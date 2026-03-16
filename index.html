@@ -455,7 +455,7 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
   <div class="header-top">
     <div class="logo-area">
       <div class="logo" id="appLogo">Madness <span>'26</span> Bets</div>
-      <div class="logo-event" id="eventSubtitle">NCAA Tournament · Times in local time</div>
+      <div class="logo-event" id="eventSubtitle">NCAA Tournament</div>
     </div>
     <div class="header-right">
       <button class="icon-btn" onclick="openSettings()" title="Settings" style="font-size:17px">⚙</button>
@@ -1067,7 +1067,7 @@ function bootApp() {
   const parts = ev.name.split(' '), last = parts.pop();
   document.getElementById('appLogo').innerHTML = (parts.length ? parts.join(' ')+' ' : '') + `<span>${last}</span>`;
   const tzAbbr = getLocalTzAbbr();
-  document.getElementById('eventSubtitle').textContent = `${ev.sport} · Times in ${tzAbbr}`;
+  document.getElementById('eventSubtitle').textContent = ev.sport;
   updateSourcePills();
   buildWeekBar();
   renderWeek();
@@ -1682,13 +1682,28 @@ function getPrefLine(g) {
 // ═══════════════════════════════════════════
 // RENDER
 // ═══════════════════════════════════════════
+function timeToMins(t) {
+  if (!t || t==='TBD') return 9999;
+  const c = t.replace(/\s*(ET|EST|EDT|PT|PDT|PST|MT|CT)$/i,'').trim();
+  const m = c.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if (!m) return 9999;
+  let h=parseInt(m[1]), mn=parseInt(m[2]), ap=m[3].toUpperCase();
+  if (ap==='PM'&&h!==12) h+=12;
+  if (ap==='AM'&&h===12) h=0;
+  return h*60+mn;
+}
+
 function renderPanel(dayKey, data) {
   const panel = document.getElementById('panel-'+dayKey);
   if (!data.games?.length) {
     panel.innerHTML = `<div class="empty-wrap"><h3>No Games Yet</h3><p>Try after odds are posted.</p><button class="kick-btn" onclick="refreshCurrentTab()">↻ Retry</button></div>`;
     return;
   }
-  panel.innerHTML = `<div class="round-label">${data.round} · ${data.day}</div>` + data.games.map(buildRow).join('');
+  // Sort games chronologically by ET tip time
+  const sorted = [...data.games].sort((a,b) =>
+    timeToMins(a.timeET||a.timePT||'') - timeToMins(b.timeET||b.timePT||'')
+  );
+  panel.innerHTML = `<div class="round-label">${data.round} · ${data.day}</div>` + sorted.map(buildRow).join('');
 }
 
 function buildRow(g) {
@@ -1701,7 +1716,7 @@ function buildRow(g) {
   const hasKalshi = g.kalshiMarkets?.length > 0;
   // Support both timeET (new) and timePT (legacy cached data)
   const rawTime = g.timeET || g.timePT || 'TBD';
-  const displayTime = convertToLocalTime(rawTime);
+  const displayTime = convertToLocalTime(rawTime) + ' ' + getLocalTzAbbr();
 
   return `
   <div class="game-row" id="row-${g.id}" onclick="toggleGame('${g.id}')">

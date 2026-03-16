@@ -513,7 +513,7 @@ let prefs = JSON.parse(localStorage.getItem('betsPrefs') || '{}');
 if (!prefs.prefBook)    prefs.prefBook    = 'consensus';
 if (!prefs.activeEvent) prefs.activeEvent = 'ncaam-w1';
 if (prefs.useOddsApi  === undefined) prefs.useOddsApi  = false;
-if (prefs.useKalshi   === undefined) prefs.useKalshi   = true;
+if (prefs.useKalshi   === undefined) prefs.useKalshi   = false;
 
 function savePrefs() { localStorage.setItem('betsPrefs', JSON.stringify(prefs)); }
 
@@ -696,7 +696,7 @@ function convertToLocalTime(timeStr) {
     const iso = refDate + 'T' + String(h).padStart(2,'0') + ':' + String(min).padStart(2,'0') + ':00';
     // Get what UTC ms corresponds to that local clock time in America/New_York
     const etLocal = new Date(new Date(iso + 'Z').toLocaleString('en-US', {timeZone: 'America/New_York'}));
-    const utcMs = new Date(iso + 'Z').getTime() - (etLocal - new Date(iso + 'Z'));
+    const utcMs = new Date(iso + 'Z').getTime() + (etLocal - new Date(iso + 'Z'));
     // Now render in the device local timezone
     return new Date(utcMs).toLocaleTimeString('en-US', {
       hour: 'numeric', minute: '2-digit', hour12: true,
@@ -1010,7 +1010,7 @@ async function loadDay(dayKey) {
     try {
       const [oddsApiData, kalshiData, aiData] = await Promise.allSettled([
         prefs.useOddsApi && prefs.oddsApiKey ? fetchOddsApi(ev, dayInfo) : Promise.reject('disabled'),
-        prefs.useKalshi ? fetchKalshi(ev, dayInfo) : Promise.reject('disabled'),
+        Promise.reject('kalshi disabled - CORS blocked'),
         proxyReady ? fetchAI(ev, dayInfo) : Promise.reject('proxy not configured'),
       ]);
 

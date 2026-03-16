@@ -696,7 +696,7 @@ function convertToLocalTime(timeStr) {
     const iso = refDate + 'T' + String(h).padStart(2,'0') + ':' + String(min).padStart(2,'0') + ':00';
     // Get what UTC ms corresponds to that local clock time in America/New_York
     const etLocal = new Date(new Date(iso + 'Z').toLocaleString('en-US', {timeZone: 'America/New_York'}));
-    const utcMs = new Date(iso + 'Z').getTime() - (etLocal - new Date(iso + 'Z'));
+    const utcMs = new Date(iso + 'Z').getTime() + (etLocal - new Date(iso + 'Z'));
     // Now render in the device local timezone
     return new Date(utcMs).toLocaleTimeString('en-US', {
       hour: 'numeric', minute: '2-digit', hour12: true,

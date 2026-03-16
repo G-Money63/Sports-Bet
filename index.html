@@ -47,6 +47,23 @@
   --mono:'DM Mono',monospace; --sans:'Syne',sans-serif;
 }
 
+/* ── LIVE SCORE STATES ── */
+.live-tag{display:flex;align-items:center;gap:5px}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--red);animation:livePulse 1.2s ease infinite;flex-shrink:0}
+@keyframes livePulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.4;transform:scale(0.8)}}
+.live-text{font-family:var(--mono);font-size:11px;color:var(--red);font-weight:500;line-height:1}
+.final-text{font-family:var(--mono);font-size:11px;color:var(--red);font-weight:500;line-height:1}
+.live-period{font-family:var(--mono);font-size:10px;color:var(--text3)}
+.game-row.is-live{border-color:var(--red)!important}
+.game-row.is-final{opacity:0.82}
+.score-badge{font-family:var(--mono);font-size:14px;font-weight:500;padding:3px 0;border-radius:5px;width:92px;text-align:center;display:block;box-sizing:border-box}
+.score-badge.leading {background:var(--green-d);color:var(--green);border:1px solid #00E88230}
+.score-badge.trailing{background:var(--card2);color:var(--text2);border:1px solid var(--border)}
+.score-badge.final-w {background:var(--green-d);color:var(--green);border:1px solid #00E88230}
+.score-badge.final-l {background:var(--card2);color:var(--text2);border:1px solid var(--border)}
+body.light .score-badge.trailing,
+body.light .score-badge.final-l{background:var(--card3);color:var(--text3);border-color:var(--border)}
+
 /* ── LIGHT MODE ── */
 body.light {
   --bg:#F4F6FA; --surface:#FFFFFF; --card:#FFFFFF; --card2:#F0F2F7; --card3:#E8EBF2;
@@ -1730,31 +1747,53 @@ function buildRow(g) {
   // Build spread badge text using abbreviation
   const spreadBadge = sp ? `${g.away?.abbr??g.spread?.favTeam??''} ${sp.line>0?'+':''}${sp.line}` : '—';
 
-  return `
-  <div class="game-row" id="row-${g.id}" onclick="toggleGame('${g.id}')">
-    <div class="game-row-inner">
-      <div class="time-block">
-        <div class="game-time">${displayTime}</div>
-        <div class="game-meta">${metaLine}</div>
-      </div>
-      <div class="matchup-block">
-        <div class="team-line">
-          <span class="seed">${g.away?.seed??'—'}</span>
-          <span class="team-name dog">${g.away?.name??'TBD'}</span>
-        </div>
-        <div class="divider-vs"></div>
-        <div class="team-line">
-          <span class="seed">${g.home?.seed??'—'}</span>
-          <span class="team-name fav">${g.home?.name??'TBD'}</span>
-        </div>
-      </div>
-      <div class="odds-block">
+  // Check for live score
+  const score = getGameScore(g);
+  const isLive  = score?.status === 'live';
+  const isFinal = score?.status === 'final';
+  const awayWinning = score && score.awayScore > score.homeScore;
+  const homeWinning = score && score.homeScore > score.awayScore;
+
+  // Time block — changes based on state
+  const timeBlock = isLive
+    ? `<div class="live-tag"><div class="live-dot"></div><span class="live-text">LIVE</span></div>
+       <div class="live-period">${score.period||''} ${score.clock||''}</div>
+       <div class="game-meta">${metaLine}</div>`
+    : isFinal
+    ? `<div class="final-text">FINAL</div>
+       <div class="game-meta">${metaLine}</div>`
+    : `<div class="game-time">${displayTime}</div>
+       <div class="game-meta">${metaLine}</div>`;
+
+  // Right column — scores when live/final, odds when pregame
+  const rightCol = (isLive || isFinal)
+    ? `<div class="score-block">
+        <span class="score-badge ${isLive?(awayWinning?'leading':'trailing'):'final-'+(awayWinning?'w':'l')}">${g.away?.abbr??''} ${score.awayScore}</span>
+        <span class="score-badge ${isLive?(homeWinning?'leading':'trailing'):'final-'+(homeWinning?'w':'l')}">${g.home?.abbr??''} ${score.homeScore}</span>
+       </div>`
+    : `<div class="odds-block">
         <span class="ml-badge ${mlCls(awayML)}">${g.away?.abbr??''} ${awayML}</span>
         <span class="ml-badge ${mlCls(homeML)}">${g.home?.abbr??''} ${homeML}</span>
         <span class="spread-mini">${spreadBadge}</span>
         ${hasVar ? '<span class="variance-badge">LINE GAP</span>' : ''}
-        ${hasKalshi ? '<span class="kalshi-inline">🔮 Kalshi</span>' : ''}
+       </div>`;
+
+  return `
+  <div class="game-row ${isLive?'is-live':isFinal?'is-final':''}" id="row-${g.id}" onclick="toggleGame('${g.id}')">
+    <div class="game-row-inner">
+      <div class="time-block">${timeBlock}</div>
+      <div class="matchup-block">
+        <div class="team-line">
+          <span class="seed">${g.away?.seed??'—'}</span>
+          <span class="team-name ${isLive&&awayWinning||isFinal&&awayWinning?'fav':'dog'}">${g.away?.name??'TBD'}</span>
+        </div>
+        <div class="divider-vs"></div>
+        <div class="team-line">
+          <span class="seed">${g.home?.seed??'—'}</span>
+          <span class="team-name ${isLive&&homeWinning||isFinal&&homeWinning?'fav':'dog'}">${g.home?.name??'TBD'}</span>
+        </div>
       </div>
+      ${rightCol}
     </div>
     <div class="detail-drawer" id="drawer-${g.id}">
       <div class="drawer-inner">${buildDrawer(g)}</div>
@@ -1915,6 +1954,56 @@ function toggleGame(id) {
 }
 
 // ═══════════════════════════════════════════
+// LIVE SCORES — fetches every 60s during game day
+// ═══════════════════════════════════════════
+let liveScores = {};       // keyed by "AWAY_abbr-HOME_abbr"
+let scoreInterval = null;
+
+async function fetchLiveScores() {
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: 'You fetch live NCAA basketball scores. Return ONLY raw JSON, no markdown.',
+        messages: [{ role: 'user', content: `Fetch current live and recent NCAA tournament scores for today ${new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}. Return JSON: {"games":[{"awayAbbr":"OSU","homeAbbr":"TCU","awayScore":52,"homeScore":47,"status":"live","period":"2H","clock":"8:42"},{"awayAbbr":"DUKE","homeAbbr":"SIE","awayScore":88,"homeScore":54,"status":"final"}]}. Status must be "pregame", "live", or "final". If no games are live or complete yet return {"games":[]}.` }]
+      })
+    });
+    const data = await resp.json();
+    const txt = (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
+    const clean = txt.replace(/^```json\s*/im,'').replace(/^```\s*/im,'').replace(/```\s*$/m,'').trim();
+    const m = clean.match(/\{[\s\S]*\}/);
+    if (!m) return;
+    const parsed = JSON.parse(m[0]);
+    // Build lookup map
+    const newScores = {};
+    for (const g of parsed.games || []) {
+      const key = (g.awayAbbr+'-'+g.homeAbbr).toUpperCase();
+      newScores[key] = g;
+    }
+    liveScores = newScores;
+    // Re-render current panel if scores changed
+    const cacheKey = prefs.activeEvent+'_'+currentDayKey;
+    if (cache[cacheKey]) renderPanel(currentDayKey, cache[cacheKey]);
+  } catch(e) {
+    console.log('Score fetch failed:', e.message);
+  }
+}
+
+function startScorePolling() {
+  fetchLiveScores();
+  if (scoreInterval) clearInterval(scoreInterval);
+  scoreInterval = setInterval(fetchLiveScores, 60000); // every 60s
+}
+
+function getGameScore(g) {
+  const key = ((g.away?.abbr||'')+ '-' +(g.home?.abbr||'')).toUpperCase();
+  return liveScores[key] || null;
+}
+
+// ═══════════════════════════════════════════
 // INSTALL NUDGE
 // ═══════════════════════════════════════════
 function initNudge() {
@@ -1935,7 +2024,7 @@ function dismissNudge() {
 // ═══════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════
-document.addEventListener('DOMContentLoaded', () => { bootApp(); initTheme(); initNudge(); });
+document.addEventListener('DOMContentLoaded', () => { bootApp(); initTheme(); initNudge(); startScorePolling(); });
 </script>
 </body>
 </html>

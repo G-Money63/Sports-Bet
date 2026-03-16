@@ -46,6 +46,29 @@
   --text:#EBF2FC; --text2:#A8BDD4; --text3:#6E8BA8;
   --mono:'DM Mono',monospace; --sans:'Syne',sans-serif;
 }
+
+/* ── LIGHT MODE ── */
+body.light {
+  --bg:#F4F6FA; --surface:#FFFFFF; --card:#FFFFFF; --card2:#F0F2F7; --card3:#E8EBF2;
+  --border:#D4D8E4; --border2:#BCC2D0;
+  --green:#00A85A; --green-d:#00A85A18;
+  --red:#E0324F;   --red-d:#E0324F18;
+  --amber:#D4960A; --amber-d:#D4960A18;
+  --blue:#2478CC;  --blue-d:#2478CC18;
+  --kalshi:#5A3ED4; --kalshi-d:#5A3ED418;
+  --accent:#D4960A; --accent-d:#D4960A18;
+  --text:#0D1220; --text2:#3D4F68; --text3:#7A8EA8;
+}
+
+/* ── THEME TOGGLE BUTTON ── */
+.theme-btn {
+  width:34px; height:34px; border-radius:7px;
+  border:1px solid var(--border2); background:var(--card2);
+  color:var(--text2); cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  transition:all .15s; font-size:17px; flex-shrink:0;
+}
+.theme-btn:hover { background:var(--card3); }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{font-size:15px}
 body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;min-height:-webkit-fill-available;overflow-x:hidden}
@@ -173,9 +196,9 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 .week-chip{flex-shrink:0;padding:5px 12px;border-radius:5px;border:1px solid var(--border);background:var(--card);color:var(--text3);font-family:var(--mono);font-size:10px;cursor:pointer;transition:all .15s;white-space:nowrap;font-weight:500}
 .week-chip:hover{color:var(--text2);border-color:var(--border2)}
 .week-chip.active{background:var(--accent-d);border-color:var(--accent);color:var(--accent)}
-.day-tabs{display:flex;gap:5px;overflow-x:auto;scrollbar-width:none}
+.day-tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;flex-wrap:wrap}
 .day-tabs::-webkit-scrollbar{display:none}
-.day-tab{flex-shrink:0;padding:6px 14px;border-radius:6px;border:1px solid var(--border2);background:var(--card2);color:var(--text2);font-family:var(--mono);font-size:11px;cursor:pointer;transition:all .15s;letter-spacing:.04em;white-space:nowrap;font-weight:500}
+.day-tab{flex-shrink:0;padding:5px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--card2);color:var(--text2);font-family:var(--mono);font-size:10.5px;cursor:pointer;transition:all .15s;letter-spacing:.02em;white-space:nowrap;font-weight:500}
 .day-tab:hover{color:var(--text);background:var(--card3)}
 .day-tab.active{background:var(--accent-d);border-color:var(--accent);color:var(--accent)}
 
@@ -404,6 +427,7 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
     </div>
     <div class="header-right">
       <button class="icon-btn" onclick="openSettings()" title="Settings" style="font-size:17px">⚙</button>
+      <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle light/dark mode">🌙</button>
       <button class="icon-btn" id="mainRefresh" onclick="refreshCurrentTab()" title="Refresh">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
           <path d="M1 4v6h6"/><path d="M23 20v-6h-6"/>
@@ -431,7 +455,7 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
   <!-- DAY label + tabs aligned as a row -->
   <div style="display:flex;align-items:center;gap:8px">
     <span style="font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--text3);flex-shrink:0;min-width:28px">DAY</span>
-    <div class="day-tabs" id="dayTabs" style="flex:1;min-width:0"></div>
+    <div class="day-tabs" id="dayTabs" style="flex:1;min-width:0;flex-wrap:wrap;gap:4px"></div>
   </div>
 </header>
 
@@ -453,6 +477,8 @@ const EVENTS = [
     oddsApiSport:'basketball_ncaab', kalshiKeyword:'NCAA',
     weeks:[
       { label:'Wk 1 — R64/R32', days:[
+        {key:'tue',label:'TUE 3/17',long:'Tuesday March 17 2026',round:'First Four — Dayton OH'},
+        {key:'wed',label:'WED 3/18',long:'Wednesday March 18 2026',round:'First Four — Dayton OH'},
         {key:'thu',label:'THU 3/19',long:'Thursday March 19 2026',round:'First Round'},
         {key:'fri',label:'FRI 3/20',long:'Friday March 20 2026',round:'First Round'},
         {key:'sat',label:'SAT 3/21',long:'Saturday March 21 2026',round:'Second Round'},
@@ -501,6 +527,279 @@ const EVENTS = [
         {key:'prelim',label:'Prelims',long:'UFC Prelims',round:'Prelims'},
         {key:'main',label:'Main Card',long:'UFC Main Card',round:'Main Card'},
       ]}
+    ]
+  },
+
+  // ── TENNIS GRAND SLAMS ──────────────────────────────────────
+  { id:'wimbledon', icon:'🎾', name:'Wimbledon', sport:'Tennis', accent:'#4C9A52', tz:'ET', tzFull:'America/New_York', oddsApiSport:'tennis_atp_wimbledon',
+    weeks:[
+      {label:'Wk 1 — R128/R64', days:[
+        {key:'mon',label:'MON',long:'Wimbledon Monday Round 1',round:'Round of 128'},
+        {key:'tue',label:'TUE',long:'Wimbledon Tuesday Round 1',round:'Round of 128'},
+        {key:'wed',label:'WED',long:'Wimbledon Wednesday Round 2',round:'Round of 64'},
+        {key:'thu',label:'THU',long:'Wimbledon Thursday Round 2',round:'Round of 64'},
+      ]},
+      {label:'Wk 1 — R32/R16', days:[
+        {key:'fri',label:'FRI',long:'Wimbledon Friday Round 3',round:'Round of 32'},
+        {key:'sat',label:'SAT',long:'Wimbledon Saturday Round 3',round:'Round of 32'},
+        {key:'mon2',label:'MON',long:'Wimbledon Monday Round 4',round:'Round of 16'},
+        {key:'tue2',label:'TUE',long:'Wimbledon Tuesday Round 4',round:'Round of 16'},
+      ]},
+      {label:'Wk 2 — QF/SF/F', days:[
+        {key:'wed2',label:'WED',long:'Wimbledon Wednesday Quarterfinals',round:'Quarterfinals'},
+        {key:'thu2',label:'THU',long:'Wimbledon Thursday Quarterfinals',round:'Quarterfinals'},
+        {key:'fri2',label:'FRI',long:'Wimbledon Friday Semifinals',round:'Semifinals'},
+        {key:'sat2',label:'SAT',long:'Wimbledon Saturday Mens Final',round:'Final'},
+        {key:'sun2',label:'SUN',long:'Wimbledon Sunday Womens Final',round:'Final'},
+      ]},
+    ]
+  },
+  { id:'usopen-tennis', icon:'🎾', name:'US Open Tennis', sport:'Tennis', accent:'#003580', tz:'ET', tzFull:'America/New_York', oddsApiSport:'tennis_atp_us_open',
+    weeks:[
+      {label:'Wk 1 — R128/R64', days:[
+        {key:'mon',label:'MON',long:'US Open Monday Round 1',round:'Round of 128'},
+        {key:'tue',label:'TUE',long:'US Open Tuesday Round 1',round:'Round of 128'},
+        {key:'wed',label:'WED',long:'US Open Wednesday Round 2',round:'Round of 64'},
+        {key:'thu',label:'THU',long:'US Open Thursday Round 2',round:'Round of 64'},
+      ]},
+      {label:'Wk 1 — R32/R16', days:[
+        {key:'fri',label:'FRI',long:'US Open Friday Round 3',round:'Round of 32'},
+        {key:'sat',label:'SAT',long:'US Open Saturday Round 3',round:'Round of 32'},
+        {key:'mon2',label:'MON',long:'US Open Monday Round 4',round:'Round of 16'},
+        {key:'tue2',label:'TUE',long:'US Open Tuesday Round 4',round:'Round of 16'},
+      ]},
+      {label:'Wk 2 — QF/SF/F', days:[
+        {key:'wed2',label:'WED',long:'US Open Wednesday Quarterfinals',round:'Quarterfinals'},
+        {key:'thu2',label:'THU',long:'US Open Thursday Quarterfinals',round:'Quarterfinals'},
+        {key:'fri2',label:'FRI',long:'US Open Friday Semifinals',round:'Semifinals'},
+        {key:'sat2',label:'SAT',long:'US Open Saturday Womens Final',round:'Final'},
+        {key:'sun2',label:'SUN',long:'US Open Sunday Mens Final',round:'Final'},
+      ]},
+    ]
+  },
+  { id:'french-open', icon:'🎾', name:'French Open', sport:'Tennis', accent:'#C8440A', tz:'ET', tzFull:'America/New_York', oddsApiSport:'tennis_atp_french_open',
+    weeks:[
+      {label:'Wk 1 — R128/R64', days:[
+        {key:'mon',label:'MON',long:'Roland Garros Monday Round 1',round:'Round of 128'},
+        {key:'tue',label:'TUE',long:'Roland Garros Tuesday Round 1',round:'Round of 128'},
+        {key:'wed',label:'WED',long:'Roland Garros Wednesday Round 2',round:'Round of 64'},
+        {key:'thu',label:'THU',long:'Roland Garros Thursday Round 2',round:'Round of 64'},
+      ]},
+      {label:'Wk 2 — QF/SF/F', days:[
+        {key:'wed2',label:'WED',long:'Roland Garros Wednesday Quarterfinals',round:'Quarterfinals'},
+        {key:'thu2',label:'THU',long:'Roland Garros Thursday Quarterfinals',round:'Quarterfinals'},
+        {key:'fri2',label:'FRI',long:'Roland Garros Friday Semifinals',round:'Semifinals'},
+        {key:'sat2',label:'SAT',long:'Roland Garros Saturday Final',round:'Final'},
+        {key:'sun2',label:'SUN',long:'Roland Garros Sunday Final',round:'Final'},
+      ]},
+    ]
+  },
+  { id:'aus-open', icon:'🎾', name:'Australian Open', sport:'Tennis', accent:'#0052A5', tz:'ET', tzFull:'America/New_York', oddsApiSport:'tennis_atp_aus_open',
+    weeks:[
+      {label:'Wk 1 — R128/R64', days:[
+        {key:'mon',label:'MON',long:'Australian Open Monday Round 1',round:'Round of 128'},
+        {key:'tue',label:'TUE',long:'Australian Open Tuesday Round 1',round:'Round of 128'},
+        {key:'wed',label:'WED',long:'Australian Open Wednesday Round 2',round:'Round of 64'},
+        {key:'thu',label:'THU',long:'Australian Open Thursday Round 2',round:'Round of 64'},
+      ]},
+      {label:'Wk 2 — QF/SF/F', days:[
+        {key:'wed2',label:'WED',long:'Australian Open Wednesday Quarterfinals',round:'Quarterfinals'},
+        {key:'thu2',label:'THU',long:'Australian Open Thursday Quarterfinals',round:'Quarterfinals'},
+        {key:'fri2',label:'FRI',long:'Australian Open Friday Semifinals',round:'Semifinals'},
+        {key:'sat2',label:'SAT',long:'Australian Open Saturday Final',round:'Final'},
+        {key:'sun2',label:'SUN',long:'Australian Open Sunday Final',round:'Final'},
+      ]},
+    ]
+  },
+
+  // ── SOCCER / FOOTBALL ────────────────────────────────────────
+  { id:'world-cup', icon:'⚽', name:'FIFA World Cup', sport:'Soccer', accent:'#1A6B3C', tz:'ET', tzFull:'America/New_York', oddsApiSport:'soccer_fifa_world_cup',
+    weeks:[
+      {label:'Group Stage', days:[
+        {key:'g1',label:'DAY 1',long:'World Cup Group Stage Day 1',round:'Group Stage'},
+        {key:'g2',label:'DAY 2',long:'World Cup Group Stage Day 2',round:'Group Stage'},
+        {key:'g3',label:'DAY 3',long:'World Cup Group Stage Day 3',round:'Group Stage'},
+        {key:'g4',label:'DAY 4',long:'World Cup Group Stage Day 4',round:'Group Stage'},
+      ]},
+      {label:'Round of 16', days:[
+        {key:'r16a',label:'DAY 1',long:'World Cup Round of 16 Day 1',round:'Round of 16'},
+        {key:'r16b',label:'DAY 2',long:'World Cup Round of 16 Day 2',round:'Round of 16'},
+        {key:'r16c',label:'DAY 3',long:'World Cup Round of 16 Day 3',round:'Round of 16'},
+        {key:'r16d',label:'DAY 4',long:'World Cup Round of 16 Day 4',round:'Round of 16'},
+      ]},
+      {label:'QF / SF / F', days:[
+        {key:'qf1',label:'QF Day 1',long:'World Cup Quarterfinals Day 1',round:'Quarterfinals'},
+        {key:'qf2',label:'QF Day 2',long:'World Cup Quarterfinals Day 2',round:'Quarterfinals'},
+        {key:'sf1',label:'SF Day 1',long:'World Cup Semifinal 1',round:'Semifinals'},
+        {key:'sf2',label:'SF Day 2',long:'World Cup Semifinal 2',round:'Semifinals'},
+        {key:'fin',label:'FINAL',long:'World Cup Final',round:'Final'},
+      ]},
+    ]
+  },
+  { id:'champions-league', icon:'⚽', name:'UEFA Champions League', sport:'Soccer', accent:'#1B3A8C', tz:'ET', tzFull:'America/New_York', oddsApiSport:'soccer_uefa_champs_league',
+    weeks:[
+      {label:'Round of 16', days:[
+        {key:'r16a',label:'LEG 1A',long:'Champions League Round of 16 Leg 1 Day 1',round:'Round of 16 — Leg 1'},
+        {key:'r16b',label:'LEG 1B',long:'Champions League Round of 16 Leg 1 Day 2',round:'Round of 16 — Leg 1'},
+        {key:'r16c',label:'LEG 2A',long:'Champions League Round of 16 Leg 2 Day 1',round:'Round of 16 — Leg 2'},
+        {key:'r16d',label:'LEG 2B',long:'Champions League Round of 16 Leg 2 Day 2',round:'Round of 16 — Leg 2'},
+      ]},
+      {label:'QF / SF', days:[
+        {key:'qf1',label:'QF L1A',long:'Champions League Quarterfinals Leg 1 Day 1',round:'Quarterfinals — Leg 1'},
+        {key:'qf2',label:'QF L1B',long:'Champions League Quarterfinals Leg 1 Day 2',round:'Quarterfinals — Leg 1'},
+        {key:'sf1',label:'SF L1A',long:'Champions League Semifinals Leg 1 Day 1',round:'Semifinals — Leg 1'},
+        {key:'sf2',label:'SF L1B',long:'Champions League Semifinals Leg 1 Day 2',round:'Semifinals — Leg 1'},
+      ]},
+      {label:'Final', days:[
+        {key:'fin',label:'FINAL',long:'Champions League Final',round:'Final'},
+      ]},
+    ]
+  },
+  { id:'euro', icon:'⚽', name:'UEFA Euro', sport:'Soccer', accent:'#003399', tz:'ET', tzFull:'America/New_York', oddsApiSport:'soccer_uefa_european_championship',
+    weeks:[
+      {label:'Group Stage', days:[
+        {key:'g1',label:'DAY 1',long:'Euro Group Stage Day 1',round:'Group Stage'},
+        {key:'g2',label:'DAY 2',long:'Euro Group Stage Day 2',round:'Group Stage'},
+        {key:'g3',label:'DAY 3',long:'Euro Group Stage Day 3',round:'Group Stage'},
+      ]},
+      {label:'Knockout', days:[
+        {key:'r16',label:'R16',long:'Euro Round of 16',round:'Round of 16'},
+        {key:'qf',label:'QF',long:'Euro Quarterfinals',round:'Quarterfinals'},
+        {key:'sf',label:'SF',long:'Euro Semifinals',round:'Semifinals'},
+        {key:'fin',label:'FINAL',long:'Euro Final',round:'Final'},
+      ]},
+    ]
+  },
+
+  // ── GOLF MAJORS ──────────────────────────────────────────────
+  { id:'pga-championship', icon:'⛳', name:'PGA Championship', sport:'Golf', accent:'#1B4D8E', tz:'ET', tzFull:'America/New_York', oddsApiSport:'golf_pga_championship_winner',
+    weeks:[
+      {label:'Tournament', days:[
+        {key:'r1',label:'RD 1 THU',long:'PGA Championship Round 1 Thursday',round:'Round 1'},
+        {key:'r2',label:'RD 2 FRI',long:'PGA Championship Round 2 Friday',round:'Round 2'},
+        {key:'r3',label:'RD 3 SAT',long:'PGA Championship Round 3 Saturday',round:'Round 3'},
+        {key:'r4',label:'RD 4 SUN',long:'PGA Championship Round 4 Sunday',round:'Final Round'},
+      ]}
+    ]
+  },
+  { id:'us-open-golf', icon:'⛳', name:'US Open Golf', sport:'Golf', accent:'#002868', tz:'ET', tzFull:'America/New_York', oddsApiSport:'golf_us_open_winner',
+    weeks:[
+      {label:'Tournament', days:[
+        {key:'r1',label:'RD 1 THU',long:'US Open Golf Round 1 Thursday',round:'Round 1'},
+        {key:'r2',label:'RD 2 FRI',long:'US Open Golf Round 2 Friday',round:'Round 2'},
+        {key:'r3',label:'RD 3 SAT',long:'US Open Golf Round 3 Saturday',round:'Round 3'},
+        {key:'r4',label:'RD 4 SUN',long:'US Open Golf Round 4 Sunday',round:'Final Round'},
+      ]}
+    ]
+  },
+  { id:'the-open', icon:'⛳', name:'The Open Championship', sport:'Golf', accent:'#00539B', tz:'ET', tzFull:'America/New_York', oddsApiSport:'golf_the_open_championship_winner',
+    weeks:[
+      {label:'Tournament', days:[
+        {key:'r1',label:'RD 1 THU',long:'The Open Championship Round 1 Thursday',round:'Round 1'},
+        {key:'r2',label:'RD 2 FRI',long:'The Open Championship Round 2 Friday',round:'Round 2'},
+        {key:'r3',label:'RD 3 SAT',long:'The Open Championship Round 3 Saturday',round:'Round 3'},
+        {key:'r4',label:'RD 4 SUN',long:'The Open Championship Round 4 Sunday',round:'Final Round'},
+      ]}
+    ]
+  },
+
+  // ── OTHER SPORTS ─────────────────────────────────────────────
+  { id:'nhl-playoffs', icon:'🏒', name:'NHL Playoffs', sport:'NHL', accent:'#002654', tz:'ET', tzFull:'America/New_York', oddsApiSport:'icehockey_nhl',
+    weeks:[
+      {label:'Round 1', days:[
+        {key:'g1',label:'Game 1',long:'NHL Playoffs Round 1 Game 1',round:'First Round'},
+        {key:'g2',label:'Game 2',long:'NHL Playoffs Round 1 Game 2',round:'First Round'},
+        {key:'g3',label:'Game 3',long:'NHL Playoffs Round 1 Game 3',round:'First Round'},
+        {key:'g4',label:'Game 4',long:'NHL Playoffs Round 1 Game 4',round:'First Round'},
+        {key:'g5',label:'Game 5',long:'NHL Playoffs Round 1 Game 5',round:'First Round'},
+        {key:'g6',label:'Game 6',long:'NHL Playoffs Round 1 Game 6',round:'First Round'},
+        {key:'g7',label:'Game 7',long:'NHL Playoffs Round 1 Game 7',round:'First Round'},
+      ]},
+      {label:'Round 2', days:[
+        {key:'r2g1',label:'Game 1',long:'NHL Playoffs Round 2 Game 1',round:'Second Round'},
+        {key:'r2g2',label:'Game 2',long:'NHL Playoffs Round 2 Game 2',round:'Second Round'},
+        {key:'r2g3',label:'Game 3',long:'NHL Playoffs Round 2 Game 3',round:'Second Round'},
+        {key:'r2g4',label:'Game 4',long:'NHL Playoffs Round 2 Game 4',round:'Second Round'},
+      ]},
+      {label:'Conf Finals', days:[
+        {key:'cf1',label:'Game 1',long:'NHL Conference Finals Game 1',round:'Conference Finals'},
+        {key:'cf2',label:'Game 2',long:'NHL Conference Finals Game 2',round:'Conference Finals'},
+        {key:'cf3',label:'Game 3',long:'NHL Conference Finals Game 3',round:'Conference Finals'},
+      ]},
+      {label:'Stanley Cup', days:[
+        {key:'sc1',label:'Game 1',long:'Stanley Cup Finals Game 1',round:'Stanley Cup Finals'},
+        {key:'sc2',label:'Game 2',long:'Stanley Cup Finals Game 2',round:'Stanley Cup Finals'},
+        {key:'sc3',label:'Game 3',long:'Stanley Cup Finals Game 3',round:'Stanley Cup Finals'},
+        {key:'sc4',label:'Game 4',long:'Stanley Cup Finals Game 4',round:'Stanley Cup Finals'},
+        {key:'sc5',label:'Game 5',long:'Stanley Cup Finals Game 5',round:'Stanley Cup Finals'},
+        {key:'sc6',label:'Game 6',long:'Stanley Cup Finals Game 6',round:'Stanley Cup Finals'},
+        {key:'sc7',label:'Game 7',long:'Stanley Cup Finals Game 7',round:'Stanley Cup Finals'},
+      ]},
+    ]
+  },
+  { id:'f1', icon:'🏎️', name:'Formula 1', sport:'F1 Grand Prix', accent:'#E8002D', tz:'ET', tzFull:'America/New_York', oddsApiSport:'motorsport_formula_one_winner',
+    weeks:[
+      {label:'Race Weekend', days:[
+        {key:'fp1',label:'FP1/FP2',long:'F1 Practice 1 and 2',round:'Free Practice'},
+        {key:'fp3',label:'FP3/QUAL',long:'F1 Practice 3 and Qualifying',round:'Qualifying'},
+        {key:'race',label:'RACE',long:'F1 Grand Prix Race Day',round:'Race'},
+      ]},
+      {label:'Sprint Weekend', days:[
+        {key:'fp1s',label:'FP1',long:'F1 Sprint Weekend Practice 1',round:'Free Practice'},
+        {key:'squal',label:'S.QUAL',long:'F1 Sprint Qualifying',round:'Sprint Qualifying'},
+        {key:'sprint',label:'SPRINT',long:'F1 Sprint Race',round:'Sprint Race'},
+        {key:'qual',label:'QUAL',long:'F1 Grand Prix Qualifying',round:'Qualifying'},
+        {key:'race',label:'RACE',long:'F1 Grand Prix Race Day',round:'Race'},
+      ]},
+    ]
+  },
+  { id:'ncaaw', icon:'🏀', name:"Women's Madness", sport:"NCAA Women's Tournament", accent:'#E040FB', tz:'PT', tzFull:'America/Los_Angeles', oddsApiSport:'basketball_ncaaw',
+    weeks:[
+      {label:'Wk 1 — R64/R32', days:[
+        {key:'fri',label:'FRI 3/20',long:'Friday March 20 2026',round:'First Round'},
+        {key:'sat',label:'SAT 3/21',long:'Saturday March 21 2026',round:'First Round'},
+        {key:'sun',label:'SUN 3/22',long:'Sunday March 22 2026',round:'Second Round'},
+        {key:'mon',label:'MON 3/23',long:'Monday March 23 2026',round:'Second Round'},
+      ]},
+      {label:'Wk 2 — S16/E8', days:[
+        {key:'fri2',label:'FRI 3/27',long:'Friday March 27 2026',round:'Sweet 16'},
+        {key:'sat2',label:'SAT 3/28',long:'Saturday March 28 2026',round:'Sweet 16'},
+        {key:'sun2',label:'SUN 3/29',long:'Sunday March 29 2026',round:'Elite Eight'},
+        {key:'mon2',label:'MON 3/30',long:'Monday March 30 2026',round:'Elite Eight'},
+      ]},
+      {label:'Wk 3 — F4/Champ', days:[
+        {key:'fri3',label:'FRI 4/3',long:'Friday April 3 2026',round:'Final Four'},
+        {key:'sun3',label:'SUN 4/5',long:'Sunday April 5 2026',round:'National Championship'},
+      ]},
+    ]
+  },
+  { id:'copa-america', icon:'⚽', name:'Copa America', sport:'Soccer', accent:'#D4AF37', tz:'ET', tzFull:'America/New_York', oddsApiSport:'soccer_conmebol_copa_america',
+    weeks:[
+      {label:'Group Stage', days:[
+        {key:'g1',label:'DAY 1',long:'Copa America Group Stage Day 1',round:'Group Stage'},
+        {key:'g2',label:'DAY 2',long:'Copa America Group Stage Day 2',round:'Group Stage'},
+        {key:'g3',label:'DAY 3',long:'Copa America Group Stage Day 3',round:'Group Stage'},
+      ]},
+      {label:'Knockout', days:[
+        {key:'qf',label:'QF',long:'Copa America Quarterfinals',round:'Quarterfinals'},
+        {key:'sf',label:'SF',long:'Copa America Semifinals',round:'Semifinals'},
+        {key:'fin',label:'FINAL',long:'Copa America Final',round:'Final'},
+      ]},
+    ]
+  },
+  { id:'rugby-wc', icon:'🏉', name:'Rugby World Cup', sport:'Rugby', accent:'#8B4513', tz:'ET', tzFull:'America/New_York', oddsApiSport:'rugbyunion_world_cup',
+    weeks:[
+      {label:'Pool Stage', days:[
+        {key:'p1',label:'WK 1',long:'Rugby World Cup Pool Stage Week 1',round:'Pool Stage'},
+        {key:'p2',label:'WK 2',long:'Rugby World Cup Pool Stage Week 2',round:'Pool Stage'},
+        {key:'p3',label:'WK 3',long:'Rugby World Cup Pool Stage Week 3',round:'Pool Stage'},
+        {key:'p4',label:'WK 4',long:'Rugby World Cup Pool Stage Week 4',round:'Pool Stage'},
+      ]},
+      {label:'Knockout', days:[
+        {key:'qf',label:'QF',long:'Rugby World Cup Quarterfinals',round:'Quarterfinals'},
+        {key:'sf',label:'SF',long:'Rugby World Cup Semifinals',round:'Semifinals'},
+        {key:'fin',label:'FINAL',long:'Rugby World Cup Final',round:'Final'},
+      ]},
     ]
   },
 ];
@@ -678,31 +977,56 @@ function getLocalTzAbbr() {
   } catch(e) { return 'Local'; }
 }
 
-// Convert "12:15 PM ET" (or bare "12:15 PM") to user local time using Intl
+// Convert "2:50 PM ET" to user local time — clean reliable version
 function convertToLocalTime(timeStr) {
   if (!timeStr || timeStr === 'TBD') return timeStr;
   try {
-    // Strip any tz suffix — we always treat the value as Eastern Time
-    const cleaned = timeStr.replace(/(\s*)(ET|EST|EDT|CT|MT|PT|PDT|PST|MDT|CDT)$/i, '').trim();
+    // Strip timezone label — all times stored as ET
+    const cleaned = timeStr.replace(/\s*(ET|EST|EDT|CT|MT|PT|PDT|PST|MDT|CDT)$/i, '').trim();
     const m = cleaned.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
     if (!m) return timeStr;
     let h = parseInt(m[1]), min = parseInt(m[2]);
     const ampm = m[3].toUpperCase();
     if (ampm === 'PM' && h !== 12) h += 12;
     if (ampm === 'AM' && h === 12) h = 0;
-    // Build an ISO string treated as ET using Intl tricks
-    // Pick a stable reference date in the tournament window (March 19 2026)
-    const refDate = '2026-03-19';
-    const iso = refDate + 'T' + String(h).padStart(2,'0') + ':' + String(min).padStart(2,'0') + ':00';
-    // Get what UTC ms corresponds to that local clock time in America/New_York
-    const etLocal = new Date(new Date(iso + 'Z').toLocaleString('en-US', {timeZone: 'America/New_York'}));
-    const utcMs = new Date(iso + 'Z').getTime() + (etLocal - new Date(iso + 'Z'));
-    // Now render in the device local timezone
-    return new Date(utcMs).toLocaleTimeString('en-US', {
-      hour: 'numeric', minute: '2-digit', hour12: true,
+    // Use a fixed tournament date: March 19 2026 (EDT = UTC-4)
+    // Build UTC time by adding 4 hours (EDT offset)
+    const utcH = h + 4;
+    const utcDate = new Date(Date.UTC(2026, 2, 19, utcH, min, 0));
+    // Format in user local timezone
+    return utcDate.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
       timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
     });
   } catch(e) { return timeStr; }
+}
+
+// ═══════════════════════════════════════════
+// THEME TOGGLE
+// ═══════════════════════════════════════════
+function toggleTheme() {
+  const isLight = document.body.classList.toggle('light');
+  localStorage.setItem('theme', isLight ? 'light' : 'dark');
+  document.getElementById('themeBtn').textContent = isLight ? '☀️' : '🌙';
+  // Update accent for light mode
+  const ev = getActiveEvent();
+  if (isLight) {
+    // Darken accent slightly for light mode readability
+    document.documentElement.style.setProperty('--accent', ev.accent);
+    document.documentElement.style.setProperty('--accent-d', ev.accent + '22');
+  } else {
+    setAccent(ev.accent);
+  }
+}
+
+function initTheme() {
+  const saved = localStorage.getItem('theme');
+  if (saved === 'light') {
+    document.body.classList.add('light');
+    document.getElementById('themeBtn').textContent = '☀️';
+  }
 }
 
 function bootApp() {
@@ -754,8 +1078,8 @@ function refreshCurrentTab() { delete cache[prefs.activeEvent+'_'+currentDayKey]
 function autoSelectToday() {
   if (prefs.activeEvent !== 'ncaam-w1') return;
   const t=new Date(), m=t.getMonth(), d=t.getDate();
-  const dm={'2-19':'thu','2-20':'fri','2-21':'sat','2-22':'sun','2-26':'thu2','2-27':'fri2','2-28':'sat2','2-29':'sun2','3-4':'sat3','3-6':'mon3'};
-  const wm={thu:0,fri:0,sat:0,sun:0,thu2:1,fri2:1,sat2:1,sun2:1,sat3:2,mon3:2};
+  const dm={'2-17':'tue','2-18':'wed','2-19':'thu','2-20':'fri','2-21':'sat','2-22':'sun','2-26':'thu2','2-27':'fri2','2-28':'sat2','2-29':'sun2','3-4':'sat3','3-6':'mon3'};
+  const wm={tue:0,wed:0,thu:0,fri:0,sat:0,sun:0,thu2:1,fri2:1,sat2:1,sun2:1,sat3:2,mon3:2};
   const k=`${m}-${d}`;
   if (dm[k]) {
     const dk=dm[k], wi=wm[dk]??0;
@@ -769,10 +1093,96 @@ function autoSelectToday() {
 // Refresh button fetches live updates on top via proxy
 // ═══════════════════════════════════════════
 const STATIC_GAMES = {
+  'ncaam-w1_tue': {
+    day:'Tuesday, March 17, 2026', round:'First Four — Dayton, OH',
+    games:[
+      {id:'t1',timeET:'6:40 PM ET',network:'truTV',region:'Midwest',
+       away:{name:'UMBC Retrievers',abbr:'UMBC',seed:16,record:'24-8'},
+       home:{name:'Howard Bison',abbr:'HOW',seed:16,record:'23-10'},
+       moneyline:{away:'-145',home:'+125'},
+       spread:{line:-2.5,favTeam:'UMBC Retrievers',juice:'-110'},
+       total:{line:134.5,overJuice:'-110',underJuice:'-110'},
+       firstHalf:{moneyline:{away:'-130',home:'+110'},spread:{line:-1.5,favTeam:'UMBC Retrievers'},total:{line:66.5}},
+       books:[
+         {book:'DraftKings',awayML:'-145',homeML:'+125',spread:'-2.5',total:'134.5'},
+         {book:'FanDuel',awayML:'-142',homeML:'+120',spread:'-2.5',total:'134.5'},
+         {book:'BetMGM',awayML:'-150',homeML:'+130',spread:'-3.0',total:'135.0'},
+         {book:'Caesars',awayML:'-145',homeML:'+125',spread:'-2.5',total:'134.0'},
+         {book:'BetUS',awayML:'-140',homeML:'+120',spread:'-2.5',total:'134.5'}
+       ],
+       playerProps:[
+         {player:'LJ Owens',team:'UMBC',market:'Points',line:14.5,overOdds:'-112',underOdds:'-108'},
+         {player:'Shy Odom',team:'Howard',market:'Points',line:13.5,overOdds:'-108',underOdds:'-112'}
+       ],
+       sharpAngle:'Winner faces Michigan in the First Round. UMBC is on a 12-game win streak and has the better 3-point shooting — take UMBC -2.5. The winner plays a brutal draw against the title favorite.'},
+      {id:'t2',timeET:'9:15 PM ET',network:'truTV',region:'West',
+       away:{name:'Texas Longhorns',abbr:'TEX',seed:11,record:'18-14'},
+       home:{name:'NC State Wolfpack',abbr:'NCST',seed:11,record:'20-13'},
+       moneyline:{away:'+105',home:'-125'},
+       spread:{line:1.5,favTeam:'NC State Wolfpack',juice:'-110'},
+       total:{line:137.5,overJuice:'-110',underJuice:'-110'},
+       firstHalf:{moneyline:{away:'+110',home:'-130'},spread:{line:1.0,favTeam:'NC State Wolfpack'},total:{line:67.5}},
+       books:[
+         {book:'DraftKings',awayML:'+105',homeML:'-125',spread:'+1.5',total:'137.5'},
+         {book:'FanDuel',awayML:'+108',homeML:'-128',spread:'+1.5',total:'137.5'},
+         {book:'BetMGM',awayML:'+110',homeML:'-130',spread:'+2.0',total:'138.0'},
+         {book:'Caesars',awayML:'+105',homeML:'-125',spread:'+1.5',total:'137.0'},
+         {book:'BetUS',awayML:'+110',homeML:'-130',spread:'+1.5',total:'137.5'}
+       ],
+       playerProps:[
+         {player:'Arterio Morris',team:'Texas',market:'Points',line:15.5,overOdds:'-110',underOdds:'-110'},
+         {player:'Michael OConnell',team:'NC State',market:'Points',line:14.5,overOdds:'-108',underOdds:'-112'}
+       ],
+       sharpAngle:'Winner faces BYU in the West Region. NC State is the slight favorite but Texas has tournament experience. Take Texas +1.5 for value — the Longhorns are a dangerous 11-seed with size.'}
+    ]
+  },
+  'ncaam-w1_wed': {
+    day:'Wednesday, March 18, 2026', round:'First Four — Dayton, OH',
+    games:[
+      {id:'w1',timeET:'6:40 PM ET',network:'truTV',region:'South',
+       away:{name:'Prairie View A&M Panthers',abbr:'PVAM',seed:16,record:'18-17'},
+       home:{name:'Lehigh Mountain Hawks',abbr:'LEH',seed:16,record:'18-16'},
+       moneyline:{away:'-130',home:'+110'},
+       spread:{line:-2.0,favTeam:'Prairie View A&M Panthers',juice:'-110'},
+       total:{line:131.5,overJuice:'-110',underJuice:'-110'},
+       firstHalf:{moneyline:{away:'-118',home:'-102'},spread:{line:-1.0,favTeam:'Prairie View A&M Panthers'},total:{line:64.5}},
+       books:[
+         {book:'DraftKings',awayML:'-130',homeML:'+110',spread:'-2.0',total:'131.5'},
+         {book:'FanDuel',awayML:'-128',homeML:'+108',spread:'-2.0',total:'131.5'},
+         {book:'BetMGM',awayML:'-135',homeML:'+115',spread:'-2.5',total:'132.0'},
+         {book:'Caesars',awayML:'-130',homeML:'+110',spread:'-2.0',total:'131.0'},
+         {book:'BetUS',awayML:'-125',homeML:'+105',spread:'-2.0',total:'131.5'}
+       ],
+       playerProps:[
+         {player:'Nasir Whitlock',team:'Lehigh',market:'Points',line:20.5,overOdds:'-115',underOdds:'-105'},
+         {player:'Kordell Charles',team:'Prairie View',market:'Points',line:13.5,overOdds:'-108',underOdds:'-112'}
+       ],
+       sharpAngle:'Lehigh has the best player in the game in Nasir Whitlock (21.1 PPG, 45% from 3). Lehigh has lost just one game since Feb — take Lehigh +2.0 and Whitlock OVER 20.5 points. Winner faces Florida.'},
+      {id:'w2',timeET:'9:15 PM ET',network:'truTV',region:'Midwest',
+       away:{name:'Miami OH RedHawks',abbr:'MIA',seed:11,record:'31-1'},
+       home:{name:'SMU Mustangs',abbr:'SMU',seed:11,record:'20-13'},
+       moneyline:{away:'-200',home:'+168'},
+       spread:{line:-4.0,favTeam:'Miami OH RedHawks',juice:'-110'},
+       total:{line:138.5,overJuice:'-110',underJuice:'-110'},
+       firstHalf:{moneyline:{away:'-155',home:'+130'},spread:{line:-2.0,favTeam:'Miami OH RedHawks'},total:{line:68.5}},
+       books:[
+         {book:'DraftKings',awayML:'-200',homeML:'+168',spread:'-4.0',total:'138.5'},
+         {book:'FanDuel',awayML:'-195',homeML:'+162',spread:'-4.0',total:'138.5'},
+         {book:'BetMGM',awayML:'-200',homeML:'+170',spread:'-4.5',total:'139.0'},
+         {book:'Caesars',awayML:'-200',homeML:'+168',spread:'-4.0',total:'138.0'},
+         {book:'BetUS',awayML:'-195',homeML:'+165',spread:'-4.0',total:'138.5'}
+       ],
+       playerProps:[
+         {player:'Boopie Miller',team:'SMU',market:'Points',line:18.5,overOdds:'-115',underOdds:'-105'},
+         {player:'AJ Clayton',team:'Miami OH',market:'Points',line:15.5,overOdds:'-110',underOdds:'-110'}
+       ],
+       sharpAngle:'Miami OH is 31-1 — the best record in the country. They lost their perfect season in the MAC tourney but are still elite. Take Miami OH -4.0 — they are heavily motivated after that heartbreak loss. Winner faces Tennessee.'}
+    ]
+  },
   'ncaam-w1_thu': {
     day:'Thursday, March 19, 2026', round:'First Round — Round of 64',
     games:[
-      {id:'g1',timeET:'12:15 PM ET',network:'CBS',region:'East',
+      {id:'g1',timeET:'2:50 PM ET',network:'CBS',region:'East',
        away:{name:'Duke Blue Devils',abbr:'DUKE',seed:1,record:'32-2'},
        home:{name:'Siena Saints',abbr:'SIE',seed:16,record:'23-11'},
        moneyline:{away:'-5000',home:'+2200'},
@@ -782,7 +1192,7 @@ const STATIC_GAMES = {
        books:[{book:'DraftKings',awayML:'-5000',homeML:'+2200',spread:'-22.5',total:'142.5'},{book:'FanDuel',awayML:'-4500',homeML:'+2000',spread:'-22.5',total:'142.5'},{book:'BetMGM',awayML:'-5000',homeML:'+2500',spread:'-23.0',total:'143.0'},{book:'Caesars',awayML:'-5000',homeML:'+2200',spread:'-22.5',total:'142.0'},{book:'BetUS',awayML:'-4800',homeML:'+2300',spread:'-22.5',total:'143.0'}],
        playerProps:[{player:'Cameron Boozer',team:'Duke',market:'Points',line:19.5,overOdds:'-115',underOdds:'-105'},{player:'Cameron Boozer',team:'Duke',market:'Rebounds',line:9.5,overOdds:'+100',underOdds:'-120'},{player:'Tyrese Proctor',team:'Duke',market:'Points',line:14.5,overOdds:'-110',underOdds:'-110'}],
        sharpAngle:'Duke -22.5 is inflated with public money. The UNDER 142.5 is the value play — Duke controls pace and Siena will struggle to score. Cameron Boozer OVER 19.5 points is a strong prop play.'},
-      {id:'g2',timeET:'2:45 PM ET',network:'CBS',region:'East',
+      {id:'g2',timeET:'12:15 PM ET',network:'CBS',region:'East',
        away:{name:'Ohio State Buckeyes',abbr:'OSU',seed:8,record:'21-12'},
        home:{name:'TCU Horned Frogs',abbr:'TCU',seed:9,record:'22-11'},
        moneyline:{away:'-120',home:'+100'},
@@ -792,7 +1202,7 @@ const STATIC_GAMES = {
        books:[{book:'DraftKings',awayML:'-120',homeML:'+100',spread:'-1.5',total:'139.5'},{book:'FanDuel',awayML:'-118',homeML:'-102',spread:'-1.5',total:'139.5'},{book:'BetMGM',awayML:'-125',homeML:'+105',spread:'-1.5',total:'140.0'},{book:'Caesars',awayML:'-120',homeML:'+100',spread:'-1.5',total:'139.0'},{book:'BetUS',awayML:'-115',homeML:'-105',spread:'-1.0',total:'139.5'}],
        playerProps:[{player:'Bruce Thornton',team:'Ohio State',market:'Points',line:16.5,overOdds:'-112',underOdds:'-108'},{player:'Micah Robinson',team:'TCU',market:'Points',line:14.5,overOdds:'-108',underOdds:'-112'}],
        sharpAngle:'Classic 8-9 toss-up. TCU covers tight games at 58% — take TCU +1.5. Line varies 0.5 pts across books so shop for the best number.'},
-      {id:'g3',timeET:'7:10 PM ET',network:'TBS',region:'East',
+      {id:'g3',timeET:'1:30 PM ET',network:'TBS',region:'East',
        away:{name:'Louisville Cardinals',abbr:'LOU',seed:6,record:'23-10'},
        home:{name:'South Florida Bulls',abbr:'USF',seed:11,record:'25-8'},
        moneyline:{away:'-175',home:'+148'},
@@ -802,7 +1212,7 @@ const STATIC_GAMES = {
        books:[{book:'DraftKings',awayML:'-175',homeML:'+148',spread:'-3.5',total:'141.5'},{book:'FanDuel',awayML:'-172',homeML:'+144',spread:'-3.5',total:'141.5'},{book:'BetMGM',awayML:'-180',homeML:'+155',spread:'-4.0',total:'142.0'},{book:'Caesars',awayML:'-175',homeML:'+150',spread:'-3.5',total:'141.0'},{book:'BetUS',awayML:'-170',homeML:'+145',spread:'-3.5',total:'141.5'}],
        playerProps:[{player:'Chucky Hepburn',team:'Louisville',market:'Points',line:15.5,overOdds:'-110',underOdds:'-110'},{player:'Selton Miguel',team:'South Florida',market:'Points',line:17.5,overOdds:'-108',underOdds:'-112'}],
        sharpAngle:'11-seeds are 8-4 ATS last 3 years. USF won the American title and is battle-tested. Take South Florida +3.5 — they have pace and shooting to keep it close.'},
-      {id:'g4',timeET:'9:40 PM ET',network:'TBS',region:'East',
+      {id:'g4',timeET:'4:05 PM ET',network:'TBS',region:'East',
        away:{name:'Michigan State Spartans',abbr:'MSU',seed:3,record:'25-7'},
        home:{name:'North Dakota State Bison',abbr:'NDSU',seed:14,record:'27-7'},
        moneyline:{away:'-900',home:'+580'},
@@ -812,7 +1222,7 @@ const STATIC_GAMES = {
        books:[{book:'DraftKings',awayML:'-900',homeML:'+580',spread:'-14.5',total:'136.5'},{book:'FanDuel',awayML:'-850',homeML:'+560',spread:'-14.5',total:'136.5'},{book:'BetMGM',awayML:'-900',homeML:'+600',spread:'-15.0',total:'137.0'},{book:'Caesars',awayML:'-900',homeML:'+580',spread:'-14.5',total:'136.0'},{book:'BetUS',awayML:'-880',homeML:'+570',spread:'-14.5',total:'137.0'}],
        playerProps:[{player:'Tre Holloman',team:'Michigan State',market:'Points',line:13.5,overOdds:'-112',underOdds:'-108'},{player:'Jaxon Kohler',team:'Michigan State',market:'Rebounds',line:7.5,overOdds:'-115',underOdds:'-105'}],
        sharpAngle:'14-seeds cover at 52% since 2019. NDSU +14.5 has value in a slower-paced game. MSU will win but struggle to blow out a tough Summit League squad.'},
-      {id:'g5',timeET:'7:10 PM ET',network:'TNT',region:'Midwest',
+      {id:'g5',timeET:'7:25 PM ET',network:'TNT',region:'Midwest',
        away:{name:'Michigan Wolverines',abbr:'MICH',seed:1,record:'31-3'},
        home:{name:'UMBC Retrievers',abbr:'UMBC',seed:16,record:'24-8'},
        moneyline:{away:'-4500',home:'+2000'},
@@ -822,7 +1232,7 @@ const STATIC_GAMES = {
        books:[{book:'DraftKings',awayML:'-4500',homeML:'+2000',spread:'-20.5',total:'144.5'},{book:'FanDuel',awayML:'-4200',homeML:'+1900',spread:'-20.5',total:'144.5'},{book:'BetMGM',awayML:'-5000',homeML:'+2200',spread:'-21.0',total:'145.0'},{book:'Caesars',awayML:'-4500',homeML:'+2000',spread:'-20.5',total:'144.0'},{book:'BetUS',awayML:'-4400',homeML:'+1950',spread:'-20.5',total:'144.5'}],
        playerProps:[{player:'Tre Donaldson',team:'Michigan',market:'Points',line:17.5,overOdds:'-115',underOdds:'-105'},{player:'Danny Wolf',team:'Michigan',market:'Rebounds',line:9.5,overOdds:'-110',underOdds:'-110'},{player:'Elliot Cadeau',team:'Michigan',market:'Assists',line:5.5,overOdds:'-108',underOdds:'-112'}],
        sharpAngle:'Michigan lost key reserve LJ Cason to injury. UMBC is on a 12-game win streak and made 38% of 3s — same profile as the 2018 team that upset Virginia. Take UMBC +20.5 for cover value.'},
-      {id:'g6',timeET:'9:40 PM ET',network:'TNT',region:'Midwest',
+      {id:'g6',timeET:'9:45 PM ET',network:'TNT',region:'Midwest',
        away:{name:'Georgia Bulldogs',abbr:'UGA',seed:8,record:'22-10'},
        home:{name:'Saint Louis Billikens',abbr:'SLU',seed:9,record:'28-5'},
        moneyline:{away:'+105',home:'-125'},
@@ -832,7 +1242,7 @@ const STATIC_GAMES = {
        books:[{book:'DraftKings',awayML:'+105',homeML:'-125',spread:'+1.5',total:'138.5'},{book:'FanDuel',awayML:'+108',homeML:'-128',spread:'+1.5',total:'138.5'},{book:'BetMGM',awayML:'+110',homeML:'-130',spread:'+2.0',total:'139.0'},{book:'Caesars',awayML:'+105',homeML:'-125',spread:'+1.5',total:'138.0'},{book:'BetUS',awayML:'+110',homeML:'-130',spread:'+1.5',total:'138.5'}],
        playerProps:[{player:'RJ Melendez',team:'Georgia',market:'Points',line:14.5,overOdds:'-110',underOdds:'-110'},{player:"JaVonte Smart",team:'Saint Louis',market:'Points',line:16.5,overOdds:'-112',underOdds:'-108'}],
        sharpAngle:'Saint Louis is 28-5 and A-10 Champion — one of the most underrated teams in the field. SLU -1.5 at home is worth a play. Elite ball security and turnover differential.'},
-      {id:'g7',timeET:'12:15 PM ET',network:'truTV',region:'Midwest',
+      {id:'g7',timeET:'7:10 PM ET',network:'truTV',region:'Midwest',
        away:{name:'Texas Tech Red Raiders',abbr:'TTU',seed:5,record:'22-10'},
        home:{name:'Akron Zips',abbr:'AKR',seed:12,record:'29-5'},
        moneyline:{away:'-220',home:'+182'},
@@ -842,7 +1252,7 @@ const STATIC_GAMES = {
        books:[{book:'DraftKings',awayML:'-220',homeML:'+182',spread:'-4.5',total:'132.5'},{book:'FanDuel',awayML:'-215',homeML:'+178',spread:'-4.5',total:'132.5'},{book:'BetMGM',awayML:'-225',homeML:'+185',spread:'-5.0',total:'133.0'},{book:'Caesars',awayML:'-220',homeML:'+182',spread:'-4.5',total:'132.0'},{book:'BetUS',awayML:'-215',homeML:'+180',spread:'-4.5',total:'133.0'}],
        playerProps:[{player:'Darrion Williams',team:'Texas Tech',market:'Points',line:15.5,overOdds:'-110',underOdds:'-110'},{player:'Ali Ali',team:'Akron',market:'Points',line:17.5,overOdds:'-112',underOdds:'-108'}],
        sharpAngle:'12-seeds are 8-4 ATS vs 5-seeds last 3 years. Akron is 29-5 and MAC champ — perfect mid-major profile to cover. Take Akron +4.5 and hammer the UNDER 132.5.'},
-      {id:'g8',timeET:'2:45 PM ET',network:'truTV',region:'Midwest',
+      {id:'g8',timeET:'9:40 PM ET',network:'truTV',region:'Midwest',
        away:{name:'Virginia Cavaliers',abbr:'UVA',seed:3,record:'29-5'},
        home:{name:'Wright State Raiders',abbr:'WSU',seed:14,record:'23-11'},
        moneyline:{away:'-750',home:'+500'},
@@ -857,7 +1267,7 @@ const STATIC_GAMES = {
   'ncaam-w1_fri': {
     day:'Friday, March 20, 2026', round:'First Round — Round of 64',
     games:[
-      {id:'f1',timeET:'12:15 PM ET',network:'CBS',region:'West',
+      {id:'f1',timeET:'2:45 PM ET',network:'CBS',region:'West',
        away:{name:'Arizona Wildcats',abbr:'ARIZ',seed:1,record:'32-2'},
        home:{name:'LIU Sharks',abbr:'LIU',seed:16,record:'24-10'},
        moneyline:{away:'-4500',home:'+1900'},
@@ -867,7 +1277,7 @@ const STATIC_GAMES = {
        books:[{book:'DraftKings',awayML:'-4500',homeML:'+1900',spread:'-21.5',total:'151.5'},{book:'FanDuel',awayML:'-4200',homeML:'+1800',spread:'-21.5',total:'151.5'},{book:'BetMGM',awayML:'-4800',homeML:'+2000',spread:'-22.0',total:'152.0'},{book:'Caesars',awayML:'-4500',homeML:'+1900',spread:'-21.5',total:'151.0'},{book:'BetUS',awayML:'-4400',homeML:'+1950',spread:'-21.5',total:'151.5'}],
        playerProps:[{player:'Brayden Burries',team:'Arizona',market:'Points',line:18.5,overOdds:'-115',underOdds:'-105'},{player:'Koa Peat',team:'Arizona',market:'Points',line:16.5,overOdds:'-110',underOdds:'-110'},{player:'Koa Peat',team:'Arizona',market:'Rebounds',line:8.5,overOdds:'-108',underOdds:'-112'}],
        sharpAngle:'Arizona runs fastest offense of any 1-seed — OVER 151.5 is justified. Freshman duo Burries & Peat are elite. Arizona -21.5 is the safe play but the OVER has more value.'},
-      {id:'f2',timeET:'2:45 PM ET',network:'CBS',region:'West',
+      {id:'f2',timeET:'5:15 PM ET',network:'CBS',region:'West',
        away:{name:'Villanova Wildcats',abbr:'NOVA',seed:8,record:'24-8'},
        home:{name:'Utah State Aggies',abbr:'USU',seed:9,record:'28-6'},
        moneyline:{away:'-108',home:'-112'},
@@ -877,7 +1287,7 @@ const STATIC_GAMES = {
        books:[{book:'DraftKings',awayML:'-108',homeML:'-112',spread:'-1.0',total:'141.5'},{book:'FanDuel',awayML:'-110',homeML:'-110',spread:'PK',total:'141.5'},{book:'BetMGM',awayML:'+105',homeML:'-125',spread:'-1.5',total:'142.0'},{book:'Caesars',awayML:'-108',homeML:'-112',spread:'-1.0',total:'141.0'},{book:'BetUS',awayML:'-110',homeML:'-110',spread:'PK',total:'141.5'}],
        playerProps:[{player:'Eric Dixon',team:'Villanova',market:'Points',line:17.5,overOdds:'-115',underOdds:'-105'},{player:'Great Osobor',team:'Utah State',market:'Rebounds',line:9.5,overOdds:'-112',underOdds:'-108'}],
        sharpAngle:'LINE GAP: spread varies from PK to -1.5 across books — shop carefully. Pick Utah State ML at -110 on FanDuel for best value. Coin flip game, both teams are well-coached.'},
-      {id:'f3',timeET:'7:10 PM ET',network:'TBS',region:'West',
+      {id:'f3',timeET:'7:45 PM ET',network:'TBS',region:'West',
        away:{name:'Arkansas Razorbacks',abbr:'ARK',seed:4,record:'26-8'},
        home:{name:"Hawaii Rainbow Warriors",abbr:'HAW',seed:13,record:'24-8'},
        moneyline:{away:'-420',home:'+335'},
@@ -887,7 +1297,7 @@ const STATIC_GAMES = {
        books:[{book:'DraftKings',awayML:'-420',homeML:'+335',spread:'-8.5',total:'148.5'},{book:'FanDuel',awayML:'-410',homeML:'+325',spread:'-8.5',total:'148.5'},{book:'BetMGM',awayML:'-425',homeML:'+340',spread:'-9.0',total:'149.0'},{book:'Caesars',awayML:'-420',homeML:'+335',spread:'-8.5',total:'148.0'},{book:'BetUS',awayML:'-415',homeML:'+330',spread:'-8.5',total:'148.5'}],
        playerProps:[{player:'Adou Thiero',team:'Arkansas',market:'Points',line:16.5,overOdds:'-112',underOdds:'-108'},{player:'Johnn Nijssen',team:"Hawaii",market:'Points',line:14.5,overOdds:'-108',underOdds:'-112'}],
        sharpAngle:"Arkansas is hot — won the SEC Tournament 3 games in 5 days. Hawaii won the Big West title and shoots well from 3. Arkansas -8.5 is reasonable but Hawaii +8.5 has cover value in a high-scoring game."},
-      {id:'f4',timeET:'9:40 PM ET',network:'TBS',region:'West',
+      {id:'f4',timeET:'10:15 PM ET',network:'TBS',region:'West',
        away:{name:'Gonzaga Bulldogs',abbr:'GONZ',seed:3,record:'30-3'},
        home:{name:'Kennesaw State Owls',abbr:'KENN',seed:14,record:'21-13'},
        moneyline:{away:'-1100',home:'+650'},
@@ -897,7 +1307,7 @@ const STATIC_GAMES = {
        books:[{book:'DraftKings',awayML:'-1100',homeML:'+650',spread:'-16.5',total:'153.5'},{book:'FanDuel',awayML:'-1050',homeML:'+620',spread:'-16.5',total:'153.5'},{book:'BetMGM',awayML:'-1100',homeML:'+700',spread:'-17.0',total:'154.0'},{book:'Caesars',awayML:'-1100',homeML:'+650',spread:'-16.5',total:'153.0'},{book:'BetUS',awayML:'-1080',homeML:'+640',spread:'-16.5',total:'153.5'}],
        playerProps:[{player:'Ryan Nembhard',team:'Gonzaga',market:'Points',line:17.5,overOdds:'-110',underOdds:'-110'},{player:'Graham Ike',team:'Gonzaga',market:'Rebounds',line:9.5,overOdds:'-108',underOdds:'-112'}],
        sharpAngle:'Gonzaga runs one of the fastest paces in the country — OVER 153.5 is live. Ryan Nembhard OVER 17.5 points is a strong prop. Gonzaga covers easily.'},
-      {id:'f5',timeET:'12:15 PM ET',network:'TNT',region:'South',
+      {id:'f5',timeET:'9:25 PM ET',network:'TNT',region:'South',
        away:{name:'Florida Gators',abbr:'FLA',seed:1,record:'26-7'},
        home:{name:'Prairie View A&M Panthers',abbr:'PVAM',seed:16,record:'18-17'},
        moneyline:{away:'-4000',home:'+1800'},
@@ -907,7 +1317,7 @@ const STATIC_GAMES = {
        books:[{book:'DraftKings',awayML:'-4000',homeML:'+1800',spread:'-19.5',total:'145.5'},{book:'FanDuel',awayML:'-3800',homeML:'+1700',spread:'-19.5',total:'145.5'},{book:'BetMGM',awayML:'-4200',homeML:'+1900',spread:'-20.0',total:'146.0'},{book:'Caesars',awayML:'-4000',homeML:'+1800',spread:'-19.5',total:'145.0'},{book:'BetUS',awayML:'-3900',homeML:'+1750',spread:'-19.5',total:'145.5'}],
        playerProps:[{player:'Walter Clayton Jr.',team:'Florida',market:'Points',line:17.5,overOdds:'-115',underOdds:'-105'},{player:'Alex Condon',team:'Florida',market:'Rebounds',line:7.5,overOdds:'-110',underOdds:'-110'}],
        sharpAngle:'Florida is the defending champ but lost to Vanderbilt in the SEC tourney. They are motivated to prove themselves. Florida -19.5 is the easy play — defending champs bounce back hard in R1.'},
-      {id:'f6',timeET:'2:45 PM ET',network:'TNT',region:'South',
+      {id:'f6',timeET:'12:00 PM ET',network:'TNT',region:'South',
        away:{name:'Clemson Tigers',abbr:'CLEM',seed:8,record:'24-10'},
        home:{name:'Iowa Hawkeyes',abbr:'IOWA',seed:9,record:'21-12'},
        moneyline:{away:'-115',home:'-105'},
@@ -917,7 +1327,7 @@ const STATIC_GAMES = {
        books:[{book:'DraftKings',awayML:'-115',homeML:'-105',spread:'-1.5',total:'140.5'},{book:'FanDuel',awayML:'-112',homeML:'-108',spread:'-1.5',total:'140.5'},{book:'BetMGM',awayML:'-120',homeML:'+100',spread:'-1.5',total:'141.0'},{book:'Caesars',awayML:'-115',homeML:'-105',spread:'-1.5',total:'140.0'},{book:'BetUS',awayML:'-110',homeML:'-110',spread:'PK',total:'140.5'}],
        playerProps:[{player:'Chase Hunter',team:'Clemson',market:'Points',line:14.5,overOdds:'-110',underOdds:'-110'},{player:'Payton Sandfort',team:'Iowa',market:'Points',line:16.5,overOdds:'-112',underOdds:'-108'}],
        sharpAngle:'Near coin flip — Iowa covers at 54% in R1 historically. Take Iowa +1.5 at best available number. Sandfort OVER 16.5 points is good value for Iowa.'},
-      {id:'f7',timeET:'7:10 PM ET',network:'truTV',region:'South',
+      {id:'f7',timeET:'2:30 PM ET',network:'truTV',region:'South',
        away:{name:'Nebraska Cornhuskers',abbr:'NEB',seed:4,record:'26-6'},
        home:{name:'Troy Trojans',abbr:'TROY',seed:13,record:'22-11'},
        moneyline:{away:'-500',home:'+390'},
@@ -927,7 +1337,7 @@ const STATIC_GAMES = {
        books:[{book:'DraftKings',awayML:'-500',homeML:'+390',spread:'-10.5',total:'143.5'},{book:'FanDuel',awayML:'-490',homeML:'+380',spread:'-10.5',total:'143.5'},{book:'BetMGM',awayML:'-500',homeML:'+400',spread:'-11.0',total:'144.0'},{book:'Caesars',awayML:'-500',homeML:'+390',spread:'-10.5',total:'143.0'},{book:'BetUS',awayML:'-490',homeML:'+385',spread:'-10.5',total:'143.5'}],
        playerProps:[{player:'Brice Williams',team:'Nebraska',market:'Points',line:18.5,overOdds:'-115',underOdds:'-105'},{player:'Dwayne Cofield Jr.',team:'Troy',market:'Points',line:15.5,overOdds:'-108',underOdds:'-112'}],
        sharpAngle:'Nebraska is seeking its first NCAA Tournament win ever — that motivation is real. However 13-seeds cover 48% of the time. Nebraska -10.5 is a bit high — Troy +10.5 is live.'},
-      {id:'f8',timeET:'9:40 PM ET',network:'truTV',region:'South',
+      {id:'f8',timeET:'5:00 PM ET',network:'truTV',region:'South',
        away:{name:'Houston Cougars',abbr:'HOU',seed:2,record:'28-6'},
        home:{name:'Idaho Vandals',abbr:'IDA',seed:15,record:'21-14'},
        moneyline:{away:'-2200',home:'+1100'},
@@ -1466,7 +1876,7 @@ function dismissNudge() {
 // ═══════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════
-document.addEventListener('DOMContentLoaded', () => { bootApp(); initNudge(); });
+document.addEventListener('DOMContentLoaded', () => { bootApp(); initTheme(); initNudge(); });
 </script>
 </body>
 </html>

@@ -51,14 +51,46 @@
 body.light {
   --bg:#F4F6FA; --surface:#FFFFFF; --card:#FFFFFF; --card2:#F0F2F7; --card3:#E8EBF2;
   --border:#D4D8E4; --border2:#BCC2D0;
-  --green:#00A85A; --green-d:#00A85A18;
-  --red:#E0324F;   --red-d:#E0324F18;
-  --amber:#D4960A; --amber-d:#D4960A18;
-  --blue:#2478CC;  --blue-d:#2478CC18;
-  --kalshi:#5A3ED4; --kalshi-d:#5A3ED418;
-  --accent:#D4960A; --accent-d:#D4960A18;
-  --text:#0D1220; --text2:#3D4F68; --text3:#7A8EA8;
+  --green:#007A40; --green-d:#007A4015;
+  --red:#C41E3A;   --red-d:#C41E3A15;
+  --amber:#B8780A; --amber-d:#B8780A15;
+  --blue:#1A5FA8;  --blue-d:#1A5FA815;
+  --kalshi:#4A2EB8; --kalshi-d:#4A2EB815;
+  --accent:#B8780A; --accent-d:#B8780A15;
+  --text:#0D1220; --text2:#2A3A52; --text3:#4A5E78;
 }
+
+/* Light mode specific contrast fixes */
+body.light .round-label { color:#3A4E68; }
+body.light .spread-mini { color:#3A4E68; font-weight:600; }
+body.light .game-net    { color:#3A4E68; }
+body.light .game-time   { color:#8A5E00; font-weight:700; }
+body.light .week-label,
+body.light .source-label { color:#3A4E68; }
+body.light .sect        { color:#1E2D42; }
+body.light .book-name   { color:#2A3A52; }
+body.light .fh-label    { color:#2A3A52; }
+body.light .prop-market { color:#2A3A52; }
+body.light .cons-label  { color:#2A3A52; }
+body.light .src-hint    { color:#3A4E68; }
+body.light .disclaimer  { color:#4A5E78; }
+body.light .logo-event  { color:#3A4E68; }
+
+/* Light mode badge fixes — ensure text is readable on light backgrounds */
+body.light .ml-badge.neg { background:#C41E3A12; color:#B01030; border-color:#C41E3A40; }
+body.light .ml-badge.pos { background:#007A4012; color:#006035; border-color:#007A4040; }
+body.light .ml-badge.evn { background:#1A5FA812; color:#1A5FA8; border-color:#1A5FA840; }
+body.light .day-tab      { color:#2A3A52; }
+body.light .week-chip    { color:#2A3A52; }
+body.light .source-btn   { color:#2A3A52; }
+body.light .tz-badge     { color:#2A3A52; }
+body.light .variance-badge { background:#8A5E0018; color:#8A5E00; border-color:#8A5E0040; }
+body.light .book-team    { color:#0D1220; }
+body.light .sc-muted     { color:#2A3A52; }
+body.light .odds-table td { background:var(--card); }
+body.light .src-opt-desc { color:#2A3A52; }
+body.light .sp-row       { color:#2A3A52; }
+body.light .loading-msg  { color:#2A3A52; }
 
 /* ── THEME TOGGLE BUTTON ── */
 .theme-btn {

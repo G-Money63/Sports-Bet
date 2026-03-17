@@ -1961,31 +1961,26 @@ let scoreInterval = null;
 
 async function fetchLiveScores() {
   try {
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        system: 'You fetch live NCAA basketball scores. Return ONLY raw JSON, no markdown.',
-        messages: [{ role: 'user', content: `Fetch current live and recent NCAA tournament scores for today ${new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}. Return JSON: {"games":[{"awayAbbr":"OSU","homeAbbr":"TCU","awayScore":52,"homeScore":47,"status":"live","period":"2H","clock":"8:42"},{"awayAbbr":"DUKE","homeAbbr":"SIE","awayScore":88,"homeScore":54,"status":"final"}]}. Status must be "pregame", "live", or "final". If no games are live or complete yet return {"games":[]}.` }]
-      })
-    });
+    // Use the proxy to fetch live NCAAB scores
+    const proxyReady = PROXY_URL && PROXY_URL !== 'YOUR_CLOUD_RUN_URL_HERE';
+    const endpoint = proxyReady ? PROXY_URL + '/api/scores' : null;
+    if (!endpoint) {
+      // Fallback: use inline static score data updated on refresh
+      return;
+    }
+    const resp = await fetch(endpoint);
+    if (!resp.ok) return;
     const data = await resp.json();
-    const txt = (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
-    const clean = txt.replace(/^```json\s*/im,'').replace(/^```\s*/im,'').replace(/```\s*$/m,'').trim();
-    const m = clean.match(/\{[\s\S]*\}/);
-    if (!m) return;
-    const parsed = JSON.parse(m[0]);
-    // Build lookup map
     const newScores = {};
-    for (const g of parsed.games || []) {
-      const key = (g.awayAbbr+'-'+g.homeAbbr).toUpperCase();
-      newScores[key] = g;
+    for (const g of data.games || []) {
+      // Try both away-home and home-away key combos for matching
+      const key1 = (g.awayAbbr + '-' + g.homeAbbr).toUpperCase();
+      const key2 = (g.homeAbbr + '-' + g.awayAbbr).toUpperCase();
+      newScores[key1] = g;
+      newScores[key2] = { ...g, flipped: true };
     }
     liveScores = newScores;
-    // Re-render current panel if scores changed
-    const cacheKey = prefs.activeEvent+'_'+currentDayKey;
+    const cacheKey = prefs.activeEvent + '_' + currentDayKey;
     if (cache[cacheKey]) renderPanel(currentDayKey, cache[cacheKey]);
   } catch(e) {
     console.log('Score fetch failed:', e.message);

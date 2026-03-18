@@ -2298,7 +2298,7 @@ function buildRow(g) {
       ${rightCol}
     </div>
     <div class="detail-drawer" id="drawer-${g.id}">
-      <div class="drawer-inner">${buildDrawer(g)}</div>
+      <div class="drawer-inner" onclick="event.stopPropagation()">${buildDrawer(g)}</div>
     </div>
   </div>`;
 }
@@ -2431,7 +2431,7 @@ function buildDrawer(g) {
 
   // G-MONEY'S BETS — AI-powered fresh prediction, fetches when drawer opens
   const gmId = `gmoney-${g.id}`;
-  h+=`<div class="gmoney-card" id="${gmId}">
+  h+=`<div class="gmoney-card" id="${gmId}" onclick="event.stopPropagation()">
     <div class="gmoney-head">
       <div class="gmoney-title">💰 G-Money's Bets</div>
       <div class="gmoney-badge">AI · Live</div>

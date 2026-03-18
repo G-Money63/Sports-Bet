@@ -2939,14 +2939,16 @@ function loadSmackTalk(force) {
 
   // Build game summaries for the prompt
   var gameLines = dayData.games.map(function(g) {
-    var away = g.away ? g.away.name + ' (#' + g.away.seed + ', ' + g.away.record + ')' : 'TBD';
-    var home = g.home ? g.home.name + ' (#' + g.home.seed + ', ' + g.home.record + ')' : 'TBD';
+    var awayName = (g.away && g.away.name) || (g.away && g.away.abbr) || 'Away';
+    var homeName = (g.home && g.home.name) || (g.home && g.home.abbr) || 'Home';
+    var awaySeed = (g.away && g.away.seed) ? '#' + g.away.seed : '';
+    var homeSeed = (g.home && g.home.seed) ? '#' + g.home.seed : '';
     var sprd = g.spread ? (g.spread.favTeam + ' ' + (g.spread.line > 0 ? '+' : '') + g.spread.line) : 'N/A';
     var tot  = g.total  ? ('O/U ' + g.total.line) : 'N/A';
-    var aml  = g.moneyline ? g.moneyline.away : 'N/A';
-    var hml  = g.moneyline ? g.moneyline.home : 'N/A';
-    var time = g.timeET || '';
-    return time + ' ET: ' + away + ' vs ' + home + ' | Spread: ' + sprd + ' | Total: ' + tot + ' | ML: ' + aml + '/' + hml;
+    var aml  = (g.moneyline && g.moneyline.away) || 'N/A';
+    var hml  = (g.moneyline && g.moneyline.home) || 'N/A';
+    var time = g.timeET || g.timePT || '';
+    return time + ': ' + awayName + ' ' + awaySeed + ' vs ' + homeName + ' ' + homeSeed + ' | ' + sprd + ' | ' + tot + ' | ML ' + aml + '/' + hml;
   }).join('\n');
 
   var prompt = 'Today is ' + dayData.day + ' — ' + dayData.round + '.\n\nGames today in order:\n' + gameLines + '\n\n'
@@ -2986,7 +2988,7 @@ function loadSmackTalk(force) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'claude-haiku-4-5-20251001',
+          model: 'claude-sonnet-4-20250514',
           max_tokens: 900,
           system: 'You are G-Money, a sassy sharp sports betting analyst. Short punchy smack talk with real picks. Funny, confident, specific. Gambling is for entertainment only.',
           messages: [{ role: 'user', content: prompt }]

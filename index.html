@@ -144,7 +144,7 @@ body.light .home-nav-btn.active{color:var(--accent);}
 .conf-tag{font-family:var(--mono);font-size:8px;padding:2px 7px;border-radius:4px;font-weight:500;}
 .conf-tag.east{background:var(--blue-d);color:var(--blue);border:1px solid #5BB8FF30;}
 .conf-tag.west{background:var(--nba-d);color:var(--accent);border:1px solid #C9553A30;}
-.conf-tag.nhl{background:#4A90D918;color:#4A90D9;border:1px solid #4A90D930;}
+.conf-tag.nhl{background:#60AAEE18;color:#60AAEE;border:1px solid #60AAEE30;}
 .sc-matchup{display:flex;align-items:center;gap:6px;}
 .sc-team{flex:1;}
 .sc-team.right{text-align:right;}
@@ -562,6 +562,20 @@ body.light .spread-mini{background:#1A5FA812;color:#1A5FA8;border-color:#1A5FA84
 .ai-tip{background:linear-gradient(135deg,var(--accent-d),transparent);border:1px solid var(--accent)44;border-radius:9px;padding:11px 13px;margin-top:4px}
 .ai-tip-head{font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:6px;font-weight:500}
 .ai-tip-text{font-size:12.5px;line-height:1.65;color:var(--text)}
+/* G-Money's Bets */
+.gmoney-card{background:linear-gradient(135deg,#7C5CFC18,#FF557708);border:1px solid #7C5CFC40;border-radius:9px;padding:11px 13px;margin-top:8px;position:relative;overflow:hidden;}
+.gmoney-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#7C5CFC,#FF5577,#FFC230);opacity:.7;}
+.gmoney-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.gmoney-title{font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:#B09DFF;font-weight:500;}
+.gmoney-badge{font-family:var(--mono);font-size:8px;background:#7C5CFC22;color:#B09DFF;border:1px solid #7C5CFC40;border-radius:4px;padding:2px 6px;}
+.gmoney-text{font-size:12.5px;line-height:1.65;color:var(--text);}
+.gmoney-loading{font-family:var(--mono);font-size:11px;color:var(--text3);display:flex;align-items:center;gap:6px;}
+.gmoney-pick{display:inline-flex;align-items:center;gap:5px;background:#7C5CFC18;border:1px solid #7C5CFC30;border-radius:6px;padding:3px 9px;margin:6px 0 4px;font-family:var(--mono);font-size:11px;font-weight:500;color:#B09DFF;}
+body.light .gmoney-card{background:linear-gradient(135deg,#7C5CFC10,#FF557705);}
+body.light .gmoney-text{color:var(--text);}
+body.light .gmoney-title{color:#5A3ECC;}
+body.light .gmoney-badge{color:#5A3ECC;background:#7C5CFC15;}
+body.light .gmoney-pick{color:#5A3ECC;}
 
 /* loading / empty / error */
 .loading-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:56px 20px;gap:14px}
@@ -1104,7 +1118,7 @@ const EVENTS = [
       ]},
     ]
   },
-  { id:'nhl-playoffs', icon:'🏒', name:'NHL Playoffs', sport:'NHL Playoffs', accent:'#4A90D9', tz:'PT', tzFull:'America/Los_Angeles', oddsApiSport:'icehockey_nhl',
+  { id:'nhl-playoffs', icon:'🏒', name:'NHL Playoffs', sport:'NHL Playoffs', accent:'#60AAEE', tz:'PT', tzFull:'America/Los_Angeles', oddsApiSport:'icehockey_nhl',
     weeks:[
       {label:'First Round', days:[
         {key:'r1e',label:'R1 EAST',long:'First Round — Eastern Conference',round:'First Round'},
@@ -2368,7 +2382,98 @@ function buildDrawer(g) {
   if (g.sharpAngle) {
     h+=`<div class="ai-tip"><div class="ai-tip-head">⚡ Sharp Angle</div><div class="ai-tip-text">${g.sharpAngle}</div></div>`;
   }
+
+  // G-MONEY'S BETS — AI-powered fresh prediction
+  const gmId = `gmoney-${g.id}`;
+  h+=`<div class="gmoney-card" id="${gmId}">
+    <div class="gmoney-head">
+      <div class="gmoney-title">💰 G-Money's Bets</div>
+      <div class="gmoney-badge">AI · Live</div>
+    </div>
+    <div class="gmoney-loading"><span style="animation:livePulse 1.2s ease infinite;display:inline-block">⚡</span> Consulting the oracle...</div>
+  </div>`;
+
+  // Fetch G-Money prediction after drawer renders
+  setTimeout(() => fetchGMoneyPick(g, gmId), 50);
+
   return h;
+}
+
+// ═══════════════════════════════════════════
+// G-MONEY'S BETS — Fresh AI prediction per game
+// ═══════════════════════════════════════════
+const gmoneyCache = {}; // cache per game so it doesn't re-fetch on re-open
+
+async function fetchGMoneyPick(g, elId) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+
+  // Use cached version if available
+  if (gmoneyCache[g.id]) {
+    el.innerHTML = gmoneyCache[g.id];
+    return;
+  }
+
+  const proxyReady = PROXY_URL && PROXY_URL !== 'YOUR_CLOUD_RUN_URL_HERE';
+  if (!proxyReady) {
+    el.querySelector('.gmoney-loading').textContent = 'Proxy not configured.';
+    return;
+  }
+
+  // Build context for the AI
+  const away = g.away?.name || g.away?.abbr || 'Away';
+  const home = g.home?.name || g.home?.abbr || 'Home';
+  const awayS = g.away?.seed ? `#${g.away.seed} seed` : '';
+  const homeS = g.home?.seed ? `#${g.home.seed} seed` : '';
+  const spread = g.spread ? `${g.spread.favTeam} ${g.spread.line > 0 ? '+' : ''}${g.spread.line}` : 'N/A';
+  const total  = g.total  ? `O/U ${g.total.line}` : 'N/A';
+  const awayML = g.moneyline?.away || 'N/A';
+  const homeML = g.moneyline?.home || 'N/A';
+  const region = g.region || '';
+  const network = g.network || '';
+  const time   = g.timeET || g.timePT || '';
+  const existing = g.sharpAngle || '';
+
+  try {
+    const resp = await fetch(PROXY_URL + '/api/claude', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 180,
+        system: `You are G-Money, a sharp, sassy sports betting analyst with serious edge. You give fresh, confident takes — not generic advice. You're precise, a little cocky, and always back your picks with real reasoning. Keep responses to 2-3 punchy sentences max. Always include a specific pick (spread, ML, prop, or total). Format: one bold pick line, then your reasoning. No asterisks, no hedging, no "I think maybe" energy. G-Money bets with conviction.`,
+        messages: [{
+          role: 'user',
+          content: `NCAA Tournament game: ${away} (${awayS}) vs ${home} (${homeS}). ${region} Region. ${time} on ${network}.
+Spread: ${spread} | Total: ${total} | ML: ${away} ${awayML} / ${home} ${homeML}.
+Existing sharp angle for context (don't repeat it, give your own fresh take): "${existing}"
+Give me G-Money's Bets — your own fresh, sassy, confident prediction for this game.`
+        }]
+      })
+    });
+
+    const data = await resp.json();
+    const text = data.content?.[0]?.text || 'No pick available right now.';
+
+    // Parse out a pick line if present (first sentence often has the pick)
+    const sentences = text.split(/(?<=[.!?])\s+/);
+    const pickLine = sentences[0] || text;
+    const rest = sentences.slice(1).join(' ');
+
+    const html = `
+      <div class="gmoney-head">
+        <div class="gmoney-title">💰 G-Money's Bets</div>
+        <div class="gmoney-badge">AI · Fresh</div>
+      </div>
+      <div class="gmoney-pick">🎯 ${pickLine}</div>
+      ${rest ? `<div class="gmoney-text">${rest}</div>` : ''}`;
+
+    gmoneyCache[g.id] = html;
+    el.innerHTML = html;
+
+  } catch(e) {
+    el.innerHTML = `<div class="gmoney-head"><div class="gmoney-title">💰 G-Money's Bets</div></div><div class="gmoney-text" style="color:var(--text3)">G-Money's lines are running hot — check back in a sec.</div>`;
+  }
 }
 
 function dedupeBooks(books) {
@@ -2956,7 +3061,7 @@ function buildNHLHome() {
 
     <!-- Hero — NHL blue accent -->
     <div class="home-hero">
-      <div class="home-hero-bg" style="background:radial-gradient(ellipse at 80% 10%,#4A90D916 0%,transparent 55%),radial-gradient(ellipse at 10% 90%,#C9553A08 0%,transparent 50%)"></div>
+      <div class="home-hero-bg" style="background:radial-gradient(ellipse at 80% 10%,#60AAEE16 0%,transparent 55%),radial-gradient(ellipse at 10% 90%,#C9553A08 0%,transparent 50%)"></div>
       <div class="home-hero-inner">
         <div class="home-eyebrow">🏒 NHL PLAYOFFS 2026 · STANLEY CUP</div>
         <div class="home-title">Cup <em>Chase</em></div>
@@ -2964,8 +3069,8 @@ function buildNHLHome() {
         <div class="home-stats">
           <div class="home-stat"><div class="home-stat-v">8</div><div class="home-stat-l">Series</div></div>
           <div class="home-stat live-stat"><div class="home-stat-v red"><div class="live-dot" style="width:8px;height:8px"></div>${liveCount||'—'}</div><div class="home-stat-l red">Live Now</div></div>
-          <div class="home-stat"><div class="home-stat-v" style="color:#4A90D9">COL</div><div class="home-stat-l">#1 West</div></div>
-          <div class="home-stat"><div class="home-stat-v" style="color:#4A90D9">CAR</div><div class="home-stat-l">#1 East</div></div>
+          <div class="home-stat"><div class="home-stat-v" style="color:#60AAEE">COL</div><div class="home-stat-l">#1 West</div></div>
+          <div class="home-stat"><div class="home-stat-v" style="color:#60AAEE">CAR</div><div class="home-stat-l">#1 East</div></div>
         </div>
       </div>
     </div>
@@ -2980,7 +3085,7 @@ function buildNHLHome() {
       <button class="home-sect-a" onclick="showBracketPanel()">Bracket →</button>
     </div>
 
-    <div style="font-family:var(--mono);font-size:9px;color:#4A90D9;text-transform:uppercase;letter-spacing:.1em;padding:0 14px;margin-bottom:8px">Western Conference</div>
+    <div style="font-family:var(--mono);font-size:9px;color:#60AAEE;text-transform:uppercase;letter-spacing:.1em;padding:0 14px;margin-bottom:8px">Western Conference</div>
     <div class="series-list" style="padding:0 14px;margin-bottom:16px">
       ${sc('west','R1 · Projected',1,'COL Avalanche','44-13',8,'STL Blues','27-30','0-0',0,'Starts: <strong>~Apr 19</strong>','COL -420',false,'')}
       ${sc('west','R1 · Projected',2,'DAL Stars','42-15',7,'WPG Jets','28-28','0-0',0,'Starts: <strong>~Apr 19</strong>','DAL -280',false,'')}
@@ -2988,7 +3093,7 @@ function buildNHLHome() {
       ${sc('west','R1 · Projected',4,'ANA Ducks','37-27',5,'EDM Oilers','34-26','0-0',0,'Starts: <strong>~Apr 19</strong>','ANA -115',false,'')}
     </div>
 
-    <div style="font-family:var(--mono);font-size:9px;color:#4A90D9;text-transform:uppercase;letter-spacing:.1em;padding:0 14px;margin-bottom:8px">Eastern Conference</div>
+    <div style="font-family:var(--mono);font-size:9px;color:#60AAEE;text-transform:uppercase;letter-spacing:.1em;padding:0 14px;margin-bottom:8px">Eastern Conference</div>
     <div class="series-list" style="padding:0 14px;margin-bottom:20px">
       ${sc('east','R1 · Projected',1,'CAR Hurricanes','42-19',8,'NJ Devils','34-31','0-0',0,'Starts: <strong>~Apr 19</strong>','CAR -380',false,'')}
       ${sc('east','R1 · Projected',2,'BUF Sabres','42-20',7,'BOS Bruins','37-23','0-0',0,'Starts: <strong>~Apr 20</strong>','BUF -175',false,'')}
@@ -2999,11 +3104,11 @@ function buildNHLHome() {
     <!-- Stanley Cup roadmap -->
     <div class="home-sect"><div class="home-sect-t">🗓 Playoffs Roadmap</div></div>
     <div class="home-sched">
-      <div class="hs-row" style="border-color:#4A90D930">
-        <div class="hs-date" style="color:#4A90D9">APR<br>~19</div>
-        <div class="hs-div" style="background:#4A90D9;opacity:.3"></div>
+      <div class="hs-row" style="border-color:#60AAEE30">
+        <div class="hs-date" style="color:#60AAEE">APR<br>~19</div>
+        <div class="hs-div" style="background:#60AAEE;opacity:.3"></div>
         <div class="hs-info"><div class="hs-round">First Round</div><div class="hs-sub">8 series · Best of 7</div></div>
-        <span class="hs-badge" style="background:#4A90D918;color:#4A90D9;border:1px solid #4A90D930">~Apr 19</span>
+        <span class="hs-badge" style="background:#60AAEE18;color:#60AAEE;border:1px solid #60AAEE30">~Apr 19</span>
       </div>
       <div class="hs-row"><div class="hs-date">MAY<br>~5</div><div class="hs-div"></div><div class="hs-info"><div class="hs-round">Second Round</div><div class="hs-sub">4 series · Best of 7</div></div><span class="hs-badge soon">Upcoming</span></div>
       <div class="hs-row"><div class="hs-date">MAY<br>~19</div><div class="hs-div"></div><div class="hs-info"><div class="hs-round">Conf. Finals</div><div class="hs-sub">2 series · Best of 7</div></div><span class="hs-badge soon">Upcoming</span></div>

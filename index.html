@@ -2870,8 +2870,8 @@ function showHomePanel() {
   document.getElementById('bracketNavBtn').classList.remove('active');
   document.querySelectorAll('.day-tab').forEach(t => t.classList.remove('active'));
   renderHome();
-  // Load smack talk after odds fetch completes — wait 20s minimum
-  setTimeout(function() { loadSmackTalk(false); }, 20000);
+  // Load smack talk after odds fetch completes — wait 30s minimum
+  setTimeout(function() { loadSmackTalk(false); }, 30000);
 }
 
 function showBracketPanel() {
@@ -2986,21 +2986,24 @@ function loadSmackTalk(force) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 1200,
-          system: 'You are G-Money, the sharpest and sassiest sports betting analyst on the internet. You give brutally honest, hilariously smack-talky game previews with real picks. You back your trash talk with stats and matchup data. You are confident but self-aware enough to admit when you might be wrong. Gambling is for entertainment only.',
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 900,
+          system: 'You are G-Money, a sassy sharp sports betting analyst. Short punchy smack talk with real picks. Funny, confident, specific. Gambling is for entertainment only.',
           messages: [{ role: 'user', content: prompt }]
         })
       });
 
       if (!resp.ok) {
+        var errBody = {};
+        try { errBody = await resp.json(); } catch(e) {}
+        console.warn('[SmackTalk] Error:', resp.status, errBody);
         if (resp.status === 429) {
-          el.innerHTML = '<div class="smack-loading">⚡ Too much traffic — G-Money retrying in 45s...</div>';
+          el.innerHTML = '<div class="smack-loading">⚡ G-Money is slammed — retrying in 45s...</div>';
           window._lastClaudeFetch = Date.now() + 40000;
           setTimeout(function() { loadSmackTalk(true); }, 45000);
           return;
         }
-        el.innerHTML = '<div class="smack-loading">API error ' + resp.status + ' — tap refresh to retry.</div>';
+        el.innerHTML = '<div class="smack-loading">API error ' + resp.status + ': ' + (errBody.error && errBody.error.message ? errBody.error.message.substring(0,80) : 'unknown') + ' — tap Refresh to retry.</div>';
         return;
       }
 

@@ -377,7 +377,8 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 .sport-icon{font-size:22px;line-height:1} .sport-name{font-size:13px;font-weight:700;color:var(--text)} .sport-event{font-family:var(--mono);font-size:10px;color:var(--text2)} .sport-weeks{font-family:var(--mono);font-size:9.5px;color:var(--text3);margin-top:2px}
 
 /* ── HEADER ── */
-.header{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:1px solid var(--border);padding:12px 16px 10px;}
+.header{position:fixed;top:0;left:0;right:0;z-index:9999;background:#07090C;border-bottom:1px solid var(--border);padding:12px 16px 10px;}
+body.light .header{background:#F4F6FA !important;}
 .header-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:11px}
 .logo-area{display:flex;flex-direction:column;gap:1px}
 .logo{font-family:var(--sans);font-size:18px;font-weight:800;letter-spacing:-.02em;color:var(--text);line-height:1}
@@ -754,7 +755,7 @@ body.light .gmoney-pick{color:#5A3ECC;}
 <!-- VERSION FOOTER -->
 <div class="ver-footer" id="verFooter">
   <div style="display:flex;align-items:center;gap:8px">
-    <button class="ver-badge" onclick="toggleDebugPanel()" title="Tap for diagnostics">v1.1</button>
+    <button class="ver-badge" onclick="toggleDebugPanel()" title="Tap for diagnostics">v1.2</button>
     <span class="ver-date">Mar 18, 2026</span>
   </div>
   <span class="ver-date">G-Money Bets</span>
@@ -764,7 +765,7 @@ body.light .gmoney-pick{color:#5A3ECC;}
 <div class="debug-overlay hidden" id="debugOverlay" onclick="if(event.target===this)toggleDebugPanel()">
   <div class="debug-sheet">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-      <div style="font-family:var(--mono);font-size:11px;font-weight:500;color:var(--text)">🔧 Diagnostics · v1.1</div>
+      <div style="font-family:var(--mono);font-size:11px;font-weight:500;color:var(--text)">🔧 Diagnostics · v1.2</div>
       <button onclick="toggleDebugPanel()" style="font-family:var(--mono);font-size:10px;color:var(--text3);background:none;border:none;cursor:pointer">✕ close</button>
     </div>
     <div id="debugContent" style="font-family:var(--mono);font-size:10px;color:var(--text2);line-height:1.7"></div>
@@ -3609,15 +3610,18 @@ document.addEventListener('DOMContentLoaded', () => {
   initNudge();
   startScorePolling();
   buildAbbrMap();
-  // Fix scroll-under-header: measure header and pad body
-  function fixHeaderPad() {
-    var h = document.querySelector('.header');
-    if (h) document.body.style.paddingTop = h.offsetHeight + 'px';
+  // Fixed header: push all .main panels down by header height
+  function applyHeaderOffset() {
+    var hdr = document.querySelector('.header');
+    if (!hdr) return;
+    var h = hdr.getBoundingClientRect().height;
+    document.querySelectorAll('.main').forEach(function(el) {
+      el.style.paddingTop = (h + 14) + 'px';
+    });
   }
-  fixHeaderPad();
-  window.addEventListener('resize', fixHeaderPad);
-  // Re-measure after fonts load (header height can change)
-  setTimeout(fixHeaderPad, 500);
+  applyHeaderOffset();
+  window.addEventListener('resize', applyHeaderOffset);
+  setTimeout(applyHeaderOffset, 300);
 });
 </script>
 </body>

@@ -723,7 +723,7 @@ body.light .gmoney-pick{color:#5A3ECC;}
   <div class="week-bar" id="weekBar" style="display:flex;align-items:center;gap:8px"><span class="week-label" style="flex-shrink:0;min-width:28px">WEEK</span></div>
   <!-- DAY label + tabs aligned as a row -->
   <div style="display:flex;align-items:center;gap:8px">
-    <span style="font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--text3);flex-shrink:0;min-width:28px">DAY</span>
+    <span id="dayLabel" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;color:var(--text3);flex-shrink:0;min-width:36px">SELECT</span>
     <div class="day-tabs" id="dayTabs" style="flex:1;min-width:0;flex-wrap:wrap;gap:4px"></div>
   </div>
 </header>
@@ -1201,14 +1201,57 @@ function savePrefBook() {
 }
 
 function renderSportGrid() {
-  document.getElementById('sportGrid').innerHTML = EVENTS.map(ev => `
-    <div class="sport-tile ${ev.id===prefs.activeEvent?'active':''}" onclick="selectEvent('${ev.id}')">
-      <div class="sport-icon">${ev.icon}</div>
+  const now = new Date();
+  const eventMeta = {
+    'ncaam-w1':     { start: new Date(2026,2,17), end: new Date(2026,3,6),  label:'Mar 17–Apr 6' },
+    'nba-playoffs': { start: new Date(2026,3,19), end: new Date(2026,5,20), label:'Apr 19' },
+    'nhl-playoffs': { start: new Date(2026,3,19), end: new Date(2026,5,15), label:'Apr ~19' },
+    'nfl-playoffs': { start: new Date(2027,0,1),  end: new Date(2027,1,15), label:'Jan 2027' },
+  };
+  function getStatus(id) {
+    const m = eventMeta[id];
+    if (!m) return 'future';
+    if (now >= m.start && now <= m.end) return 'live';
+    if (now < m.start) return 'upcoming';
+    return 'past';
+  }
+  const sorted = [...EVENTS].sort((a,b) => {
+    const order = {live:0,upcoming:1,past:2,future:3};
+    const sa = getStatus(a.id), sb = getStatus(b.id);
+    if (order[sa] !== order[sb]) return order[sa]-order[sb];
+    const ma = eventMeta[a.id], mb = eventMeta[b.id];
+    if (ma && mb) return ma.start-mb.start;
+    return 0;
+  });
+  function tile(ev) {
+    const status = getStatus(ev.id);
+    const meta = eventMeta[ev.id];
+    const isActive = ev.id === prefs.activeEvent;
+    const tag = status==='live'
+      ? `<span style="font-family:var(--mono);font-size:8px;color:var(--green);background:var(--green-d);border:1px solid #00E88225;border-radius:4px;padding:1px 5px">● NOW</span>`
+      : status==='upcoming' && meta
+      ? `<span style="font-family:var(--mono);font-size:8px;color:var(--amber);background:var(--amber-d);border:1px solid #FFC23025;border-radius:4px;padding:1px 5px">${meta.label}</span>`
+      : '';
+    return `<div class="sport-tile ${isActive?'active':''}" onclick="selectEvent('${ev.id}')">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">
+        <div class="sport-icon" style="font-size:22px">${ev.icon}</div>${tag}
+      </div>
       <div class="source-tile-name">${ev.name}</div>
       <div class="source-tile-desc">${ev.sport}</div>
-    </div>`).join('');
+    </div>`;
+  }
+  function section(title, evs) {
+    if (!evs.length) return '';
+    return `<div style="font-family:var(--mono);font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin:12px 0 6px">${title}</div><div class="sport-grid">${evs.map(tile).join('')}</div>`;
+  }
+  const current  = sorted.filter(e=>getStatus(e.id)==='live');
+  const upcoming = sorted.filter(e=>getStatus(e.id)==='upcoming');
+  const other    = sorted.filter(e=>!['live','upcoming'].includes(getStatus(e.id)));
+  document.getElementById('sportGrid').innerHTML =
+    section('🔴 Active Now', current) +
+    section('📅 Coming Up', upcoming) +
+    (other.length ? section('More Sports', other) : '');
 }
-
 function selectEvent(id) {
   prefs.activeEvent = id; savePrefs();
   activeWeekIdx = 0; currentDayKey = null;
@@ -1403,11 +1446,16 @@ function renderWeek() {
 function selectWeek(idx) { activeWeekIdx=idx; openGame=null; buildWeekBar(); renderWeek(); }
 
 function switchDay(key, el) {
+  showGamesPanel();
   currentDayKey=key; openGame=null;
-  document.querySelectorAll('.day-tab').forEach(t=>t.classList.remove('active')); el.classList.add('active');
+  document.querySelectorAll('.day-tab').forEach(t=>t.classList.remove('active'));
+  if(el) el.classList.add('active');
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('panel-'+key)?.classList.add('active');
   if (!cache[prefs.activeEvent+'_'+key]) loadDay(key);
+  // Change SELECT → DAY once user taps a tab
+  const lbl = document.getElementById('dayLabel');
+  if (lbl) lbl.textContent = 'DAY';
 }
 
 function refreshCurrentTab() { delete cache[prefs.activeEvent+'_'+currentDayKey]; openGame=null; loadDay(currentDayKey); }
@@ -1417,16 +1465,14 @@ function autoSelectToday() {
   const t=new Date(), m=t.getMonth(), d=t.getDate();
   const dm={'2-17':'tue','2-18':'wed','2-19':'thu','2-20':'fri','2-21':'sat','2-22':'sun','2-26':'thu2','2-27':'fri2','2-28':'sat2','2-29':'sun2','3-4':'sat3','3-6':'mon3'};
   const wm={tue:0,wed:0,thu:0,fri:0,sat:0,sun:0,thu2:1,fri2:1,sat2:1,sun2:1,sat3:2,mon3:2};
-  // Default to first day (TUE) if today isn't a tournament day
   const k=`${m}-${d}`;
   const dk = dm[k] || 'tue';
   const wi = wm[dk] ?? 0;
-  if (wi !== activeWeekIdx) { activeWeekIdx = wi; buildWeekBar(); renderWeek(); }
-  // Highlight the tab without switching away from home panel
+  if (wi !== activeWeekIdx) { activeWeekIdx=wi; buildWeekBar(); renderWeek(); }
+  // Set current day key for score polling but DON'T highlight tab
+  // User sees SELECT label and taps to choose
   currentDayKey = dk;
-  document.querySelectorAll('.day-tab').forEach(t => t.classList.remove('active'));
-  document.getElementById('tab-'+dk)?.classList.add('active');
-  // Silently pre-load the day data in the background
+  // Silently pre-load the day data in background
   if (!cache[prefs.activeEvent+'_'+dk]) loadDay(dk);
 }
 
@@ -2383,18 +2429,15 @@ function buildDrawer(g) {
     h+=`<div class="ai-tip"><div class="ai-tip-head">⚡ Sharp Angle</div><div class="ai-tip-text">${g.sharpAngle}</div></div>`;
   }
 
-  // G-MONEY'S BETS — AI-powered fresh prediction
+  // G-MONEY'S BETS — AI-powered fresh prediction, fetches when drawer opens
   const gmId = `gmoney-${g.id}`;
   h+=`<div class="gmoney-card" id="${gmId}">
     <div class="gmoney-head">
       <div class="gmoney-title">💰 G-Money's Bets</div>
       <div class="gmoney-badge">AI · Live</div>
     </div>
-    <div class="gmoney-loading"><span style="animation:livePulse 1.2s ease infinite;display:inline-block">⚡</span> Consulting the oracle...</div>
+    <div class="gmoney-loading"><span>⚡</span> Tap to load G-Money's pick...</div>
   </div>`;
-
-  // Fetch G-Money prediction after drawer renders
-  setTimeout(() => fetchGMoneyPick(g, gmId), 50);
 
   return h;
 }
@@ -2413,6 +2456,9 @@ async function fetchGMoneyPick(g, elId) {
     el.innerHTML = gmoneyCache[g.id];
     return;
   }
+
+  // Show loading state
+  el.querySelector('.gmoney-loading').innerHTML = `<span style="animation:livePulse 1.2s ease infinite;display:inline-block">⚡</span> G-Money is cooking...`;
 
   const proxyReady = PROXY_URL && PROXY_URL !== 'YOUR_CLOUD_RUN_URL_HERE';
   if (!proxyReady) {
@@ -2497,7 +2543,20 @@ function toggleGame(id) {
   const isOpen=drawer.classList.contains('open');
   row.classList.toggle('open',!isOpen); drawer.classList.toggle('open',!isOpen);
   openGame=isOpen?null:id;
-  if (!isOpen) setTimeout(()=>row.scrollIntoView({behavior:'smooth',block:'nearest'}),60);
+  if (!isOpen) {
+    setTimeout(()=>row.scrollIntoView({behavior:'smooth',block:'nearest'}),60);
+    // Fire G-Money fetch when drawer opens — find the game data
+    setTimeout(()=>{
+      const gmEl = document.getElementById('gmoney-'+id);
+      if (gmEl && !gmoneyCache[id]) {
+        // Find game in static data
+        for (const key of Object.keys(STATIC_GAMES)) {
+          const g = STATIC_GAMES[key].games?.find(g=>g.id===id);
+          if (g) { fetchGMoneyPick(g, 'gmoney-'+id); break; }
+        }
+      }
+    }, 150);
+  }
 }
 
 // ═══════════════════════════════════════════

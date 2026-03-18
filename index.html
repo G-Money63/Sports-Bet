@@ -2451,77 +2451,66 @@ async function fetchGMoneyPick(g, elId) {
   const el = document.getElementById(elId);
   if (!el) return;
 
-  // Use cached version if available
-  if (gmoneyCache[g.id]) {
-    el.innerHTML = gmoneyCache[g.id];
-    return;
-  }
+  if (gmoneyCache[g.id]) { el.innerHTML = gmoneyCache[g.id]; return; }
 
-  // Show loading state
-  el.querySelector('.gmoney-loading').innerHTML = `<span style="animation:livePulse 1.2s ease infinite;display:inline-block">⚡</span> G-Money is cooking...`;
+  const loadEl = el.querySelector('.gmoney-loading');
+  if (loadEl) loadEl.innerHTML = `<span style="animation:livePulse 1.2s ease infinite;display:inline-block">⚡</span> G-Money is cooking...`;
 
   const proxyReady = PROXY_URL && PROXY_URL !== 'YOUR_CLOUD_RUN_URL_HERE';
   if (!proxyReady) {
-    el.querySelector('.gmoney-loading').textContent = 'Proxy not configured.';
+    el.innerHTML = `<div class="gmoney-head"><div class="gmoney-title">💰 G-Money\'s Bets</div></div><div class="gmoney-text" style="color:var(--text3)">Proxy not configured.</div>`;
     return;
   }
 
-  // Build context for the AI
   const away = g.away?.name || g.away?.abbr || 'Away';
   const home = g.home?.name || g.home?.abbr || 'Home';
-  const awayS = g.away?.seed ? `#${g.away.seed} seed` : '';
-  const homeS = g.home?.seed ? `#${g.home.seed} seed` : '';
-  const spread = g.spread ? `${g.spread.favTeam} ${g.spread.line > 0 ? '+' : ''}${g.spread.line}` : 'N/A';
+  const spread = g.spread ? `${g.spread.favTeam} ${g.spread.line>0?\'+\':\'\'}${g.spread.line}` : 'N/A';
   const total  = g.total  ? `O/U ${g.total.line}` : 'N/A';
   const awayML = g.moneyline?.away || 'N/A';
   const homeML = g.moneyline?.home || 'N/A';
-  const region = g.region || '';
-  const network = g.network || '';
-  const time   = g.timeET || g.timePT || '';
-  const existing = g.sharpAngle || '';
+
+  function showError(msg) {
+    el.innerHTML = `<div class="gmoney-head"><div class="gmoney-title">💰 G-Money\'s Bets</div><div class="gmoney-badge" style="color:var(--red)">Error</div></div>
+      <div class="gmoney-text" style="color:var(--text3);margin-bottom:8px">${msg}</div>
+      <button onclick="delete gmoneyCache[\'${g.id}\'];fetchGMoneyPick(Object.values(STATIC_GAMES).flatMap(d=>d.games||[]).find(x=>x.id===\'${g.id}\'),\'${elId}\')"
+        style="font-family:var(--mono);font-size:10px;background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:5px 12px;color:var(--accent);cursor:pointer">↻ Retry</button>`;
+  }
 
   try {
+    console.log('[G-Money] Fetching:', away, 'vs', home);
     const resp = await fetch(PROXY_URL + '/api/claude', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 180,
-        system: `You are G-Money, a sharp, sassy sports betting analyst with serious edge. You give fresh, confident takes — not generic advice. You're precise, a little cocky, and always back your picks with real reasoning. Keep responses to 2-3 punchy sentences max. Always include a specific pick (spread, ML, prop, or total). Format: one bold pick line, then your reasoning. No asterisks, no hedging, no "I think maybe" energy. G-Money bets with conviction.`,
-        messages: [{
-          role: 'user',
-          content: `NCAA Tournament game: ${away} (${awayS}) vs ${home} (${homeS}). ${region} Region. ${time} on ${network}.
-Spread: ${spread} | Total: ${total} | ML: ${away} ${awayML} / ${home} ${homeML}.
-Existing sharp angle for context (don't repeat it, give your own fresh take): "${existing}"
-Give me G-Money's Bets — your own fresh, sassy, confident prediction for this game.`
-        }]
+        system: 'You are G-Money, a sharp sassy sports betting analyst. Give fresh confident takes — precise, a little cocky, always back picks with real reasoning. 2-3 punchy sentences max. Always include a specific pick. No hedging.',
+        messages: [{ role: 'user', content: `NCAA Tournament: ${away} vs ${home}. ${g.region||\'\'} Region. ${g.timeET||\'\'}.\nSpread: ${spread} | Total: ${total} | ML: ${away} ${awayML} / ${home} ${homeML}.\nContext: "${g.sharpAngle||\'\'}"\nGive G-Money\'s fresh sassy pick.` }]
       })
     });
-
+    console.log('[G-Money] Status:', resp.status);
+    if (!resp.ok) {
+      const err = await resp.json().catch(()=>({}));
+      console.warn('[G-Money] Error:', resp.status, err);
+      showError(resp.status===429 ? "G-Money\'s phone is ringing off the hook — too many requests. Try in 30s." : `API error ${resp.status}`);
+      return;
+    }
     const data = await resp.json();
-    const text = data.content?.[0]?.text || 'No pick available right now.';
-
-    // Parse out a pick line if present (first sentence often has the pick)
+    const text = data.content?.[0]?.text || 'No pick right now.';
+    console.log('[G-Money] Got:', text.substring(0,60));
     const sentences = text.split(/(?<=[.!?])\s+/);
     const pickLine = sentences[0] || text;
     const rest = sentences.slice(1).join(' ');
-
-    const html = `
-      <div class="gmoney-head">
-        <div class="gmoney-title">💰 G-Money's Bets</div>
-        <div class="gmoney-badge">AI · Fresh</div>
-      </div>
+    const html = `<div class="gmoney-head"><div class="gmoney-title">💰 G-Money\'s Bets</div><div class="gmoney-badge">AI · Fresh</div></div>
       <div class="gmoney-pick">🎯 ${pickLine}</div>
       ${rest ? `<div class="gmoney-text">${rest}</div>` : ''}`;
-
     gmoneyCache[g.id] = html;
     el.innerHTML = html;
-
   } catch(e) {
-    el.innerHTML = `<div class="gmoney-head"><div class="gmoney-title">💰 G-Money's Bets</div></div><div class="gmoney-text" style="color:var(--text3)">G-Money's lines are running hot — check back in a sec.</div>`;
+    console.error('[G-Money] Failed:', e.message);
+    showError('Connection issue — check proxy and retry.');
   }
 }
-
 function dedupeBooks(books) {
   const seen = new Set();
   return books.filter(b => {

@@ -179,7 +179,7 @@ body.light .home-nav-btn.active{color:var(--accent);}
 .nlc-series{font-family:var(--mono);font-size:9px;color:var(--text3);margin-top:5px;position:relative;}
 
 /* ── BRACKET PANEL STYLES ── */
-.brk-region-tabs{display:flex;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:0;z-index:5;}
+.brk-region-tabs{display:flex;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:0;z-index:5;flex-shrink:0;}
 .brk-tab{flex:1;padding:9px 4px;text-align:center;font-family:var(--mono);font-size:10px;font-weight:500;color:var(--text3);cursor:pointer;transition:all .15s;border-bottom:2px solid transparent;letter-spacing:.04em;}
 .brk-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
 .brk-round-hdr{display:flex;padding:5px 14px 2px;background:var(--surface);}
@@ -312,13 +312,13 @@ body.light .loading-msg  { color:#2A3A52; }
 }
 .theme-btn:hover { background:var(--card3); }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html{font-size:15px}
-body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;min-height:-webkit-fill-available;overflow-x:hidden}
+html{font-size:15px;height:100%}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);height:100%;display:flex;flex-direction:column;overflow:hidden;}
 
 /* Safe area padding when installed as home screen app */
 @media all and (display-mode: standalone) {
   .header { padding-top: max(13px, env(safe-area-inset-top)); }
-  body { padding-bottom: env(safe-area-inset-bottom); }
+  .main   { padding-bottom: max(100px, calc(80px + env(safe-area-inset-bottom))); }
 }
 
 /* Install nudge banner */
@@ -377,7 +377,7 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 .sport-icon{font-size:22px;line-height:1} .sport-name{font-size:13px;font-weight:700;color:var(--text)} .sport-event{font-family:var(--mono);font-size:10px;color:var(--text2)} .sport-weeks{font-family:var(--mono);font-size:9.5px;color:var(--text3);margin-top:2px}
 
 /* ── HEADER ── */
-.header{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:1px solid var(--border);padding:12px 16px 10px}
+.header{flex-shrink:0;background:var(--bg);border-bottom:1px solid var(--border);padding:12px 16px 10px;z-index:100;}
 .header-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:11px}
 .logo-area{display:flex;flex-direction:column;gap:1px}
 .logo{font-family:var(--sans);font-size:18px;font-weight:800;letter-spacing:-.02em;color:var(--text);line-height:1}
@@ -445,12 +445,12 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 .day-tab.active{background:var(--accent-d);border-color:var(--accent);color:var(--accent)}
 
 /* ── MAIN ── */
-.main{padding:14px 14px 100px}
+.main{padding:14px 14px 100px;overflow-anchor:none;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;}
 .panel{display:none} .panel.active{display:block}
 .round-label{font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--text3);padding:6px 2px 8px}
 
 /* ── GAME ROW ── */
-.game-row{background:var(--card);border:1px solid var(--border);border-radius:11px;margin-bottom:9px;cursor:pointer;overflow:hidden;transition:border-color .15s,box-shadow .15s}
+.game-row{background:var(--card);border:1px solid var(--border);border-radius:11px;margin-bottom:9px;cursor:pointer;overflow:hidden;transition:border-color .15s,box-shadow .15s;position:relative;z-index:1;}
 .game-row:hover{border-color:var(--border2);box-shadow:0 2px 12px #00000040}
 .game-row.open{border-color:var(--accent)}
 .game-row-inner{padding:12px 13px;display:grid;grid-template-columns:90px 1fr auto;align-items:center;gap:12px}
@@ -563,7 +563,7 @@ body.light .spread-mini{background:#1A5FA812;color:#1A5FA8;border-color:#1A5FA84
 .ai-tip-head{font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:6px;font-weight:500}
 .ai-tip-text{font-size:12.5px;line-height:1.65;color:var(--text)}
 /* G-Money Smack Talk card */
-.smack-card{background:linear-gradient(135deg,#7C5CFC14,#FF557708);border:1px solid #7C5CFC35;border-radius:14px;padding:14px;position:relative;overflow:hidden;margin:0 14px;}
+.smack-card{background:linear-gradient(135deg,#7C5CFC14,#FF557708);border:1px solid #7C5CFC35;border-radius:14px;padding:14px;position:relative;overflow:hidden;}
 .smack-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#7C5CFC,#FF5577,#FFC230,#00E882);opacity:.8;}
 .smack-loading{font-family:var(--mono);font-size:11px;color:var(--text3);padding:8px 0;}
 .smack-game{margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid #7C5CFC20;}
@@ -2869,8 +2869,8 @@ function showHomePanel() {
   document.getElementById('bracketNavBtn').classList.remove('active');
   document.querySelectorAll('.day-tab').forEach(t => t.classList.remove('active'));
   renderHome();
-  // Load smack talk after a short delay to let odds fetch go first
-  setTimeout(function() { loadSmackTalk(false); }, 2000);
+  // Load smack talk after odds fetch completes — wait 20s minimum
+  setTimeout(function() { loadSmackTalk(false); }, 20000);
 }
 
 function showBracketPanel() {
@@ -2960,8 +2960,23 @@ function loadSmackTalk(force) {
     + 'Do all ' + dayData.games.length + ' games. Be sassy, specific, and funny.';
 
   // Stagger this call to avoid rate limit with other fetches
-  var wait = (window._lastClaudeFetch && (Date.now() - window._lastClaudeFetch) < 15000)
-    ? 15000 - (Date.now() - window._lastClaudeFetch) : 0;
+  var wait = (window._lastClaudeFetch && (Date.now() - window._lastClaudeFetch) < 25000)
+    ? 25000 - (Date.now() - window._lastClaudeFetch) : 0;
+
+  if (wait > 0) {
+    el.innerHTML = '<div class="smack-loading">⚡ G-Money warming up... ' + Math.ceil(wait/1000) + 's</div>';
+    // Update countdown
+    var countInterval = setInterval(function() {
+      var remaining = Math.max(0, 25000 - (Date.now() - window._lastClaudeFetch));
+      var countEl = document.getElementById('smackTalkCard');
+      if (countEl && remaining > 0) {
+        countEl.innerHTML = '<div class="smack-loading">⚡ G-Money warming up... ' + Math.ceil(remaining/1000) + 's</div>';
+      } else {
+        clearInterval(countInterval);
+      }
+    }, 1000);
+    setTimeout(function() { clearInterval(countInterval); }, wait + 1000);
+  }
 
   setTimeout(async function() {
     try {
@@ -2979,8 +2994,9 @@ function loadSmackTalk(force) {
 
       if (!resp.ok) {
         if (resp.status === 429) {
-          el.innerHTML = '<div class="smack-loading">⚡ Too much traffic — G-Money retrying in 30s...</div>';
-          setTimeout(function() { loadSmackTalk(true); }, 30000);
+          el.innerHTML = '<div class="smack-loading">⚡ Too much traffic — G-Money retrying in 45s...</div>';
+          window._lastClaudeFetch = Date.now() + 40000;
+          setTimeout(function() { loadSmackTalk(true); }, 45000);
           return;
         }
         el.innerHTML = '<div class="smack-loading">API error ' + resp.status + ' — tap refresh to retry.</div>';

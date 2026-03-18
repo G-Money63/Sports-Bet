@@ -2281,8 +2281,8 @@ function buildRow(g) {
        </div>`;
 
   return `
-  <div class="game-row ${isLive?'is-live':isFinal?'is-final':''}" id="row-${g.id}" onclick="toggleGame('${g.id}')">
-    <div class="game-row-inner">
+  <div class="game-row ${isLive?'is-live':isFinal?'is-final':''}" id="row-${g.id}">
+    <div class="game-row-inner" onclick="toggleGame('${g.id}')">
       <div class="time-block">${timeBlock}</div>
       <div class="matchup-block">
         <div class="team-line">
@@ -2298,7 +2298,7 @@ function buildRow(g) {
       ${rightCol}
     </div>
     <div class="detail-drawer" id="drawer-${g.id}">
-      <div class="drawer-inner" onclick="event.stopPropagation()">${buildDrawer(g)}</div>
+      <div class="drawer-inner">${buildDrawer(g)}</div>
     </div>
   </div>`;
 }
@@ -2431,7 +2431,7 @@ function buildDrawer(g) {
 
   // G-MONEY'S BETS — AI-powered fresh prediction, fetches when drawer opens
   const gmId = `gmoney-${g.id}`;
-  h+=`<div class="gmoney-card" id="${gmId}" onclick="event.stopPropagation()">
+  h+=`<div class="gmoney-card" id="${gmId}">
     <div class="gmoney-head">
       <div class="gmoney-title">💰 G-Money's Bets</div>
       <div class="gmoney-badge">AI · Live</div>

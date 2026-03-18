@@ -2468,11 +2468,13 @@ async function fetchGMoneyPick(g, elId) {
 
   try {
     console.log("[G-Money] Fetching:", away, "vs", home);
+    // Keep prompt tiny to avoid rate limit — under 200 tokens total
+    var prompt = away + " vs " + home + ". " + sprd + " | " + tot + ". Give a sharp 2-sentence pick.";
     var payload = {
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 180,
-      system: "You are G-Money, a sharp sassy sports betting analyst. Give fresh confident takes. Precise, a little cocky. 2-3 punchy sentences. Always a specific pick. No hedging.",
-      messages: [{ role: "user", content: "NCAA Tournament: " + away + " vs " + home + ". " + rgn + " Region. " + tm + ".\nSpread: " + sprd + " | Total: " + tot + " | ML: " + away + " " + aML + " / " + home + " " + hML + ".\nContext: " + ctx + "\nGive G-Money pick." }]
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 120,
+      system: "You are G-Money, a sassy sharp betting analyst. 2 sentences max. One specific pick with odds. Confident, no hedging.",
+      messages: [{ role: "user", content: prompt }]
     };
     var resp = await fetch(PROXY_URL + "/api/claude", {
       method: "POST",
@@ -2481,8 +2483,13 @@ async function fetchGMoneyPick(g, elId) {
     });
     console.log("[G-Money] Status:", resp.status);
     if (!resp.ok) {
-      var errMsg = resp.status === 429 ? "Too many requests — try in 30s." : "API error " + resp.status;
-      el.innerHTML = "<div class=\"gmoney-head\"><div class=\"gmoney-title\">G-Money Bets</div></div><div class=\"gmoney-text\" style=\"color:var(--text3)\">" + errMsg + "</div>";
+      if (resp.status === 429) {
+        // Auto-retry after 8 seconds
+        if (loadEl) loadEl.textContent = "Rate limit — retrying in 8s...";
+        setTimeout(function() { delete gmoneyCache[gid]; fetchGMoneyPick(g, elId); }, 8000);
+        return;
+      }
+      el.innerHTML = "<div class=\"gmoney-head\"><div class=\"gmoney-title\">G-Money Bets</div></div><div class=\"gmoney-text\" style=\"color:var(--text3)\">API error " + resp.status + " — retry.</div>";
       return;
     }
     var data = await resp.json();

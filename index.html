@@ -312,8 +312,8 @@ body.light .loading-msg  { color:#2A3A52; }
 }
 .theme-btn:hover { background:var(--card3); }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html{font-size:15px;height:100%}
-body{background:var(--bg);color:var(--text);font-family:var(--sans);height:100%;display:flex;flex-direction:column;overflow:hidden;}
+html{font-size:15px}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;overflow-x:hidden;}
 
 /* Safe area padding when installed as home screen app */
 @media all and (display-mode: standalone) {
@@ -377,7 +377,7 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 .sport-icon{font-size:22px;line-height:1} .sport-name{font-size:13px;font-weight:700;color:var(--text)} .sport-event{font-family:var(--mono);font-size:10px;color:var(--text2)} .sport-weeks{font-family:var(--mono);font-size:9.5px;color:var(--text3);margin-top:2px}
 
 /* ── HEADER ── */
-.header{flex-shrink:0;background:var(--bg);border-bottom:1px solid var(--border);padding:12px 16px 10px;z-index:100;}
+.header{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:1px solid var(--border);padding:12px 16px 10px;}
 .header-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:11px}
 .logo-area{display:flex;flex-direction:column;gap:1px}
 .logo{font-family:var(--sans);font-size:18px;font-weight:800;letter-spacing:-.02em;color:var(--text);line-height:1}
@@ -445,7 +445,7 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 .day-tab.active{background:var(--accent-d);border-color:var(--accent);color:var(--accent)}
 
 /* ── MAIN ── */
-.main{padding:14px 14px 100px;overflow-y:auto;-webkit-overflow-scrolling:touch;position:absolute;inset:0;}
+.main{padding:14px 14px 100px;}
 .panel{display:none} .panel.active{display:block}
 .round-label{font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--text3);padding:6px 2px 8px}
 
@@ -744,11 +744,13 @@ body.light .gmoney-pick{color:#5A3ECC;}
 </header>
 
 <!-- HOME PANEL -->
-<div id="appContent" style="flex:1;overflow:hidden;position:relative;">
-  <div id="homePanel" class="main"></div>
-  <div id="bracketPanel" class="main" style="display:none"></div>
-  <div class="main" id="mainPanels" style="display:none"></div>
-</div>
+<div id="homePanel" class="main"></div>
+
+<!-- BRACKET PANEL -->
+<div id="bracketPanel" class="main" style="display:none"></div>
+
+<!-- GAME PANELS -->
+<div class="main" id="mainPanels" style="display:none"></div>
 <!-- VERSION FOOTER -->
 <div class="ver-footer" id="verFooter">
   <div style="display:flex;align-items:center;gap:8px">
@@ -3606,7 +3608,16 @@ document.addEventListener('DOMContentLoaded', () => {
   initTheme();
   initNudge();
   startScorePolling();
-  buildAbbrMap(); // crosscheck ESPN abbreviations on load
+  buildAbbrMap();
+  // Fix scroll-under-header: measure header and pad body
+  function fixHeaderPad() {
+    var h = document.querySelector('.header');
+    if (h) document.body.style.paddingTop = h.offsetHeight + 'px';
+  }
+  fixHeaderPad();
+  window.addEventListener('resize', fixHeaderPad);
+  // Re-measure after fonts load (header height can change)
+  setTimeout(fixHeaderPad, 500);
 });
 </script>
 </body>

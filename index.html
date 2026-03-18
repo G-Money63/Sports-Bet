@@ -2108,6 +2108,7 @@ Include ALL scheduled games. Real teams, real odds. Unique IDs g1,g2,g3. Always 
       messages:[{role:'user',content:prompt}]
     })
   });
+  window._lastClaudeFetch = Date.now(); // let G-Money know a fetch just ran
   if (!resp.ok) throw new Error(`Claude API ${resp.status}`);
   const d = await resp.json();
   const txt = (d.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n');
@@ -2466,15 +2467,27 @@ async function fetchGMoneyPick(g, elId) {
   var tm   = g.timeET || "";
   var gid  = g.id;
 
+  // Wait if a fetch was recently made to avoid rate limits
+  var now = Date.now();
+  var lastFetch = window._lastClaudeFetch || 0;
+  var waitMs = Math.max(0, 12000 - (now - lastFetch));
+  if (waitMs > 0) {
+    if (loadEl) loadEl.textContent = "⚡ G-Money loading in " + Math.ceil(waitMs/1000) + "s...";
+    await new Promise(function(r){ setTimeout(r, waitMs); });
+    // Update element reference after wait — drawer might have closed
+    var elNow = document.getElementById(elId);
+    if (!elNow) return;
+  }
+
   try {
+    window._lastClaudeFetch = Date.now();
+    if (loadEl) loadEl.textContent = "⚡ G-Money is cooking...";
     console.log("[G-Money] Fetching:", away, "vs", home);
-    // Keep prompt tiny to avoid rate limit — under 200 tokens total
-    var prompt = away + " vs " + home + ". " + sprd + " | " + tot + ". Give a sharp 2-sentence pick.";
     var payload = {
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 120,
-      system: "You are G-Money, a sassy sharp betting analyst. 2 sentences max. One specific pick with odds. Confident, no hedging.",
-      messages: [{ role: "user", content: prompt }]
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 180,
+      system: "You are G-Money, a sharp sassy sports betting analyst with serious edge. Fresh confident takes — precise, a little cocky, real reasoning. 2-3 punchy sentences. Always a specific pick (spread, ML, or total). No hedging, no asterisks.",
+      messages: [{ role: "user", content: "NCAA Tournament: " + away + " vs " + home + ". " + rgn + " Region. " + tm + ".\nSpread: " + sprd + " | Total: " + tot + " | ML: " + away + " " + aML + " / " + home + " " + hML + ".\nContext (give your own fresh take, don\'t repeat this): \"" + ctx + "\"\nGive G-Money\'s pick." }]
     };
     var resp = await fetch(PROXY_URL + "/api/claude", {
       method: "POST",
@@ -2484,9 +2497,10 @@ async function fetchGMoneyPick(g, elId) {
     console.log("[G-Money] Status:", resp.status);
     if (!resp.ok) {
       if (resp.status === 429) {
-        // Auto-retry after 8 seconds
-        if (loadEl) loadEl.textContent = "Rate limit — retrying in 8s...";
-        setTimeout(function() { delete gmoneyCache[gid]; fetchGMoneyPick(g, elId); }, 8000);
+        // Auto-retry after 20 seconds
+        if (loadEl) loadEl.textContent = "⚡ Heavy traffic — G-Money retrying in 20s...";
+        window._lastClaudeFetch = Date.now() + 15000; // block other fetches too
+        setTimeout(function() { delete gmoneyCache[gid]; fetchGMoneyPick(g, elId); }, 20000);
         return;
       }
       el.innerHTML = "<div class=\"gmoney-head\"><div class=\"gmoney-title\">G-Money Bets</div></div><div class=\"gmoney-text\" style=\"color:var(--text3)\">API error " + resp.status + " — retry.</div>";

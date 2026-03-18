@@ -562,7 +562,22 @@ body.light .spread-mini{background:#1A5FA812;color:#1A5FA8;border-color:#1A5FA84
 .ai-tip{background:linear-gradient(135deg,var(--accent-d),transparent);border:1px solid var(--accent)44;border-radius:9px;padding:11px 13px;margin-top:4px}
 .ai-tip-head{font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:6px;font-weight:500}
 .ai-tip-text{font-size:12.5px;line-height:1.65;color:var(--text)}
-/* G-Money's Bets */
+/* G-Money Smack Talk card */
+.smack-card{background:linear-gradient(135deg,#7C5CFC14,#FF557708);border:1px solid #7C5CFC35;border-radius:14px;padding:14px;position:relative;overflow:hidden;margin:0 14px;}
+.smack-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#7C5CFC,#FF5577,#FFC230,#00E882);opacity:.8;}
+.smack-loading{font-family:var(--mono);font-size:11px;color:var(--text3);padding:8px 0;}
+.smack-game{margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid #7C5CFC20;}
+.smack-game:last-child{margin-bottom:0;padding-bottom:0;border-bottom:none;}
+.smack-game-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+.smack-matchup{font-family:var(--sans);font-size:13px;font-weight:700;color:var(--text);}
+.smack-time{font-family:var(--mono);font-size:9px;color:var(--text3);}
+.smack-pick{display:inline-flex;align-items:center;gap:5px;background:#7C5CFC18;border:1px solid #7C5CFC30;border-radius:6px;padding:3px 9px;margin:5px 0;font-family:var(--mono);font-size:11px;font-weight:500;color:#B09DFF;}
+.smack-text{font-family:var(--mono);font-size:11px;color:var(--text2);line-height:1.6;}
+.smack-disclaimer{font-family:var(--mono);font-size:9px;color:var(--text3);margin-top:12px;padding-top:10px;border-top:1px solid #7C5CFC20;font-style:italic;}
+body.light .smack-card{background:linear-gradient(135deg,#7C5CFC10,#FF557705);}
+body.light .smack-matchup{color:var(--text);}
+body.light .smack-text{color:var(--text2);}
+body.light .smack-pick{color:#5A3ECC;}
 .gmoney-card{background:linear-gradient(135deg,#7C5CFC18,#FF557708);border:1px solid #7C5CFC40;border-radius:9px;padding:11px 13px;margin-top:8px;position:relative;overflow:hidden;}
 .gmoney-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#7C5CFC,#FF5577,#FFC230);opacity:.7;}
 .gmoney-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
@@ -2854,6 +2869,8 @@ function showHomePanel() {
   document.getElementById('bracketNavBtn').classList.remove('active');
   document.querySelectorAll('.day-tab').forEach(t => t.classList.remove('active'));
   renderHome();
+  // Load smack talk after a short delay to let odds fetch go first
+  setTimeout(function() { loadSmackTalk(false); }, 2000);
 }
 
 function showBracketPanel() {
@@ -2882,6 +2899,146 @@ const _origSwitchDay = typeof switchDay !== 'undefined' ? switchDay : null;
 // ═══════════════════════════════════════════
 // HOME PANEL — sport-aware rendering
 // ═══════════════════════════════════════════
+// ═══════════════════════════════════════════
+// G-MONEY SMACK TALK — daily AI game previews
+// ═══════════════════════════════════════════
+var smackTalkCache = null;
+var smackTalkDate  = null;
+
+function loadSmackTalk(force) {
+  var today = new Date().toDateString();
+  var el = document.getElementById('smackTalkCard');
+  if (!el) return;
+
+  // Use cache unless forced refresh or new day
+  if (smackTalkCache && smackTalkDate === today && !force) {
+    el.innerHTML = smackTalkCache;
+    return;
+  }
+
+  el.innerHTML = '<div class="smack-loading">⚡ G-Money is studying the tape...</div>';
+
+  var proxyReady = PROXY_URL && PROXY_URL !== 'YOUR_CLOUD_RUN_URL_HERE';
+  if (!proxyReady) {
+    el.innerHTML = '<div class="smack-loading">Proxy not configured.</div>';
+    return;
+  }
+
+  // Build today's game list from static data
+  var t = new Date(), mo = t.getMonth(), da = t.getDate();
+  var dayMap = {'2-17':'tue','2-18':'wed','2-19':'thu','2-20':'fri','2-21':'sat','2-22':'sun',
+                '2-26':'thu2','2-27':'fri2','2-28':'sat2','2-29':'sun2','3-4':'sat3','3-6':'mon3'};
+  var todayKey = 'ncaam-w1_' + (dayMap[mo+'-'+da] || 'wed');
+  var dayData = STATIC_GAMES[todayKey];
+
+  if (!dayData || !dayData.games || !dayData.games.length) {
+    el.innerHTML = '<div class="smack-loading">No games found for today.</div>';
+    return;
+  }
+
+  // Build game summaries for the prompt
+  var gameLines = dayData.games.map(function(g) {
+    var away = g.away ? g.away.name + ' (#' + g.away.seed + ', ' + g.away.record + ')' : 'TBD';
+    var home = g.home ? g.home.name + ' (#' + g.home.seed + ', ' + g.home.record + ')' : 'TBD';
+    var sprd = g.spread ? (g.spread.favTeam + ' ' + (g.spread.line > 0 ? '+' : '') + g.spread.line) : 'N/A';
+    var tot  = g.total  ? ('O/U ' + g.total.line) : 'N/A';
+    var aml  = g.moneyline ? g.moneyline.away : 'N/A';
+    var hml  = g.moneyline ? g.moneyline.home : 'N/A';
+    var time = g.timeET || '';
+    return time + ' ET: ' + away + ' vs ' + home + ' | Spread: ' + sprd + ' | Total: ' + tot + ' | ML: ' + aml + '/' + hml;
+  }).join('\n');
+
+  var prompt = 'Today is ' + dayData.day + ' — ' + dayData.round + '.\n\nGames today in order:\n' + gameLines + '\n\n'
+    + 'For EACH game write a short smack talk preview. Format exactly like this for each game:\n'
+    + 'GAME: [Away] vs [Home] | [Time]\n'
+    + 'PICK: [Your specific pick with line]\n'
+    + 'SMACK: [2-3 sentences of sassy trash talk. Include player names, records, matchup insight. '
+    + 'Be funny and insulting to the team you think will lose. Make creative analogies. '
+    + 'End with a bold prediction like "Lehigh will clobber Prairie View like we clobber groundhogs back into the ground." '
+    + 'Escalate the smack talk as the games get later in the day. '
+    + 'Add a humility disclaimer on the last game like "...but if I am wrong I will eat my hat."]\n\n'
+    + 'Do all ' + dayData.games.length + ' games. Be sassy, specific, and funny.';
+
+  // Stagger this call to avoid rate limit with other fetches
+  var wait = (window._lastClaudeFetch && (Date.now() - window._lastClaudeFetch) < 15000)
+    ? 15000 - (Date.now() - window._lastClaudeFetch) : 0;
+
+  setTimeout(async function() {
+    try {
+      window._lastClaudeFetch = Date.now();
+      var resp = await fetch(PROXY_URL + '/api/claude', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1200,
+          system: 'You are G-Money, the sharpest and sassiest sports betting analyst on the internet. You give brutally honest, hilariously smack-talky game previews with real picks. You back your trash talk with stats and matchup data. You are confident but self-aware enough to admit when you might be wrong. Gambling is for entertainment only.',
+          messages: [{ role: 'user', content: prompt }]
+        })
+      });
+
+      if (!resp.ok) {
+        if (resp.status === 429) {
+          el.innerHTML = '<div class="smack-loading">⚡ Too much traffic — G-Money retrying in 30s...</div>';
+          setTimeout(function() { loadSmackTalk(true); }, 30000);
+          return;
+        }
+        el.innerHTML = '<div class="smack-loading">API error ' + resp.status + ' — tap refresh to retry.</div>';
+        return;
+      }
+
+      var data = await resp.json();
+      var text = (data.content && data.content[0] && data.content[0].text) || '';
+      if (!text) { el.innerHTML = '<div class="smack-loading">No response — tap refresh.</div>'; return; }
+
+      // Parse into game blocks
+      var blocks = text.split(/\nGAME:/g).filter(function(b) { return b.trim(); });
+      if (blocks[0] && !blocks[0].includes('|')) blocks.shift(); // remove preamble if any
+
+      var html = '';
+      blocks.forEach(function(block) {
+        var lines = block.trim().split('\n');
+        var headerLine = lines[0] || '';
+        var pickLine   = '';
+        var smackLines = [];
+        lines.forEach(function(l) {
+          if (l.startsWith('PICK:'))  pickLine = l.replace('PICK:', '').trim();
+          else if (l.startsWith('SMACK:')) smackLines.push(l.replace('SMACK:', '').trim());
+          else if (smackLines.length) smackLines.push(l.trim());
+        });
+        var smackText = smackLines.join(' ').trim();
+        var parts = headerLine.split('|');
+        var matchup = parts[0] ? parts[0].trim() : headerLine;
+        var time    = parts[1] ? parts[1].trim() : '';
+
+        html += '<div class="smack-game">'
+          + '<div class="smack-game-hdr">'
+          + '<div class="smack-matchup">' + matchup + '</div>'
+          + '<div class="smack-time">' + time + '</div>'
+          + '</div>'
+          + (pickLine ? '<div class="smack-pick">🎯 ' + pickLine + '</div>' : '')
+          + '<div class="smack-text">' + smackText + '</div>'
+          + '</div>';
+      });
+
+      if (!html) {
+        // Fallback — show raw text nicely
+        html = '<div class="smack-text">' + text.replace(/\n/g, '<br>') + '</div>';
+      }
+
+      html += '<div class="smack-disclaimer">💬 G-Money\'s takes are for entertainment only. Bet responsibly. If G-Money is wrong, blame the algorithm — not the analyst.</div>';
+
+      smackTalkCache = html;
+      smackTalkDate  = today;
+      el.innerHTML = html;
+
+    } catch(e) {
+      console.error('[SmackTalk] Failed:', e.message);
+      el.innerHTML = '<div class="smack-loading">Connection issue — tap refresh to retry.</div>';
+    }
+  }, wait);
+}
+
 function renderHome() {
   const ev = getActiveEvent();
   const panel = document.getElementById('homePanel');
@@ -2971,6 +3128,12 @@ function buildNCAAHome() {
 
     ${liveSection}
     ${finalSection}
+
+    <!-- G-Money Smack Talk -->
+    <div class="home-sect"><div class="home-sect-t">🎤 G-Money Smack Talk</div><button class="home-sect-a" onclick="loadSmackTalk(true)">↻ Refresh</button></div>
+    <div id="smackTalkCard" class="smack-card">
+      <div class="smack-loading">⚡ G-Money is studying the tape...</div>
+    </div>
 
     <!-- Tournament roadmap -->
     <div class="home-sect"><div class="home-sect-t">📅 Tournament Roadmap</div></div>

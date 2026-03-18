@@ -257,6 +257,36 @@ body.light .ml-badge.pos { background:#007A4012; color:#006035; border-color:#00
 body.light .ml-badge.evn { background:#1A5FA812; color:#1A5FA8; border-color:#1A5FA840; }
 body.light .day-tab      { color:#2A3A52; }
 body.light .week-chip    { color:#2A3A52; }
+/* Bracket light mode — darker text on cards */
+body.light .btn          { color:#0D1220; }
+body.light .bts          { color:#3A4E68; }
+body.light .bsc          { color:#2A3A52; }
+body.light .bsc.blead    { color:#006035; }
+body.light .bsc.brl      { color:#B01030; }
+body.light .bmc          { background:#FFFFFF; border-color:#C8CEDD; }
+body.light .bmc.blive    { border-color:#C41E3A; }
+body.light .btbd-card    { border-color:#C8CEDD; background:#F4F6FA; }
+body.light .btbd-l       { color:#8A9AB0; }
+body.light .btbd-t       { color:#4A5E78; }
+body.light .brk-tab      { color:#4A5E78; }
+body.light .brk-tab.active { color:var(--accent); }
+body.light .brk-rh-item  { color:#8A9AB0; }
+/* Home panel light mode */
+body.light .home-stat    { background:#FFFFFF; border-color:#C8CEDD; }
+body.light .home-stat-v  { color:#0D1220; }
+body.light .home-stat-l  { color:#4A5E78; }
+body.light .hs-round     { color:#0D1220; }
+body.light .hs-sub       { color:#4A5E78; }
+body.light .sc-name      { color:#0D1220; }
+body.light .sc-seed      { color:#4A5E78; }
+body.light .sc-rec       { color:#4A5E78; }
+body.light .sc-round     { color:#4A5E78; }
+body.light .sc-score     { color:#2A3A52; }
+body.light .sc-score-lbl { color:#4A5E78; }
+body.light .sc-next      { color:#4A5E78; }
+body.light .sc-odds      { color:#4A5E78; }
+body.light .series-card  { background:#FFFFFF; border-color:#C8CEDD; }
+body.light .sc-footer    { background:#F0F2F7; border-color:#C8CEDD; }
 body.light .source-btn   { color:#2A3A52; }
 body.light .tz-badge     { color:#2A3A52; }
 body.light .variance-badge { background:#8A5E0018; color:#8A5E00; border-color:#8A5E0040; }
@@ -1305,8 +1335,10 @@ function bootApp() {
   updateSourcePills();
   buildWeekBar();
   renderWeek();
-  // Start on home panel
+  // Show home panel first, but also silently pre-load today's day
   showHomePanel();
+  // Auto-select today's day tab so data is ready when user taps it
+  autoSelectToday();
 }
 
 function buildWeekBar() {
@@ -1347,12 +1379,17 @@ function autoSelectToday() {
   const t=new Date(), m=t.getMonth(), d=t.getDate();
   const dm={'2-17':'tue','2-18':'wed','2-19':'thu','2-20':'fri','2-21':'sat','2-22':'sun','2-26':'thu2','2-27':'fri2','2-28':'sat2','2-29':'sun2','3-4':'sat3','3-6':'mon3'};
   const wm={tue:0,wed:0,thu:0,fri:0,sat:0,sun:0,thu2:1,fri2:1,sat2:1,sun2:1,sat3:2,mon3:2};
+  // Default to first day (TUE) if today isn't a tournament day
   const k=`${m}-${d}`;
-  if (dm[k]) {
-    const dk=dm[k], wi=wm[dk]??0;
-    if (wi!==activeWeekIdx) { activeWeekIdx=wi; buildWeekBar(); renderWeek(); }
-    document.getElementById('tab-'+dk)?.click();
-  }
+  const dk = dm[k] || 'tue';
+  const wi = wm[dk] ?? 0;
+  if (wi !== activeWeekIdx) { activeWeekIdx = wi; buildWeekBar(); renderWeek(); }
+  // Highlight the tab without switching away from home panel
+  currentDayKey = dk;
+  document.querySelectorAll('.day-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-'+dk)?.classList.add('active');
+  // Silently pre-load the day data in the background
+  if (!cache[prefs.activeEvent+'_'+dk]) loadDay(dk);
 }
 
 // ═══════════════════════════════════════════
@@ -2365,6 +2402,8 @@ async function fetchLiveScores() {
     console.log('liveScores keys:', Object.keys(newScores));
     const cacheKey = prefs.activeEvent + '_' + currentDayKey;
     if (cache[cacheKey]) renderPanel(currentDayKey, cache[cacheKey]);
+    // Update home panel live count if visible
+    refreshHomeStats();
   } catch(e) {
     console.log('Score fetch failed:', e.message);
   }
@@ -2586,6 +2625,24 @@ function runDiagnostics() {
 // ═══════════════════════════════════════════
 let activeMainView = 'home'; // 'home' | 'bracket' | 'games'
 
+function refreshHomeStats() {
+  // Update live count chip without re-rendering the whole home panel
+  const seen = new Set();
+  let liveCount = 0, finalCount = 0;
+  for (const g of Object.values(liveScores)) {
+    const key = (g.away||'') + (g.home||'');
+    if (seen.has(key)) continue;
+    seen.add(key);
+    if (g.status === 'live') liveCount++;
+    if (g.status === 'final') finalCount++;
+  }
+  // Update stat chips if they exist in DOM
+  const liveEl = document.getElementById('homeLiveCount');
+  const finalEl = document.getElementById('homeFinalCount');
+  if (liveEl) liveEl.textContent = liveCount || '—';
+  if (finalEl) finalEl.textContent = finalCount || '—';
+}
+
 function showHomePanel() {
   activeMainView = 'home';
   document.getElementById('homePanel').style.display = '';
@@ -2692,10 +2749,10 @@ function buildNCAAHome() {
         <div class="home-stats">
           <div class="home-stat"><div class="home-stat-v">16</div><div class="home-stat-l">Today</div></div>
           <div class="home-stat live-stat">
-            <div class="home-stat-v red"><div class="live-dot" style="width:8px;height:8px"></div>${liveGames.length||'—'}</div>
+            <div class="home-stat-v red"><div class="live-dot" style="width:8px;height:8px"></div><span id="homeLiveCount">${liveGames.length||'—'}</span></div>
             <div class="home-stat-l red">Live Now</div>
           </div>
-          <div class="home-stat"><div class="home-stat-v">${finalGames.length||'—'}</div><div class="home-stat-l">Finals</div></div>
+          <div class="home-stat"><div class="home-stat-v"><span id="homeFinalCount">${finalGames.length||'—'}</span></div><div class="home-stat-l">Finals</div></div>
           <div class="home-stat"><div class="home-stat-v amber">4</div><div class="home-stat-l">Up Next</div></div>
         </div>
       </div>

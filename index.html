@@ -144,6 +144,7 @@ body.light .home-nav-btn.active{color:var(--accent);}
 .conf-tag{font-family:var(--mono);font-size:8px;padding:2px 7px;border-radius:4px;font-weight:500;}
 .conf-tag.east{background:var(--blue-d);color:var(--blue);border:1px solid #5BB8FF30;}
 .conf-tag.west{background:var(--nba-d);color:var(--accent);border:1px solid #C9553A30;}
+.conf-tag.nhl{background:#4A90D918;color:#4A90D9;border:1px solid #4A90D930;}
 .sc-matchup{display:flex;align-items:center;gap:6px;}
 .sc-team{flex:1;}
 .sc-team.right{text-align:right;}
@@ -1100,6 +1101,25 @@ const EVENTS = [
       ]},
       {label:'NBA Finals', days:[
         {key:'fin',label:'FINALS',long:'NBA Finals',round:'NBA Finals'},
+      ]},
+    ]
+  },
+  { id:'nhl-playoffs', icon:'🏒', name:'NHL Playoffs', sport:'NHL Playoffs', accent:'#4A90D9', tz:'PT', tzFull:'America/Los_Angeles', oddsApiSport:'icehockey_nhl',
+    weeks:[
+      {label:'First Round', days:[
+        {key:'r1e',label:'R1 EAST',long:'First Round — Eastern Conference',round:'First Round'},
+        {key:'r1w',label:'R1 WEST',long:'First Round — Western Conference',round:'First Round'},
+      ]},
+      {label:'Second Round', days:[
+        {key:'r2e',label:'R2 EAST',long:'Second Round — Eastern Conference',round:'Second Round'},
+        {key:'r2w',label:'R2 WEST',long:'Second Round — Western Conference',round:'Second Round'},
+      ]},
+      {label:'Conf Finals', days:[
+        {key:'cfe',label:'CONF E',long:'Conference Finals — East',round:'Conf. Finals'},
+        {key:'cfw',label:'CONF W',long:'Conference Finals — West',round:'Conf. Finals'},
+      ]},
+      {label:'Stanley Cup', days:[
+        {key:'fin',label:'CUP FINALS',long:'Stanley Cup Finals',round:'Stanley Cup Finals'},
       ]},
     ]
   },
@@ -2388,9 +2408,10 @@ async function fetchLiveScores() {
     // Pass league param so proxy fetches the right ESPN sport
     const ev = getActiveEvent();
     const leagueMap = {
-      'ncaam-w1':     'ncaamb',
-      'nba-playoffs': 'nba',
-      'nfl-playoffs': 'nfl',
+      'ncaam-w1':      'ncaamb',
+      'nba-playoffs':  'nba',
+      'nhl-playoffs':  'nhl',
+      'nfl-playoffs':  'nfl',
     };
     const league = leagueMap[ev.id] || 'ncaamb';
     const endpoint = `${PROXY_URL}/api/scores?league=${league}`;
@@ -2694,6 +2715,8 @@ function renderHome() {
   const panel = document.getElementById('homePanel');
   if (ev.id === 'nba-playoffs') {
     panel.innerHTML = buildNBAHome();
+  } else if (ev.id === 'nhl-playoffs') {
+    panel.innerHTML = buildNHLHome();
   } else if (ev.id === 'ncaam-w1') {
     panel.innerHTML = buildNCAAHome();
   } else {
@@ -2707,8 +2730,8 @@ function buildNCAAHome() {
   const liveGames  = games.filter((g,i) => i%4===0 && g.status==='live');
   const finalGames = games.filter((g,i) => i%4===0 && g.status==='final');
 
-  // Build live strip from liveScores
-  let liveStrip = '';
+  // Build strips — split live games vs final results
+  let liveStrip = '', finalStrip = '';
   const seen = new Set();
   for (const g of Object.values(liveScores)) {
     if (seen.has(g.id||g.away+g.home)) continue;
@@ -2722,17 +2745,20 @@ function buildNCAAHome() {
       </div>`;
     } else if (g.status === 'final') {
       const aw = g.awayScore > g.homeScore;
-      liveStrip += `<div class="hfc">
+      finalStrip += `<div class="hfc">
         <div class="hfc-tag">FINAL</div>
         <div class="hlc-row"><div class="hlc-name" style="${aw?'color:var(--green)':''}">${g.away}</div><div class="hlc-sc ${aw?'lead':''}">${g.awayScore}</div></div>
         <div class="hlc-row"><div class="hlc-name" style="${!aw?'color:var(--green)':''}">${g.home}</div><div class="hlc-sc ${!aw?'lead':''}">${g.homeScore}</div></div>
       </div>`;
     }
   }
-  if (!liveStrip) liveStrip = '';
+  // Only show sections when there's content — correct title + icon per state
   const liveSection = liveStrip ? `
-    <div class="home-sect"><div class="home-sect-t">🔴 Live Right Now</div><button class="home-sect-a" onclick="showBracketPanel()">Bracket →</button></div>
+    <div class="home-sect"><div class="home-sect-t" style="display:flex;align-items:center;gap:6px"><div class="live-dot" style="width:6px;height:6px;flex-shrink:0"></div>Live Right Now</div><button class="home-sect-a" onclick="showBracketPanel()">Bracket →</button></div>
     <div class="home-live-strip">${liveStrip}</div>` : '';
+  const finalSection = finalStrip ? `
+    <div class="home-sect"><div class="home-sect-t">✓ Recent Results</div><button class="home-sect-a" onclick="showGamesPanel()">See all →</button></div>
+    <div class="home-live-strip">${finalStrip}</div>` : '';
 
   // Tournament schedule rows
   const today = new Date();
@@ -2772,6 +2798,7 @@ function buildNCAAHome() {
     </div>
 
     ${liveSection}
+    ${finalSection}
 
     <!-- Tournament roadmap -->
     <div class="home-sect"><div class="home-sect-t">📅 Tournament Roadmap</div></div>
@@ -2883,6 +2910,119 @@ function buildNBAHome() {
       <div><div class="ns-title">NCAA Tournament</div><div class="ns-sub">March Madness · Final Four · Apr 4</div></div>
       <div class="ns-badge" style="background:var(--amber-d);color:var(--amber);border-color:#FFC23030">Live</div>
     </div>
+  </div>`;
+}
+
+function buildNHLHome() {
+  const liveCount = Object.values(liveScores).filter((g,i)=>i%4===0&&g.status==='live').length;
+
+  // Series card reused from NBA — same sc() helper pattern
+  function sc(conf, round, t1seed, t1name, t1rec, t2seed, t2name, t2rec, seriesScore, leading, nextGame, seriesOdds, isLive, liveStr) {
+    const liveTag = isLive ? `<div class="sc-live-tag"><div class="live-dot" style="width:5px;height:5px"></div>${liveStr}</div>` : '';
+    const [s1,s2] = (seriesScore||'0-0').split('-').map(Number);
+    const scoreCls = (s1>s2||s2>s1) ? 'leads' : '';
+    return `<div class="series-card sc-${conf} ${isLive?'sc-live':''}">
+      <div class="sc-bar"></div>
+      <div class="sc-inner">
+        <div class="sc-top">
+          <div class="sc-round">${round}</div>
+          <div class="sc-tags">${liveTag}<div class="conf-tag ${conf}">${conf.toUpperCase()}</div></div>
+        </div>
+        <div class="sc-matchup">
+          <div class="sc-team">
+            <div class="sc-seed">#${t1seed} · ${t1rec}</div>
+            <div class="sc-name ${leading===1?'leading':''}">${t1name}</div>
+            <div class="sc-rec">${leading===1?'Series leads':leading===2?'Trails series':'Series tied'}</div>
+          </div>
+          <div class="sc-score-wrap">
+            <div class="sc-score ${scoreCls}">${seriesScore}</div>
+            <div class="sc-score-lbl">Series</div>
+          </div>
+          <div class="sc-team right">
+            <div class="sc-seed">#${t2seed} · ${t2rec}</div>
+            <div class="sc-name ${leading===2?'leading':''}">${t2name}</div>
+            <div class="sc-rec">${leading===2?'Series leads':leading===1?'Trails series':'Series tied'}</div>
+          </div>
+        </div>
+      </div>
+      <div class="sc-footer">
+        <div class="sc-next">${nextGame}</div>
+        <div class="sc-odds"><span>${seriesOdds}</span></div>
+      </div>
+    </div>`;
+  }
+
+  return `<div style="padding-bottom:80px">
+
+    <!-- Hero — NHL blue accent -->
+    <div class="home-hero">
+      <div class="home-hero-bg" style="background:radial-gradient(ellipse at 80% 10%,#4A90D916 0%,transparent 55%),radial-gradient(ellipse at 10% 90%,#C9553A08 0%,transparent 50%)"></div>
+      <div class="home-hero-inner">
+        <div class="home-eyebrow">🏒 NHL PLAYOFFS 2026 · STANLEY CUP</div>
+        <div class="home-title">Cup <em>Chase</em></div>
+        <div class="home-sub">Stanley Cup Playoffs · 16 teams · Best of 7</div>
+        <div class="home-stats">
+          <div class="home-stat"><div class="home-stat-v">8</div><div class="home-stat-l">Series</div></div>
+          <div class="home-stat live-stat"><div class="home-stat-v red"><div class="live-dot" style="width:8px;height:8px"></div>${liveCount||'—'}</div><div class="home-stat-l red">Live Now</div></div>
+          <div class="home-stat"><div class="home-stat-v" style="color:#4A90D9">COL</div><div class="home-stat-l">#1 West</div></div>
+          <div class="home-stat"><div class="home-stat-v" style="color:#4A90D9">CAR</div><div class="home-stat-l">#1 East</div></div>
+        </div>
+      </div>
+    </div>
+
+    ${liveCount ? `
+    <div class="home-sect"><div class="home-sect-t">🔴 Live Right Now</div><button class="home-sect-a" onclick="showBracketPanel()">Bracket →</button></div>
+    <div class="nba-live-strip" id="nhlLiveStrip"></div>` : ''}
+
+    <!-- First Round series — projected based on current standings -->
+    <div class="home-sect" style="margin-top:${liveCount?'8px':'14px'}">
+      <div class="home-sect-t">🏒 First Round Series</div>
+      <button class="home-sect-a" onclick="showBracketPanel()">Bracket →</button>
+    </div>
+
+    <div style="font-family:var(--mono);font-size:9px;color:#4A90D9;text-transform:uppercase;letter-spacing:.1em;padding:0 14px;margin-bottom:8px">Western Conference</div>
+    <div class="series-list" style="padding:0 14px;margin-bottom:16px">
+      ${sc('west','R1 · Projected',1,'COL Avalanche','44-13',8,'STL Blues','27-30','0-0',0,'Starts: <strong>~Apr 19</strong>','COL -420',false,'')}
+      ${sc('west','R1 · Projected',2,'DAL Stars','42-15',7,'WPG Jets','28-28','0-0',0,'Starts: <strong>~Apr 19</strong>','DAL -280',false,'')}
+      ${sc('west','R1 · Projected',3,'MIN Wild','39-18',6,'UTA Mammoth','35-27','0-0',0,'Starts: <strong>~Apr 19</strong>','MIN -200',false,'')}
+      ${sc('west','R1 · Projected',4,'ANA Ducks','37-27',5,'EDM Oilers','34-26','0-0',0,'Starts: <strong>~Apr 19</strong>','ANA -115',false,'')}
+    </div>
+
+    <div style="font-family:var(--mono);font-size:9px;color:#4A90D9;text-transform:uppercase;letter-spacing:.1em;padding:0 14px;margin-bottom:8px">Eastern Conference</div>
+    <div class="series-list" style="padding:0 14px;margin-bottom:20px">
+      ${sc('east','R1 · Projected',1,'CAR Hurricanes','42-19',8,'NJ Devils','34-31','0-0',0,'Starts: <strong>~Apr 19</strong>','CAR -380',false,'')}
+      ${sc('east','R1 · Projected',2,'BUF Sabres','42-20',7,'BOS Bruins','37-23','0-0',0,'Starts: <strong>~Apr 20</strong>','BUF -175',false,'')}
+      ${sc('east','R1 · Projected',3,'NYI Islanders','39-24',6,'CBJ Blue Jackets','35-21','0-0',0,'Starts: <strong>~Apr 20</strong>','NYI -155',false,'')}
+      ${sc('east','R1 · Projected',4,'TB Lightning','41-21',5,'PIT Penguins','34-18','0-0',0,'Starts: <strong>~Apr 21</strong>','TB -190',false,'')}
+    </div>
+
+    <!-- Stanley Cup roadmap -->
+    <div class="home-sect"><div class="home-sect-t">🗓 Playoffs Roadmap</div></div>
+    <div class="home-sched">
+      <div class="hs-row" style="border-color:#4A90D930">
+        <div class="hs-date" style="color:#4A90D9">APR<br>~19</div>
+        <div class="hs-div" style="background:#4A90D9;opacity:.3"></div>
+        <div class="hs-info"><div class="hs-round">First Round</div><div class="hs-sub">8 series · Best of 7</div></div>
+        <span class="hs-badge" style="background:#4A90D918;color:#4A90D9;border:1px solid #4A90D930">~Apr 19</span>
+      </div>
+      <div class="hs-row"><div class="hs-date">MAY<br>~5</div><div class="hs-div"></div><div class="hs-info"><div class="hs-round">Second Round</div><div class="hs-sub">4 series · Best of 7</div></div><span class="hs-badge soon">Upcoming</span></div>
+      <div class="hs-row"><div class="hs-date">MAY<br>~19</div><div class="hs-div"></div><div class="hs-info"><div class="hs-round">Conf. Finals</div><div class="hs-sub">2 series · Best of 7</div></div><span class="hs-badge soon">Upcoming</span></div>
+      <div class="hs-row"><div class="hs-date">JUN<br>~1</div><div class="hs-div"></div><div class="hs-info"><div class="hs-round">Stanley Cup Finals</div><div class="hs-sub">Best of 7 · The Cup</div></div><span class="hs-badge soon">Upcoming</span></div>
+    </div>
+
+    <!-- Also active -->
+    <div class="home-sect" style="margin-top:20px"><div class="home-sect-t">🏀 Also Active</div></div>
+    <div class="next-sport-card" onclick="selectEvent('ncaam-w1')" style="margin-bottom:8px">
+      <div class="ns-ico">🏆</div>
+      <div><div class="ns-title">NCAA Tournament</div><div class="ns-sub">March Madness · Final Four · Apr 4</div></div>
+      <div class="ns-badge" style="background:var(--amber-d);color:var(--amber);border-color:#FFC23030">Live</div>
+    </div>
+    <div class="next-sport-card" onclick="selectEvent('nba-playoffs')">
+      <div class="ns-ico">🏀</div>
+      <div><div class="ns-title">NBA Playoffs</div><div class="ns-sub">Starts April 19 · Same time as NHL</div></div>
+      <div class="ns-badge">Apr 19</div>
+    </div>
+
   </div>`;
 }
 

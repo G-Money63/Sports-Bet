@@ -3,15 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Madness '26 Bets</title>
+<title>G-Money Bets</title>
 
 <!-- PWA / Home Screen -->
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="MM'26 Bets">
+<meta name="apple-mobile-web-app-title" content="G-Money Bets">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#07090C">
-<meta name="description" content="Live March Madness 2026 odds, spreads and betting lines">
+<meta name="description" content="G-Money Bets — Live odds, spreads and AI picks across NCAA, NBA, NHL and more">
 
 <!-- Home screen icon (canvas-generated, no external image needed) -->
 <script>
@@ -24,7 +24,7 @@
     x.font='bold 72px system-ui'; x.textAlign='center'; x.textBaseline='middle';
     x.fillText('🏀',90,80);
     x.font='bold 22px system-ui'; x.fillStyle='#EBF2FC';
-    x.fillText("MM'26",90,138);
+    x.fillText("G-Money",90,130);
     var link=document.createElement('link');
     link.rel='apple-touch-icon'; link.href=c.toDataURL('image/png');
     document.head.appendChild(link);
@@ -685,7 +685,7 @@ body.light .gmoney-pick{color:#5A3ECC;}
 <header class="header">
   <div class="header-top">
     <div class="logo-area">
-      <div class="logo" id="appLogo">Madness <span>'26</span> Bets</div>
+      <div class="logo" id="appLogo">G-Money <span>Bets</span></div>
       <div class="logo-event" id="eventSubtitle">NCAA Tournament</div>
     </div>
     <div class="header-right">
@@ -742,7 +742,7 @@ body.light .gmoney-pick{color:#5A3ECC;}
     <button class="ver-badge" onclick="toggleDebugPanel()" title="Tap for diagnostics">v1.1</button>
     <span class="ver-date">Mar 18, 2026</span>
   </div>
-  <span class="ver-date">Madness '26 Bets</span>
+  <span class="ver-date">G-Money Bets</span>
 </div>
 
 <!-- DEBUG PANEL -->
@@ -770,7 +770,7 @@ const PROXY_URL = 'https://sports-bet-proxy-251253105381.us-central1.run.app';
 // EVENT CONFIGS
 // ═══════════════════════════════════════════
 const EVENTS = [
-  { id:'ncaam-w1', icon:'🏀', name:"Madness '26 Bets", sport:'NCAA Tournament', accent:'#FFC230', tz:'PT · La Quinta', tzFull:'America/Los_Angeles',
+  { id:'ncaam-w1', icon:'🏀', name:"NCAA Tournament", sport:'NCAA Tournament', accent:'#FFC230', tz:'PT · La Quinta', tzFull:'America/Los_Angeles',
     oddsApiSport:'basketball_ncaab', kalshiKeyword:'NCAA',
     weeks:[
       { label:'Wk 1 — R64/R32', days:[
@@ -1411,7 +1411,7 @@ function bootApp() {
   const ev = getActiveEvent();
   setAccent(ev.accent);
   const parts = ev.name.split(' '), last = parts.pop();
-  document.getElementById('appLogo').innerHTML = (parts.length ? parts.join(' ')+' ' : '') + `<span>${last}</span>`;
+  document.getElementById('appLogo').innerHTML = `G-Money <span>Bets</span>`;
   document.getElementById('eventSubtitle').textContent = ev.sport;
   updateSourcePills();
   buildWeekBar();
@@ -2448,98 +2448,66 @@ function buildDrawer(g) {
 const gmoneyCache = {}; // cache per game so it doesn't re-fetch on re-open
 
 async function fetchGMoneyPick(g, elId) {
-  const el = document.getElementById(elId);
+  var el = document.getElementById(elId);
   if (!el) return;
   if (gmoneyCache[g.id]) { el.innerHTML = gmoneyCache[g.id]; return; }
-  const loadEl = el.querySelector('.gmoney-loading');
-  if (loadEl) loadEl.textContent = '⚡ G-Money is cooking...';
-  const proxyReady = PROXY_URL && PROXY_URL !== 'YOUR_CLOUD_RUN_URL_HERE';
-  if (!proxyReady) {
-    el.textContent = 'Proxy not configured.';
-    return;
-  }
-  const away = g.away?.name || g.away?.abbr || 'Away';
-  const home = g.home?.name || g.home?.abbr || 'Home';
-  const sprd = g.spread ? (g.spread.favTeam + ' ' + (g.spread.line > 0 ? '+' : '') + g.spread.line) : 'N/A';
-  const tot  = g.total  ? ('O/U ' + g.total.line) : 'N/A';
-  const aML  = g.moneyline?.away || 'N/A';
-  const hML  = g.moneyline?.home || 'N/A';
-  const ctx  = (g.sharpAngle || '').replace(/"/g, "'");
-
-  function showError(msg) {
-    const retryKey = g.id;
-    const retryEl  = elId;
-    el.innerHTML = '<div class="gmoney-head"><div class="gmoney-title">G-Money Bets</div>'
-      + '<div class="gmoney-badge" style="color:var(--red)">Error</div></div>'
-      + '<div class="gmoney-text" style="color:var(--text3);margin-bottom:8px">' + msg + '</div>'
-      + '<button onclick="triggerGMoney(\"' + retryKey + '\",\"' + retryEl + '\")" '
-      + 'style="font-family:var(--mono);font-size:10px;background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:5px 12px;color:var(--accent);cursor:pointer">Retry</button>';
-  }
+  var loadEl = el.querySelector(".gmoney-loading");
+  if (loadEl) loadEl.textContent = "G-Money is cooking...";
+  var proxyReady = PROXY_URL && PROXY_URL !== "YOUR_CLOUD_RUN_URL_HERE";
+  if (!proxyReady) { if (loadEl) loadEl.textContent = "Proxy not configured."; return; }
+  var away = (g.away && (g.away.name || g.away.abbr)) || "Away";
+  var home = (g.home && (g.home.name || g.home.abbr)) || "Home";
+  var sprd = g.spread ? (g.spread.favTeam + " " + (g.spread.line > 0 ? "+" : "") + g.spread.line) : "N/A";
+  var tot  = g.total  ? ("O/U " + g.total.line) : "N/A";
+  var aML  = (g.moneyline && g.moneyline.away) || "N/A";
+  var hML  = (g.moneyline && g.moneyline.home) || "N/A";
+  var ctx  = (g.sharpAngle || "").replace(/["\"]/g, " ");
+  var rgn  = g.region || "";
+  var tm   = g.timeET || "";
+  var gid  = g.id;
 
   try {
-    console.log('[G-Money] Fetching:', away, 'vs', home);
-    const resp = await fetch(PROXY_URL + '/api/claude', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 180,
-        system: 'You are G-Money, a sharp sassy sports betting analyst. Fresh confident takes — precise, a little cocky, real reasoning. 2-3 punchy sentences. Always a specific pick. No hedging.',
-        messages: [{ role: 'user', content: 'NCAA Tournament: ' + away + ' vs ' + home + '. ' + (g.region||'') + ' Region. ' + (g.timeET||'') + '.\nSpread: ' + sprd + ' | Total: ' + tot + ' | ML: ' + away + ' ' + aML + ' / ' + home + ' ' + hML + '.\nContext: ' + ctx + '\nGive G-Money pick.' }]
-      })
+    console.log("[G-Money] Fetching:", away, "vs", home);
+    var payload = {
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 180,
+      system: "You are G-Money, a sharp sassy sports betting analyst. Give fresh confident takes. Precise, a little cocky. 2-3 punchy sentences. Always a specific pick. No hedging.",
+      messages: [{ role: "user", content: "NCAA Tournament: " + away + " vs " + home + ". " + rgn + " Region. " + tm + ".\nSpread: " + sprd + " | Total: " + tot + " | ML: " + away + " " + aML + " / " + home + " " + hML + ".\nContext: " + ctx + "\nGive G-Money pick." }]
+    };
+    var resp = await fetch(PROXY_URL + "/api/claude", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
     });
-    console.log('[G-Money] Status:', resp.status);
+    console.log("[G-Money] Status:", resp.status);
     if (!resp.ok) {
-      const err = await resp.json().catch(function(){return {};});
-      console.warn('[G-Money] Error:', resp.status, err);
-      showError(resp.status === 429 ? 'Too many requests — try in 30s.' : 'API error ' + resp.status);
+      var errMsg = resp.status === 429 ? "Too many requests — try in 30s." : "API error " + resp.status;
+      el.innerHTML = "<div class=\"gmoney-head\"><div class=\"gmoney-title\">G-Money Bets</div></div><div class=\"gmoney-text\" style=\"color:var(--text3)\">" + errMsg + "</div>";
       return;
     }
-    const data = await resp.json();
-    const text = (data.content && data.content[0] && data.content[0].text) || 'No pick right now.';
-    console.log('[G-Money] Got:', text.substring(0, 60));
-    const sentences = text.split(/(?<=[.!?])\s+/);
-    const pickLine  = sentences[0] || text;
-    const rest      = sentences.slice(1).join(' ');
-    const html = '<div class="gmoney-head"><div class="gmoney-title">G-Money Bets</div>'
-      + '<div class="gmoney-badge">AI Fresh</div></div>'
-      + '<div class="gmoney-pick">🎯 ' + pickLine + '</div>'
-      + (rest ? '<div class="gmoney-text">' + rest + '</div>' : '');
-    gmoneyCache[g.id] = html;
+    var data = await resp.json();
+    var text = (data.content && data.content[0] && data.content[0].text) || "No pick right now.";
+    console.log("[G-Money] Got:", text.substring(0, 60));
+    var parts = text.split(/(?<=[.!?])\s+/);
+    var pick  = parts[0] || text;
+    var rest  = parts.slice(1).join(" ");
+    var html  = "<div class=\"gmoney-head\"><div class=\"gmoney-title\">G-Money Bets</div><div class=\"gmoney-badge\">AI Fresh</div></div>"
+      + "<div class=\"gmoney-pick\">🎯 " + pick + "</div>"
+      + (rest ? "<div class=\"gmoney-text\">" + rest + "</div>" : "");
+    gmoneyCache[gid] = html;
     el.innerHTML = html;
   } catch(e) {
-    console.error('[G-Money] Failed:', e.message);
-    showError('Connection issue — retry.');
+    console.error("[G-Money] Failed:", e.message);
+    el.innerHTML = "<div class=\"gmoney-head\"><div class=\"gmoney-title\">G-Money Bets</div></div><div class=\"gmoney-text\" style=\"color:var(--text3)\">Connection issue — reload and retry.</div>";
   }
 }
 
 function triggerGMoney(gameId, elId) {
   delete gmoneyCache[gameId];
-  const g = Object.values(STATIC_GAMES).flatMap(function(d){return d.games||[];}).find(function(x){return x.id===gameId;});
+  var all = Object.values(STATIC_GAMES).reduce(function(a,d){ return a.concat(d.games||[]); }, []);
+  var g = all.find(function(x){ return x.id === gameId; });
   if (g) fetchGMoneyPick(g, elId);
 }
-
-    const rest      = sentences.slice(1).join(' ');
-
-    const html = '<div class="gmoney-head"><div class="gmoney-title">G-Money Bets</div><div class="gmoney-badge">AI Fresh</div></div>'
-      + '<div class="gmoney-pick">🎯 ' + pickLine + '</div>'
-      + (rest ? '<div class="gmoney-text">' + rest + '</div>' : '');
-
-    gmoneyCache[g.id] = html;
-    el.innerHTML = html;
-
-  } catch(e) {
-    console.error('[G-Money] Failed:', e.message);
-    showError('Connection issue — check proxy and retry.');
-  }
-}
-
-// Helper so retry button can find the game
-function triggerGMoney(gameId, elId) {
-  const g = Object.values(STATIC_GAMES).flatMap(function(d) { return d.games || []; }).find(function(x) { return x.id === gameId; });
-  if (g) fetchGMoneyPick(g, elId);
-}
-
 
 function dedupeBooks(books) {
   const seen = new Set();

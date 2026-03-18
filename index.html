@@ -1967,12 +1967,13 @@ async function fetchLiveScores() {
     const resp = await fetch(endpoint);
     if (!resp.ok) { console.log('Scores HTTP error:', resp.status); return; }
     const data = await resp.json();
-    console.log('Scores received:', data.games?.length, 'games', data.games?.map(g=>g.awayAbbr+'-'+g.homeAbbr+':'+g.status));
+    console.log('Scores received:', data.games?.length, 'games', data.games?.map(g=>(g.away||g.awayAbbr)+'-'+(g.home||g.homeAbbr)+':'+g.status));
     const newScores = {};
     for (const g of data.games || []) {
-      // Store under every possible key combo so matching works
-      const a = g.awayAbbr.toUpperCase();
-      const h = g.homeAbbr.toUpperCase();
+      // Support both proxy field names (away/home) and legacy (awayAbbr/homeAbbr)
+      if (!g.away && !g.awayAbbr) continue;
+      const a = (g.away || g.awayAbbr).toUpperCase();
+      const h = (g.home || g.homeAbbr).toUpperCase();
       newScores[a + '-' + h] = g;
       newScores[h + '-' + a] = { ...g, flipped: true };
       // Also store without dash for fuzzy matching

@@ -115,7 +115,7 @@ body.light .home-nav-btn.active{color:var(--accent);}
 .hs-badge.live{background:var(--green-d);color:var(--green);border:1px solid #00E88230;}
 .hs-badge.done{background:var(--green-d);color:var(--green);border:1px solid #00E88230;}
 .hs-badge.soon{background:var(--card2);color:var(--text3);border:1px solid var(--border);}
-.hs-badge.next{background:var(--amber-d);color:var(--amber);border:1px solid #FFC23030;}
+.hs-badge.next{background:var(--card2);color:var(--text3);border:1px solid var(--border);}
 
 /* Next sport card */
 .next-sport-card{margin:0 14px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px;cursor:pointer;}
@@ -2740,8 +2740,9 @@ function buildNCAAHome() {
   }
   const s = (m,d) => {
     const st = schedStatus(m,d);
-    const labels = {done:'✓ Done',live:'🔴 Now',next:'Tomorrow',soon:'Upcoming'};
-    return `<span class="hs-badge ${st}">${labels[st]}</span>`;
+    const labels = {done:'✓ Done', live:'✓ Now', next:'Upcoming', soon:'Upcoming'};
+    const cls    = {done:'done',   live:'live',   next:'soon',     soon:'soon'};
+    return `<span class="hs-badge ${cls[st]}">${labels[st]}</span>`;
   };
 
   return `

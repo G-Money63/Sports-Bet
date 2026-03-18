@@ -47,7 +47,165 @@
   --mono:'DM Mono',monospace; --sans:'Syne',sans-serif;
 }
 
-/* ── LIVE SCORE STATES ── */
+/* ── HOME / BRACKET NAV BUTTONS ── */
+.home-nav-btn{font-family:var(--mono);font-size:10px;font-weight:500;padding:5px 13px;border-radius:20px;border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;transition:all .15s;white-space:nowrap;}
+.home-nav-btn.active{background:var(--accent-d);color:var(--accent);border-color:var(--accent);}
+body.light .home-nav-btn{color:var(--text3);}
+body.light .home-nav-btn.active{color:var(--accent);}
+
+/* ── VERSION FOOTER ── */
+.ver-footer{position:fixed;bottom:0;left:0;right:0;max-width:100%;background:var(--surface);border-top:1px solid var(--border);padding:6px 14px;display:flex;align-items:center;justify-content:space-between;z-index:40;}
+.ver-badge{font-family:var(--mono);font-size:9px;background:var(--card2);border:1px solid var(--border2);border-radius:4px;padding:2px 8px;color:var(--text3);cursor:pointer;transition:all .15s;}
+.ver-badge:hover{border-color:var(--accent);color:var(--accent);}
+.ver-date{font-family:var(--mono);font-size:9px;color:var(--text3);}
+
+/* ── DEBUG PANEL ── */
+.debug-overlay{position:fixed;inset:0;background:#00000075;z-index:60;display:flex;align-items:flex-end;}
+.debug-overlay.hidden{display:none;}
+.debug-sheet{width:100%;background:var(--surface);border-radius:18px 18px 0 0;border-top:1px solid var(--border2);padding:18px 18px 36px;max-height:70vh;overflow-y:auto;}
+.debug-ok{color:var(--green);}.debug-fail{color:var(--red);}.debug-warn{color:var(--amber);}
+
+/* ── HOME PANEL STYLES ── */
+.home-hero{margin:12px 14px;background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;position:relative;}
+.home-hero-bg{position:absolute;inset:0;background:radial-gradient(ellipse at 85% 15%,var(--accent-d) 0%,transparent 55%),radial-gradient(ellipse at 15% 85%,#5BB8FF08 0%,transparent 50%);pointer-events:none;}
+.home-hero-inner{padding:16px;position:relative;}
+.home-eyebrow{font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;gap:6px;}
+.home-title{font-family:var(--sans);font-size:26px;font-weight:800;color:var(--text);line-height:1.05;margin-bottom:3px;}
+.home-title em{color:var(--accent);font-style:normal;}
+.home-sub{font-family:var(--mono);font-size:11px;color:var(--text3);margin-bottom:14px;}
+.home-stats{display:flex;gap:7px;}
+.home-stat{background:var(--card2);border:1px solid var(--border2);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:3px;flex:1;}
+.home-stat.live-stat{border-color:#FF557750;background:linear-gradient(135deg,#FF557712,#FF557708);}
+.home-stat-v{font-family:var(--mono);font-size:19px;font-weight:500;color:var(--text);display:flex;align-items:center;gap:5px;}
+.home-stat-v.red{color:var(--red);}.home-stat-v.amber{color:var(--amber);}
+.home-stat-l{font-family:var(--mono);font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;}
+.home-stat-l.red{color:var(--red);opacity:.9;}
+.home-sect{display:flex;align-items:center;justify-content:space-between;margin:16px 14px 8px;}
+.home-sect-t{font-family:var(--mono);font-size:10px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;}
+.home-sect-a{font-family:var(--mono);font-size:10px;color:var(--accent);background:none;border:none;cursor:pointer;padding:0;}
+.home-pad{padding:0 14px;}
+
+/* Live strip */
+.home-live-strip{display:flex;gap:8px;overflow-x:auto;padding:0 14px 4px;margin:0;scrollbar-width:none;}
+.home-live-strip::-webkit-scrollbar{display:none;}
+.hlc{flex-shrink:0;width:154px;background:var(--card);border:1.5px solid var(--red);border-radius:12px;padding:10px 12px;position:relative;overflow:hidden;cursor:pointer;}
+.hlc::before{content:'';position:absolute;inset:0;background:var(--red-d);pointer-events:none;}
+.hlc-tag{display:flex;align-items:center;gap:4px;margin-bottom:7px;position:relative;}
+.hlc-t{font-family:var(--mono);font-size:9px;color:var(--red);font-weight:500;}
+.hlc-clk{font-family:var(--mono);font-size:9px;color:var(--text3);margin-left:auto;}
+.hlc-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;position:relative;}
+.hlc-row:last-child{margin-bottom:0;}
+.hlc-name{font-family:var(--sans);font-size:13px;font-weight:700;color:var(--text);}
+.hlc-sc{font-family:var(--mono);font-size:15px;font-weight:500;color:var(--text);}
+.hlc-sc.lead{color:var(--green);}
+.hlc-net{font-family:var(--mono);font-size:9px;color:var(--text3);margin-top:6px;position:relative;}
+.hfc{flex-shrink:0;width:154px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px 12px;opacity:.82;cursor:pointer;}
+.hfc-tag{font-family:var(--mono);font-size:9px;color:var(--red);margin-bottom:7px;font-weight:500;}
+
+/* Schedule rows */
+.home-sched{display:flex;flex-direction:column;gap:6px;padding:0 14px;}
+.hs-row{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;cursor:pointer;transition:border-color .15s;}
+.hs-row:hover{border-color:var(--border2);}
+.hs-date{font-family:var(--mono);font-size:10px;color:var(--accent);font-weight:500;width:54px;flex-shrink:0;line-height:1.3;text-align:center;}
+.hs-div{width:1px;height:32px;background:var(--border);flex-shrink:0;}
+.hs-info{flex:1;}
+.hs-round{font-family:var(--sans);font-size:13px;font-weight:700;color:var(--text);}
+.hs-sub{font-family:var(--mono);font-size:10px;color:var(--text3);margin-top:2px;}
+.hs-badge{font-family:var(--mono);font-size:9px;padding:3px 8px;border-radius:5px;flex-shrink:0;}
+.hs-badge.live{background:var(--red-d);color:var(--red);border:1px solid #FF557730;}
+.hs-badge.done{background:var(--green-d);color:var(--green);border:1px solid #00E88230;}
+.hs-badge.soon{background:var(--card2);color:var(--text3);border:1px solid var(--border);}
+.hs-badge.next{background:var(--amber-d);color:var(--amber);border:1px solid #FFC23030;}
+
+/* Next sport card */
+.next-sport-card{margin:0 14px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px;cursor:pointer;}
+.ns-ico{font-size:28px;flex-shrink:0;}
+.ns-title{font-family:var(--sans);font-size:14px;font-weight:700;color:var(--text);margin-bottom:2px;}
+.ns-sub{font-family:var(--mono);font-size:10px;color:var(--text3);}
+.ns-badge{margin-left:auto;font-family:var(--mono);font-size:9px;background:var(--blue-d);color:var(--blue);border:1px solid #5BB8FF30;border-radius:6px;padding:4px 9px;flex-shrink:0;white-space:nowrap;}
+
+/* ── NBA SERIES CARDS ── */
+.nba-conf-label{font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;font-weight:500;}
+.nba-conf-label.west{color:var(--accent);}
+.nba-conf-label.east{color:var(--blue);}
+.series-list{display:flex;flex-direction:column;gap:8px;}
+.series-card{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;cursor:pointer;transition:border-color .15s;}
+.series-card:hover{border-color:var(--border2);}
+.series-card.sc-live{border-color:var(--red);}
+.series-card.sc-live .sc-bar{background:var(--red);}
+.series-card.sc-west .sc-bar{background:var(--accent);}
+.series-card.sc-east .sc-bar{background:var(--blue);}
+.sc-bar{height:2px;opacity:.5;}
+.sc-inner{padding:11px 14px 10px;}
+.sc-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px;}
+.sc-round{font-family:var(--mono);font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;}
+.sc-tags{display:flex;align-items:center;gap:6px;}
+.sc-live-tag{display:flex;align-items:center;gap:4px;font-family:var(--mono);font-size:9px;color:var(--red);}
+.conf-tag{font-family:var(--mono);font-size:8px;padding:2px 7px;border-radius:4px;font-weight:500;}
+.conf-tag.east{background:var(--blue-d);color:var(--blue);border:1px solid #5BB8FF30;}
+.conf-tag.west{background:var(--nba-d);color:var(--accent);border:1px solid #C9553A30;}
+.sc-matchup{display:flex;align-items:center;gap:6px;}
+.sc-team{flex:1;}
+.sc-team.right{text-align:right;}
+.sc-seed{font-family:var(--mono);font-size:9px;color:var(--text3);margin-bottom:1px;}
+.sc-name{font-family:var(--sans);font-size:14px;font-weight:800;color:var(--text);line-height:1.1;}
+.sc-name.leading{color:var(--green);}
+.sc-rec{font-family:var(--mono);font-size:9px;color:var(--text3);margin-top:2px;}
+.sc-score-wrap{text-align:center;flex-shrink:0;padding:0 10px;}
+.sc-score{font-family:var(--mono);font-size:26px;font-weight:500;line-height:1;letter-spacing:.06em;color:var(--text2);}
+.sc-score.leads{color:var(--green);}
+.sc-score-lbl{font-family:var(--mono);font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-top:2px;}
+.sc-footer{padding:8px 14px;background:var(--card2);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.sc-next{font-family:var(--mono);font-size:9px;color:var(--text3);}
+.sc-next strong{color:var(--amber);}
+.sc-odds{font-family:var(--mono);font-size:9px;color:var(--text3);}
+.sc-odds span{color:var(--text2);}
+
+/* live strip (in NBA home) */
+.nba-live-strip{display:flex;gap:8px;overflow-x:auto;padding:0 14px 4px;margin:0 -14px;scrollbar-width:none;}
+.nba-live-strip::-webkit-scrollbar{display:none;}
+.nlc{flex-shrink:0;width:158px;background:var(--card);border:1.5px solid var(--red);border-radius:12px;padding:10px 12px;position:relative;overflow:hidden;}
+.nlc::before{content:'';position:absolute;inset:0;background:var(--red-d);pointer-events:none;}
+.nlc-tag{display:flex;align-items:center;gap:4px;margin-bottom:7px;position:relative;}
+.nlc-t{font-family:var(--mono);font-size:9px;color:var(--red);font-weight:500;}
+.nlc-clk{font-family:var(--mono);font-size:9px;color:var(--text3);margin-left:auto;}
+.nlc-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;position:relative;}
+.nlc-row:last-child{margin-bottom:0;}
+.nlc-name{font-family:var(--sans);font-size:13px;font-weight:700;color:var(--text);}
+.nlc-sc{font-family:var(--mono);font-size:15px;font-weight:500;}
+.nlc-sc.lead{color:var(--green);}
+.nlc-sc.trail{color:var(--text2);}
+.nlc-series{font-family:var(--mono);font-size:9px;color:var(--text3);margin-top:5px;position:relative;}
+
+/* ── BRACKET PANEL STYLES ── */
+.brk-region-tabs{display:flex;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:0;z-index:5;}
+.brk-tab{flex:1;padding:9px 4px;text-align:center;font-family:var(--mono);font-size:10px;font-weight:500;color:var(--text3);cursor:pointer;transition:all .15s;border-bottom:2px solid transparent;letter-spacing:.04em;}
+.brk-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.brk-round-hdr{display:flex;padding:5px 14px 2px;background:var(--surface);}
+.brk-rh-item{font-family:var(--mono);font-size:8px;color:var(--border2);text-transform:uppercase;letter-spacing:.05em;text-align:center;}
+.brk-area{padding:8px 14px 80px;overflow-x:auto;}
+.brk-tree{display:flex;align-items:flex-start;}
+.bmc{background:var(--card);border:1px solid var(--border);border-radius:7px;overflow:hidden;width:74px;cursor:pointer;transition:border-color .15s,transform .1s;flex-shrink:0;}
+.bmc:hover{border-color:var(--accent);transform:scale(1.03);}
+.bmc.blive{border-color:var(--red);}
+.bmc.blive::before{content:'';display:block;height:2px;background:var(--red);opacity:.7;}
+.bmc.bfinal{opacity:.85;}
+.bmc.btbd{opacity:.4;cursor:default;}
+.bmc:hover.btbd{transform:none;border-color:var(--border);}
+.btr{display:flex;align-items:center;padding:3px 5px;gap:3px;border-bottom:1px solid var(--border);min-height:22px;}
+.btr:last-child{border-bottom:none;}
+.btr.bwin{background:var(--green-d);}
+.btr.blos{opacity:.4;}
+.btr.bll{background:var(--red-d);}
+.bts{font-family:var(--mono);font-size:7px;color:var(--text3);width:9px;flex-shrink:0;text-align:right;}
+.btn{font-family:var(--sans);font-size:9px;font-weight:700;color:var(--text);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.btn.bw{color:var(--green);}.btn.bl{color:var(--red);}
+.bsc{font-family:var(--mono);font-size:8px;color:var(--text2);flex-shrink:0;}
+.bsc.blead{color:var(--green);font-weight:500;}
+.bsc.brl{color:var(--red);font-weight:500;}
+.btbd-card{width:74px;height:46px;background:var(--card);border:1px dashed var(--border);border-radius:7px;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;}
+.btbd-l{font-family:var(--mono);font-size:7px;color:var(--border2);}
+.btbd-t{font-family:var(--mono);font-size:8px;color:var(--text3);margin-top:2px;}
 .live-tag{display:flex;align-items:center;gap:5px}
 .live-dot{width:7px;height:7px;border-radius:50%;background:var(--red);animation:livePulse 1.2s ease infinite;flex-shrink:0}
 @keyframes livePulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.4;transform:scale(0.8)}}
@@ -507,6 +665,12 @@ body.light .spread-mini{background:#1A5FA812;color:#1A5FA8;border-color:#1A5FA84
     </div>
   </div>
 
+  <!-- HOME + BRACKET quick nav -->
+  <div style="display:flex;align-items:center;gap:5px;margin-bottom:8px">
+    <button id="homeNavBtn" class="home-nav-btn active" onclick="showHomePanel()">🏠 Home</button>
+    <button id="bracketNavBtn" class="home-nav-btn" onclick="showBracketPanel()">🏆 Bracket</button>
+  </div>
+
   <div class="week-bar" id="weekBar" style="display:flex;align-items:center;gap:8px"><span class="week-label" style="flex-shrink:0;min-width:28px">WEEK</span></div>
   <!-- DAY label + tabs aligned as a row -->
   <div style="display:flex;align-items:center;gap:8px">
@@ -515,7 +679,35 @@ body.light .spread-mini{background:#1A5FA812;color:#1A5FA8;border-color:#1A5FA84
   </div>
 </header>
 
-<div class="main" id="mainPanels"></div>
+<!-- HOME PANEL -->
+<div id="homePanel" class="main"></div>
+
+<!-- BRACKET PANEL -->
+<div id="bracketPanel" class="main" style="display:none"></div>
+
+<!-- GAME PANELS -->
+<div class="main" id="mainPanels" style="display:none"></div>
+<!-- VERSION FOOTER -->
+<div class="ver-footer" id="verFooter">
+  <div style="display:flex;align-items:center;gap:8px">
+    <button class="ver-badge" onclick="toggleDebugPanel()" title="Tap for diagnostics">v1.1</button>
+    <span class="ver-date">Mar 18, 2026</span>
+  </div>
+  <span class="ver-date">Madness '26 Bets</span>
+</div>
+
+<!-- DEBUG PANEL -->
+<div class="debug-overlay hidden" id="debugOverlay" onclick="if(event.target===this)toggleDebugPanel()">
+  <div class="debug-sheet">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div style="font-family:var(--mono);font-size:11px;font-weight:500;color:var(--text)">🔧 Diagnostics · v1.1</div>
+      <button onclick="toggleDebugPanel()" style="font-family:var(--mono);font-size:10px;color:var(--text3);background:none;border:none;cursor:pointer">✕ close</button>
+    </div>
+    <div id="debugContent" style="font-family:var(--mono);font-size:10px;color:var(--text2);line-height:1.7"></div>
+    <button onclick="runDiagnostics()" style="margin-top:10px;width:100%;padding:8px;background:var(--card2);border:1px solid var(--border);border-radius:8px;font-family:var(--mono);font-size:10px;color:var(--accent);cursor:pointer">↻ Re-run diagnostics</button>
+  </div>
+</div>
+
 <div class="disclaimer">⚠ Odds via AI + The Odds API + Kalshi · entertainment only · verify at sportsbook · gamble responsibly · 1-800-GAMBLER</div>
 
 <script>
@@ -858,6 +1050,25 @@ const EVENTS = [
       ]},
     ]
   },
+  { id:'nba-playoffs', icon:'🏀', name:'NBA Playoffs', sport:'NBA Playoffs', accent:'#C9553A', tz:'PT', tzFull:'America/Los_Angeles', oddsApiSport:'basketball_nba',
+    weeks:[
+      {label:'First Round', days:[
+        {key:'r1e',label:'R1 EAST',long:'First Round — Eastern Conference',round:'First Round'},
+        {key:'r1w',label:'R1 WEST',long:'First Round — Western Conference',round:'First Round'},
+      ]},
+      {label:'Conf Semis', days:[
+        {key:'cse',label:'SEMI E',long:'Conference Semifinals — East',round:'Conf. Semifinals'},
+        {key:'csw',label:'SEMI W',long:'Conference Semifinals — West',round:'Conf. Semifinals'},
+      ]},
+      {label:'Conf Finals', days:[
+        {key:'cfe',label:'CONF E',long:'Conference Finals — East',round:'Conf. Finals'},
+        {key:'cfw',label:'CONF F',long:'Conference Finals — West',round:'Conf. Finals'},
+      ]},
+      {label:'NBA Finals', days:[
+        {key:'fin',label:'FINALS',long:'NBA Finals',round:'NBA Finals'},
+      ]},
+    ]
+  },
 ];
 
 // ═══════════════════════════════════════════
@@ -1090,12 +1301,12 @@ function bootApp() {
   setAccent(ev.accent);
   const parts = ev.name.split(' '), last = parts.pop();
   document.getElementById('appLogo').innerHTML = (parts.length ? parts.join(' ')+' ' : '') + `<span>${last}</span>`;
-  const tzAbbr = getLocalTzAbbr();
   document.getElementById('eventSubtitle').textContent = ev.sport;
   updateSourcePills();
   buildWeekBar();
   renderWeek();
-  autoSelectToday();
+  // Start on home panel
+  showHomePanel();
 }
 
 function buildWeekBar() {
@@ -1310,14 +1521,110 @@ const STATIC_GAMES = {
        sharpAngle:'12-seeds are 8-4 ATS vs 5-seeds last 3 years. Akron is 29-5 and MAC champ — perfect mid-major profile to cover. Take Akron +4.5 and hammer the UNDER 132.5.'},
       {id:'g8',timeET:'9:40 PM ET',network:'truTV',region:'Midwest',
        away:{name:'Virginia Cavaliers',abbr:'UVA',seed:3,record:'29-5'},
-       home:{name:'Wright State Raiders',abbr:'WSU',seed:14,record:'23-11'},
+       home:{name:'Wright State Raiders',abbr:'WRST',seed:14,record:'23-11'},
        moneyline:{away:'-750',home:'+500'},
        spread:{line:-13.5,favTeam:'Virginia Cavaliers',juice:'-110'},
        total:{line:128.5,overJuice:'-110',underJuice:'-110'},
        firstHalf:{moneyline:{away:'-380',home:'+300'},spread:{line:-7.0,favTeam:'Virginia Cavaliers'},total:{line:62.5}},
        books:[{book:'DraftKings',awayML:'-750',homeML:'+500',spread:'-13.5',total:'128.5'},{book:'FanDuel',awayML:'-720',homeML:'+480',spread:'-13.5',total:'128.5'},{book:'BetMGM',awayML:'-750',homeML:'+520',spread:'-14.0',total:'129.0'},{book:'Caesars',awayML:'-750',homeML:'+500',spread:'-13.5',total:'128.0'},{book:'BetUS',awayML:'-730',homeML:'+490',spread:'-13.5',total:'129.0'}],
        playerProps:[{player:'Isaac McKneely',team:'Virginia',market:'Points',line:13.5,overOdds:'-108',underOdds:'-112'},{player:'Blake Buchanan',team:'Virginia',market:'Rebounds',line:6.5,overOdds:'-115',underOdds:'-105'}],
-       sharpAngle:'Lowest total of the day at 128.5. Virginia Pack Line holds opponents under 60 — UNDER is the strongest lean on the board. UVA wins but pace kills the OVER.'}
+       sharpAngle:'Lowest total of the day at 128.5. Virginia Pack Line holds opponents under 60 — UNDER is the strongest lean on the board. UVA wins but pace kills the OVER.'},
+      {id:'g9',timeET:'12:40 PM ET',network:'CBS',region:'South',
+       away:{name:'Nebraska Cornhuskers',abbr:'NEB',seed:4,record:'26-6'},
+       home:{name:'Troy Trojans',abbr:'TROY',seed:13,record:'22-11'},
+       moneyline:{away:'-500',home:'+390'},spread:{line:-10.5,favTeam:'Nebraska Cornhuskers',juice:'-110'},total:{line:143.5,overJuice:'-110',underJuice:'-110'},
+       firstHalf:{moneyline:{away:'-250',home:'+205'},spread:{line:-5.5,favTeam:'Nebraska Cornhuskers'},total:{line:71.5}},
+       books:[{book:'DraftKings',awayML:'-500',homeML:'+390',spread:'-10.5',total:'143.5'},{book:'FanDuel',awayML:'-490',homeML:'+380',spread:'-10.5',total:'143.5'},{book:'BetMGM',awayML:'-500',homeML:'+400',spread:'-11.0',total:'144.0'},{book:'Caesars',awayML:'-500',homeML:'+390',spread:'-10.5',total:'143.0'}],
+       playerProps:[{player:'Brice Williams',team:'Nebraska',market:'Points',line:18.5,overOdds:'-115',underOdds:'-105'},{player:'Dwayne Cofield Jr.',team:'Troy',market:'Points',line:15.5,overOdds:'-108',underOdds:'-112'}],
+       sharpAngle:'Nebraska seeks first NCAA Tournament win ever — motivation is real. Troy +10.5 has cover value — 13-seeds cover 48% of the time.'},
+      {id:'g10',timeET:'11:50 AM ET',network:'CBS',region:'Midwest',
+       away:{name:'Wisconsin Badgers',abbr:'WIS',seed:7,record:'23-9'},
+       home:{name:'High Point Panthers',abbr:'HP',seed:10,record:'26-7'},
+       moneyline:{away:'-185',home:'+155'},spread:{line:-3.5,favTeam:'Wisconsin Badgers',juice:'-110'},total:{line:138.5,overJuice:'-110',underJuice:'-110'},
+       firstHalf:{moneyline:{away:'-145',home:'+122'},spread:{line:-2.0,favTeam:'Wisconsin Badgers'},total:{line:67.5}},
+       books:[{book:'DraftKings',awayML:'-185',homeML:'+155',spread:'-3.5',total:'138.5'},{book:'FanDuel',awayML:'-182',homeML:'+152',spread:'-3.5',total:'138.5'},{book:'BetMGM',awayML:'-190',homeML:'+160',spread:'-4.0',total:'139.0'},{book:'Caesars',awayML:'-185',homeML:'+155',spread:'-3.5',total:'138.0'}],
+       playerProps:[{player:'John Blackwell',team:'Wisconsin',market:'Points',line:14.5,overOdds:'-110',underOdds:'-110'},{player:'Zymicah Culpepper',team:'High Point',market:'Points',line:18.5,overOdds:'-108',underOdds:'-112'}],
+       sharpAngle:'High Point is 26-7 and Big South champ — peaking at the right time. Wisconsin -3.5 is a tad high for a 7-10 matchup. HP +3.5 has cover value.'},
+      {id:'g11',timeET:'1:15 PM ET',network:'CBS',region:'Midwest',
+       away:{name:'Vanderbilt Commodores',abbr:'VAN',seed:5,record:'24-8'},
+       home:{name:'McNeese Cowboys',abbr:'MCNS',seed:12,record:'27-6'},
+       moneyline:{away:'-200',home:'+168'},spread:{line:-4.5,favTeam:'Vanderbilt Commodores',juice:'-110'},total:{line:139.5,overJuice:'-110',underJuice:'-110'},
+       firstHalf:{moneyline:{away:'-155',home:'+130'},spread:{line:-2.5,favTeam:'Vanderbilt Commodores'},total:{line:68.5}},
+       books:[{book:'DraftKings',awayML:'-200',homeML:'+168',spread:'-4.5',total:'139.5'},{book:'FanDuel',awayML:'-195',homeML:'+162',spread:'-4.5',total:'139.5'},{book:'BetMGM',awayML:'-205',homeML:'+172',spread:'-5.0',total:'140.0'},{book:'Caesars',awayML:'-200',homeML:'+168',spread:'-4.5',total:'139.0'}],
+       playerProps:[{player:'Jason Edwards',team:'Vanderbilt',market:'Points',line:17.5,overOdds:'-112',underOdds:'-108'},{player:'Harlan Beverly',team:'McNeese',market:'Points',line:16.5,overOdds:'-108',underOdds:'-112'}],
+       sharpAngle:'Vanderbilt beat Florida in the SEC Tourney — this team is peaking. McNeese is a dangerous 12-seed but Vandy has the talent edge. VAN -4.5 is the play.'},
+      {id:'g12',timeET:'1:25 PM ET',network:'TBS',region:'Midwest',
+       away:{name:'Arkansas Razorbacks',abbr:'ARK',seed:4,record:'26-8'},
+       home:{name:"Hawaii Rainbow Warriors",abbr:'HAW',seed:13,record:'24-8'},
+       moneyline:{away:'-420',home:'+335'},spread:{line:-8.5,favTeam:'Arkansas Razorbacks',juice:'-110'},total:{line:148.5,overJuice:'-110',underJuice:'-110'},
+       firstHalf:{moneyline:{away:'-210',home:'+175'},spread:{line:-4.5,favTeam:'Arkansas Razorbacks'},total:{line:74.5}},
+       books:[{book:'DraftKings',awayML:'-420',homeML:'+335',spread:'-8.5',total:'148.5'},{book:'FanDuel',awayML:'-410',homeML:'+325',spread:'-8.5',total:'148.5'},{book:'BetMGM',awayML:'-425',homeML:'+340',spread:'-9.0',total:'149.0'},{book:'Caesars',awayML:'-420',homeML:'+335',spread:'-8.5',total:'148.0'}],
+       playerProps:[{player:'Adou Thiero',team:'Arkansas',market:'Points',line:16.5,overOdds:'-112',underOdds:'-108'},{player:'Johnn Nijssen',team:"Hawaii",market:'Points',line:14.5,overOdds:'-108',underOdds:'-112'}],
+       sharpAngle:"Arkansas is hot — won the SEC Tournament. Hawaii +8.5 has cover value in a high-scoring game. Both teams shoot well from 3."},
+      {id:'g13',timeET:'3:50 PM ET',network:'TBS',region:'East',
+       away:{name:'North Carolina Tar Heels',abbr:'UNC',seed:2,record:'28-7'},
+       home:{name:'VCU Rams',abbr:'VCU',seed:15,record:'24-10'},
+       moneyline:{away:'-1800',home:'+950'},spread:{line:-17.0,favTeam:'North Carolina Tar Heels',juice:'-110'},total:{line:146.5,overJuice:'-110',underJuice:'-110'},
+       firstHalf:{moneyline:{away:'-700',home:'+500'},spread:{line:-9.0,favTeam:'North Carolina Tar Heels'},total:{line:73.0}},
+       books:[{book:'DraftKings',awayML:'-1800',homeML:'+950',spread:'-17.0',total:'146.5'},{book:'FanDuel',awayML:'-1700',homeML:'+900',spread:'-17.0',total:'146.5'},{book:'BetMGM',awayML:'-1800',homeML:'+1000',spread:'-17.5',total:'147.0'},{book:'Caesars',awayML:'-1800',homeML:'+950',spread:'-17.0',total:'146.0'}],
+       playerProps:[{player:'RJ Davis',team:'UNC',market:'Points',line:18.5,overOdds:'-115',underOdds:'-105'},{player:'Adrian Baldwin',team:'VCU',market:'Points',line:14.5,overOdds:'-108',underOdds:'-112'}],
+       sharpAngle:'UNC -17.0 is reasonable but the OVER 146.5 is the sharper play. UNC runs fast and VCU will push pace trying to keep up. OVER has strong value.'},
+      {id:'g14',timeET:'4:10 PM ET',network:'TBS',region:'Midwest',
+       away:{name:'Michigan Wolverines',abbr:'MICH',seed:1,record:'31-3'},
+       home:{name:'Howard Bison',abbr:'HOW',seed:16,record:'23-10'},
+       moneyline:{away:'-4500',home:'+2000'},spread:{line:-20.5,favTeam:'Michigan Wolverines',juice:'-110'},total:{line:144.5,overJuice:'-110',underJuice:'-110'},
+       firstHalf:{moneyline:{away:'-800',home:'+550'},spread:{line:-10.5,favTeam:'Michigan Wolverines'},total:{line:71.5}},
+       books:[{book:'DraftKings',awayML:'-4500',homeML:'+2000',spread:'-20.5',total:'144.5'},{book:'FanDuel',awayML:'-4200',homeML:'+1900',spread:'-20.5',total:'144.5'},{book:'BetMGM',awayML:'-5000',homeML:'+2200',spread:'-21.0',total:'145.0'},{book:'Caesars',awayML:'-4500',homeML:'+2000',spread:'-20.5',total:'144.0'}],
+       playerProps:[{player:'Tre Donaldson',team:'Michigan',market:'Points',line:17.5,overOdds:'-115',underOdds:'-105'},{player:'Danny Wolf',team:'Michigan',market:'Rebounds',line:9.5,overOdds:'-110',underOdds:'-110'},{player:'Elliot Cadeau',team:'Michigan',market:'Assists',line:5.5,overOdds:'-108',underOdds:'-112'}],
+       sharpAngle:'Howard won the First Four and is riding momentum. Michigan lost key reserve LJ Cason to injury. HOW +20.5 has cover value — same profile as 2018 UMBC team.'},
+      {id:'g15',timeET:'4:25 PM ET',network:'TNT',region:'West',
+       away:{name:'BYU Cougars',abbr:'BYU',seed:5,record:'24-9'},
+       home:{name:'Texas Longhorns',abbr:'TEX',seed:11,record:'18-15'},
+       moneyline:{away:'-175',home:'+148'},spread:{line:-3.5,favTeam:'BYU Cougars',juice:'-110'},total:{line:138.5,overJuice:'-110',underJuice:'-110'},
+       firstHalf:{moneyline:{away:'-140',home:'+118'},spread:{line:-2.0,favTeam:'BYU Cougars'},total:{line:68.5}},
+       books:[{book:'DraftKings',awayML:'-175',homeML:'+148',spread:'-3.5',total:'138.5'},{book:'FanDuel',awayML:'-172',homeML:'+144',spread:'-3.5',total:'138.5'},{book:'BetMGM',awayML:'-180',homeML:'+155',spread:'-4.0',total:'139.0'},{book:'Caesars',awayML:'-175',homeML:'+148',spread:'-3.5',total:'138.0'}],
+       playerProps:[{player:'Trevin Knell',team:'BYU',market:'Points',line:16.5,overOdds:'-110',underOdds:'-110'},{player:'Arterio Morris',team:'Texas',market:'Points',line:15.5,overOdds:'-108',underOdds:'-112'}],
+       sharpAngle:'Texas won the First Four and is a dangerous 11-seed. BYU -3.5 is the safe play but Texas +3.5 has cover value — motivated team riding momentum.'},
+      {id:'g16',timeET:'4:35 PM ET',network:'TNT',region:'West',
+       away:{name:"Saint Mary's Gaels",abbr:'SMC',seed:4,record:'28-5'},
+       home:{name:'Texas A&M Aggies',abbr:'TXAM',seed:13,record:'21-13'},
+       moneyline:{away:'-320',home:'+260'},spread:{line:-7.5,favTeam:"Saint Mary's Gaels",juice:'-110'},total:{line:142.5,overJuice:'-110',underJuice:'-110'},
+       firstHalf:{moneyline:{away:'-155',home:'+130'},spread:{line:-4.0,favTeam:"Saint Mary's Gaels"},total:{line:70.5}},
+       books:[{book:'DraftKings',awayML:'-320',homeML:'+260',spread:'-7.5',total:'142.5'},{book:'FanDuel',awayML:'-315',homeML:'+255',spread:'-7.5',total:'142.5'},{book:'BetMGM',awayML:'-325',homeML:'+270',spread:'-8.0',total:'143.0'},{book:'Caesars',awayML:'-320',homeML:'+260',spread:'-7.5',total:'142.0'}],
+       playerProps:[{player:'Augustas Marciulionis',team:"Saint Mary's",market:'Points',line:15.5,overOdds:'-112',underOdds:'-108'},{player:'Wade Taylor IV',team:'Texas A&M',market:'Points',line:17.5,overOdds:'-108',underOdds:'-112'}],
+       sharpAngle:"Saint Mary's is one of the most efficient offenses in the country. TXAM struggled down the stretch. SMC -7.5 covers comfortably."},
+      {id:'g17',timeET:'6:25 PM ET',network:'TNT',region:'South',
+       away:{name:'Illinois Fighting Illini',abbr:'ILL',seed:6,record:'22-11'},
+       home:{name:'Penn Quakers',abbr:'PENN',seed:11,record:'21-10'},
+       moneyline:{away:'-220',home:'+182'},spread:{line:-4.5,favTeam:'Illinois Fighting Illini',juice:'-110'},total:{line:136.5,overJuice:'-110',underJuice:'-110'},
+       firstHalf:{moneyline:{away:'-165',home:'+138'},spread:{line:-2.5,favTeam:'Illinois Fighting Illini'},total:{line:66.5}},
+       books:[{book:'DraftKings',awayML:'-220',homeML:'+182',spread:'-4.5',total:'136.5'},{book:'FanDuel',awayML:'-215',homeML:'+178',spread:'-4.5',total:'136.5'},{book:'BetMGM',awayML:'-225',homeML:'+185',spread:'-5.0',total:'137.0'},{book:'Caesars',awayML:'-220',homeML:'+182',spread:'-4.5',total:'136.0'}],
+       playerProps:[{player:'Kasparas Jakucionis',team:'Illinois',market:'Points',line:15.5,overOdds:'-112',underOdds:'-108'},{player:'Nick Spinosa',team:'Penn',market:'Points',line:13.5,overOdds:'-108',underOdds:'-112'}],
+       sharpAngle:'Illinois has the athleticism and depth edge. Penn is a dangerous Ivy team but ILL controls the pace. ILL -4.5 is the solid play.'},
+      {id:'g18',timeET:'6:45 PM ET',network:'TNT',region:'Midwest',
+       away:{name:'Georgia Bulldogs',abbr:'UGA',seed:8,record:'22-10'},
+       home:{name:'Saint Louis Billikens',abbr:'SLU',seed:9,record:'28-5'},
+       moneyline:{away:'+105',home:'-125'},spread:{line:1.5,favTeam:'Saint Louis Billikens',juice:'-110'},total:{line:138.5,overJuice:'-110',underJuice:'-110'},
+       firstHalf:{moneyline:{away:'+110',home:'-130'},spread:{line:1.0,favTeam:'Saint Louis Billikens'},total:{line:67.5}},
+       books:[{book:'DraftKings',awayML:'+105',homeML:'-125',spread:'+1.5',total:'138.5'},{book:'FanDuel',awayML:'+108',homeML:'-128',spread:'+1.5',total:'138.5'},{book:'BetMGM',awayML:'+110',homeML:'-130',spread:'+2.0',total:'139.0'},{book:'Caesars',awayML:'+105',homeML:'-125',spread:'+1.5',total:'138.0'}],
+       playerProps:[{player:'RJ Melendez',team:'Georgia',market:'Points',line:14.5,overOdds:'-110',underOdds:'-110'},{player:"JaVonte Smart",team:'Saint Louis',market:'Points',line:16.5,overOdds:'-112',underOdds:'-108'}],
+       sharpAngle:'Saint Louis is 28-5 and A-10 Champion — one of the most underrated teams in the field. SLU -1.5 at home is a strong value play.'},
+      {id:'g19',timeET:'7:00 PM ET',network:'truTV',region:'West',
+       away:{name:'Gonzaga Bulldogs',abbr:'GONZ',seed:3,record:'30-3'},
+       home:{name:'Kennesaw State Owls',abbr:'KENN',seed:14,record:'21-13'},
+       moneyline:{away:'-1100',home:'+650'},spread:{line:-16.5,favTeam:'Gonzaga Bulldogs',juice:'-110'},total:{line:153.5,overJuice:'-110',underJuice:'-110'},
+       firstHalf:{moneyline:{away:'-550',home:'+400'},spread:{line:-8.5,favTeam:'Gonzaga Bulldogs'},total:{line:77.5}},
+       books:[{book:'DraftKings',awayML:'-1100',homeML:'+650',spread:'-16.5',total:'153.5'},{book:'FanDuel',awayML:'-1050',homeML:'+620',spread:'-16.5',total:'153.5'},{book:'BetMGM',awayML:'-1100',homeML:'+700',spread:'-17.0',total:'154.0'},{book:'Caesars',awayML:'-1100',homeML:'+650',spread:'-16.5',total:'153.0'}],
+       playerProps:[{player:'Ryan Nembhard',team:'Gonzaga',market:'Points',line:17.5,overOdds:'-110',underOdds:'-110'},{player:'Graham Ike',team:'Gonzaga',market:'Rebounds',line:9.5,overOdds:'-108',underOdds:'-112'}],
+       sharpAngle:'Gonzaga runs one of the fastest paces in the country — OVER 153.5 is live. Ryan Nembhard OVER 17.5 points is a strong prop. Gonzaga covers easily.'},
+      {id:'g20',timeET:'7:10 PM ET',network:'truTV',region:'South',
+       away:{name:'Houston Cougars',abbr:'HOU',seed:2,record:'28-6'},
+       home:{name:'Idaho Vandals',abbr:'IDHO',seed:15,record:'21-14'},
+       moneyline:{away:'-2200',home:'+1100'},spread:{line:-17.5,favTeam:'Houston Cougars',juice:'-110'},total:{line:136.5,overJuice:'-110',underJuice:'-110'},
+       firstHalf:{moneyline:{away:'-650',home:'+460'},spread:{line:-9.0,favTeam:'Houston Cougars'},total:{line:66.5}},
+       books:[{book:'DraftKings',awayML:'-2200',homeML:'+1100',spread:'-17.5',total:'136.5'},{book:'FanDuel',awayML:'-2000',homeML:'+1050',spread:'-17.5',total:'136.5'},{book:'BetMGM',awayML:'-2200',homeML:'+1200',spread:'-18.0',total:'137.0'},{book:'Caesars',awayML:'-2200',homeML:'+1100',spread:'-17.5',total:'136.0'}],
+       playerProps:[{player:'Milos Uzan',team:'Houston',market:'Points',line:15.5,overOdds:'-112',underOdds:'-108'},{player:'JWan Roberts',team:'Houston',market:'Rebounds',line:8.5,overOdds:'-115',underOdds:'-105'}],
+       sharpAngle:"Houston's pack defense limits opponents to 58 pts. Lowest total on the slate. Idaho can't score against elite defenses. Houston -17.5 and UNDER 136.5."}
     ]
   },
   'ncaam-w1_fri': {
@@ -1443,6 +1750,80 @@ const STATIC_GAMES = {
        books:[{book:'DraftKings',awayML:'-500',homeML:'+390',spread:'-10.5',total:'150.5'},{book:'FanDuel',awayML:'-490',homeML:'+380',spread:'-10.5',total:'150.5'},{book:'BetMGM',awayML:'-500',homeML:'+400',spread:'-11.0',total:'151.0'},{book:'Caesars',awayML:'-500',homeML:'+390',spread:'-10.5',total:'150.0'},{book:'BetUS',awayML:'-490',homeML:'+385',spread:'-10.5',total:'150.5'}],
        playerProps:[{player:'Brayden Burries',team:'Arizona',market:'Points',line:20.5,overOdds:'-115',underOdds:'-105'},{player:'Koa Peat',team:'Arizona',market:'Points',line:18.5,overOdds:'-110',underOdds:'-110'}],
        sharpAngle:'Second round opponent TBD — refresh Sunday morning for live updated matchup and odds once Friday results are in.'}
+    ]
+  },
+  'ncaam-w1_thu2': {
+    day:'Thursday, March 26, 2026', round:'Sweet 16 — Regional Semifinals',
+    games:[
+      {id:'s16-1',timeET:'TBD',network:'CBS',region:'East',
+       away:{name:'TBD',abbr:'TBD',seed:'?',record:'TBD'},home:{name:'TBD',abbr:'TBD',seed:'?',record:'TBD'},
+       moneyline:{away:'TBD',home:'TBD'},spread:{line:0,favTeam:'TBD',juice:'-110'},total:{line:0,overJuice:'-110',underJuice:'-110'},
+       books:[],playerProps:[],sharpAngle:'Sweet 16 matchup TBD — check back once Second Round results are in.'},
+      {id:'s16-2',timeET:'TBD',network:'TBS',region:'Midwest',
+       away:{name:'TBD',abbr:'TBD',seed:'?',record:'TBD'},home:{name:'TBD',abbr:'TBD',seed:'?',record:'TBD'},
+       moneyline:{away:'TBD',home:'TBD'},spread:{line:0,favTeam:'TBD',juice:'-110'},total:{line:0,overJuice:'-110',underJuice:'-110'},
+       books:[],playerProps:[],sharpAngle:'Sweet 16 matchup TBD — check back once Second Round results are in.'}
+    ]
+  },
+  'ncaam-w1_fri2': {
+    day:'Friday, March 27, 2026', round:'Sweet 16 — Regional Semifinals',
+    games:[
+      {id:'s16-3',timeET:'TBD',network:'CBS',region:'West',
+       away:{name:'TBD',abbr:'TBD',seed:'?',record:'TBD'},home:{name:'TBD',abbr:'TBD',seed:'?',record:'TBD'},
+       moneyline:{away:'TBD',home:'TBD'},spread:{line:0,favTeam:'TBD',juice:'-110'},total:{line:0,overJuice:'-110',underJuice:'-110'},
+       books:[],playerProps:[],sharpAngle:'Sweet 16 matchup TBD — check back once Second Round results are in.'},
+      {id:'s16-4',timeET:'TBD',network:'TBS',region:'South',
+       away:{name:'TBD',abbr:'TBD',seed:'?',record:'TBD'},home:{name:'TBD',abbr:'TBD',seed:'?',record:'TBD'},
+       moneyline:{away:'TBD',home:'TBD'},spread:{line:0,favTeam:'TBD',juice:'-110'},total:{line:0,overJuice:'-110',underJuice:'-110'},
+       books:[],playerProps:[],sharpAngle:'Sweet 16 matchup TBD — check back once Second Round results are in.'}
+    ]
+  },
+  'ncaam-w1_sat2': {
+    day:'Saturday, March 28, 2026', round:'Elite Eight — Regional Finals',
+    games:[
+      {id:'e8-1',timeET:'TBD',network:'CBS',region:'East',
+       away:{name:'TBD',abbr:'TBD',seed:'?',record:'TBD'},home:{name:'TBD',abbr:'TBD',seed:'?',record:'TBD'},
+       moneyline:{away:'TBD',home:'TBD'},spread:{line:0,favTeam:'TBD',juice:'-110'},total:{line:0,overJuice:'-110',underJuice:'-110'},
+       books:[],playerProps:[],sharpAngle:'Elite Eight matchup TBD — check back once Sweet 16 results are in.'},
+      {id:'e8-2',timeET:'TBD',network:'TBS',region:'South',
+       away:{name:'TBD',abbr:'TBD',seed:'?',record:'TBD'},home:{name:'TBD',abbr:'TBD',seed:'?',record:'TBD'},
+       moneyline:{away:'TBD',home:'TBD'},spread:{line:0,favTeam:'TBD',juice:'-110'},total:{line:0,overJuice:'-110',underJuice:'-110'},
+       books:[],playerProps:[],sharpAngle:'Elite Eight matchup TBD — check back once Sweet 16 results are in.'}
+    ]
+  },
+  'ncaam-w1_sun2': {
+    day:'Sunday, March 29, 2026', round:'Elite Eight — Regional Finals',
+    games:[
+      {id:'e8-3',timeET:'TBD',network:'CBS',region:'West',
+       away:{name:'TBD',abbr:'TBD',seed:'?',record:'TBD'},home:{name:'TBD',abbr:'TBD',seed:'?',record:'TBD'},
+       moneyline:{away:'TBD',home:'TBD'},spread:{line:0,favTeam:'TBD',juice:'-110'},total:{line:0,overJuice:'-110',underJuice:'-110'},
+       books:[],playerProps:[],sharpAngle:'Elite Eight matchup TBD — check back once Sweet 16 results are in.'},
+      {id:'e8-4',timeET:'TBD',network:'TBS',region:'Midwest',
+       away:{name:'TBD',abbr:'TBD',seed:'?',record:'TBD'},home:{name:'TBD',abbr:'TBD',seed:'?',record:'TBD'},
+       moneyline:{away:'TBD',home:'TBD'},spread:{line:0,favTeam:'TBD',juice:'-110'},total:{line:0,overJuice:'-110',underJuice:'-110'},
+       books:[],playerProps:[],sharpAngle:'Elite Eight matchup TBD — check back once Sweet 16 results are in.'}
+    ]
+  },
+  'ncaam-w1_sat3': {
+    day:'Saturday, April 4, 2026', round:'Final Four — San Antonio, TX',
+    games:[
+      {id:'ff-1',timeET:'TBD',network:'CBS',region:'East vs West',
+       away:{name:'TBD',abbr:'TBD',seed:'?',record:'TBD'},home:{name:'TBD',abbr:'TBD',seed:'?',record:'TBD'},
+       moneyline:{away:'TBD',home:'TBD'},spread:{line:0,favTeam:'TBD',juice:'-110'},total:{line:0,overJuice:'-110',underJuice:'-110'},
+       books:[],playerProps:[],sharpAngle:'Final Four matchup TBD — check back once Elite Eight results are in.'},
+      {id:'ff-2',timeET:'TBD',network:'CBS',region:'South vs Midwest',
+       away:{name:'TBD',abbr:'TBD',seed:'?',record:'TBD'},home:{name:'TBD',abbr:'TBD',seed:'?',record:'TBD'},
+       moneyline:{away:'TBD',home:'TBD'},spread:{line:0,favTeam:'TBD',juice:'-110'},total:{line:0,overJuice:'-110',underJuice:'-110'},
+       books:[],playerProps:[],sharpAngle:'Final Four matchup TBD — check back once Elite Eight results are in.'}
+    ]
+  },
+  'ncaam-w1_mon3': {
+    day:'Monday, April 6, 2026', round:'National Championship — San Antonio, TX',
+    games:[
+      {id:'champ',timeET:'TBD',network:'CBS',region:'Championship',
+       away:{name:'TBD',abbr:'TBD',seed:'?',record:'TBD'},home:{name:'TBD',abbr:'TBD',seed:'?',record:'TBD'},
+       moneyline:{away:'TBD',home:'TBD'},spread:{line:0,favTeam:'TBD',juice:'-110'},total:{line:0,overJuice:'-110',underJuice:'-110'},
+       books:[],playerProps:[],sharpAngle:'National Championship matchup TBD — check back once Final Four results are in.'}
     ]
   }
 };
@@ -2022,7 +2403,653 @@ function dismissNudge() {
 // ═══════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════
-document.addEventListener('DOMContentLoaded', () => { bootApp(); initTheme(); initNudge(); startScorePolling(); });
+// ═══════════════════════════════════════════
+// REVISION HISTORY
+// v1.0 — Mar 16 2026 — Initial build: live scores, day tabs, light/dark mode
+// v1.1 — Mar 18 2026 — Home tab, Bracket tab, abbr crosscheck, NBA Playoffs,
+//                       BYU vs TEX fix, Sweet16/E8/F4 shells, debug panel,
+//                       version footer, sport-aware homepage
+// ═══════════════════════════════════════════
+
+// ═══════════════════════════════════════════
+// ABBREVIATION CROSSCHECK SYSTEM
+// Fetches ESPN bracket data on load to build a
+// dynamic normalization map — no manual maintenance needed
+// ═══════════════════════════════════════════
+let ABBR_MAP = {};          // ESPN abbr → our static abbr
+let ESPN_TEAMS = {};        // espnAbbr → { fullName, espnAbbr }
+let abbrMapReady = false;
+
+async function buildAbbrMap() {
+  try {
+    // Fetch ESPN tournament scoreboard which returns full team names + abbrs
+    const url = 'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?limit=100&groups=100';
+    const r = await fetch(url);
+    const data = await r.json();
+    const events = data.events || [];
+
+    // Build ESPN team registry: abbr → full name
+    for (const ev of events) {
+      const comp = ev.competitions?.[0];
+      if (!comp) continue;
+      for (const c of comp.competitors || []) {
+        const t = c.team;
+        if (t?.abbreviation) {
+          ESPN_TEAMS[t.abbreviation.toUpperCase()] = {
+            fullName: t.displayName || t.name || t.abbreviation,
+            espnAbbr: t.abbreviation.toUpperCase(),
+          };
+        }
+      }
+    }
+
+    // Now cross-check against our static game data
+    const staticAbbrs = getAllStaticAbbrs();
+    let mapped = 0, mismatches = 0;
+
+    for (const sa of staticAbbrs) {
+      const upper = sa.toUpperCase();
+      if (ESPN_TEAMS[upper]) {
+        // Exact match — no mapping needed
+        mapped++;
+      } else {
+        // Try fuzzy: find ESPN team whose full name contains our abbr as substring
+        const fuzzyMatch = Object.values(ESPN_TEAMS).find(t =>
+          t.fullName.toUpperCase().includes(upper) ||
+          upper.includes(t.espnAbbr.replace(/[^A-Z]/g,'').substring(0,3))
+        );
+        if (fuzzyMatch) {
+          ABBR_MAP[fuzzyMatch.espnAbbr] = upper;  // ESPN abbr → our abbr
+          ABBR_MAP[upper] = fuzzyMatch.espnAbbr;  // our abbr → ESPN abbr
+          mismatches++;
+          console.warn(`[AbbrMap] Mismatch: static="${upper}" ESPN="${fuzzyMatch.espnAbbr}" (${fuzzyMatch.fullName})`);
+        }
+      }
+    }
+
+    abbrMapReady = true;
+    console.log(`[AbbrMap] Ready — ${mapped} exact, ${mismatches} remapped, ${Object.keys(ESPN_TEAMS).length} ESPN teams loaded`);
+    runDiagnostics();
+  } catch(e) {
+    console.warn('[AbbrMap] Build failed:', e.message);
+    abbrMapReady = true; // continue without map
+  }
+}
+
+function getAllStaticAbbrs() {
+  const abbrs = new Set();
+  for (const key of Object.keys(STATIC_GAMES)) {
+    const day = STATIC_GAMES[key];
+    for (const g of day.games || []) {
+      if (g.away?.abbr) abbrs.add(g.away.abbr.toUpperCase());
+      if (g.home?.abbr) abbrs.add(g.home.abbr.toUpperCase());
+    }
+  }
+  return [...abbrs];
+}
+
+function normalizeAbbr(abbr) {
+  if (!abbr) return '';
+  const u = abbr.toUpperCase();
+  return ABBR_MAP[u] || u;
+}
+
+// ═══════════════════════════════════════════
+// ENHANCED SCORE MATCHING — uses abbr map + fuzzy fallback
+// ═══════════════════════════════════════════
+function getGameScore(g) {
+  const rawA = (g.away?.abbr || '').toUpperCase();
+  const rawH = (g.home?.abbr || '').toUpperCase();
+  // Try original
+  let score = liveScores[rawA+'-'+rawH] || liveScores[rawH+'-'+rawA] ||
+               liveScores[rawA+rawH]     || liveScores[rawH+rawA];
+  if (score) return score;
+  // Try normalized via abbr map
+  const normA = normalizeAbbr(rawA);
+  const normH = normalizeAbbr(rawH);
+  if (normA !== rawA || normH !== rawH) {
+    score = liveScores[normA+'-'+normH] || liveScores[normH+'-'+normA] ||
+             liveScores[normA+normH]     || liveScores[normH+normA];
+    if (score) return score;
+  }
+  // Fuzzy: strip non-alpha and try 3-char prefix
+  const fuzA = rawA.replace(/[^A-Z]/g,'');
+  const fuzH = rawH.replace(/[^A-Z]/g,'');
+  for (const key of Object.keys(liveScores)) {
+    const k = key.replace(/[^A-Z]/g,'');
+    if (k === fuzA+fuzH || k === fuzH+fuzA) return liveScores[key];
+  }
+  return null;
+}
+
+// ═══════════════════════════════════════════
+// DEBUG / DIAGNOSTICS PANEL
+// ═══════════════════════════════════════════
+function toggleDebugPanel() {
+  const el = document.getElementById('debugOverlay');
+  el.classList.toggle('hidden');
+  if (!el.classList.contains('hidden')) runDiagnostics();
+}
+
+function runDiagnostics() {
+  const lines = [];
+  lines.push(`<div style="color:var(--text3);margin-bottom:8px">Run: ${new Date().toLocaleTimeString()}</div>`);
+
+  // Abbr map status
+  lines.push(`<div class="debug-${abbrMapReady?'ok':'warn'}">AbbrMap: ${abbrMapReady?'✓ Ready':'⏳ Loading'} — ${Object.keys(ESPN_TEAMS).length} ESPN teams, ${Object.keys(ABBR_MAP).length/2|0} remapped</div>`);
+
+  // Live score match status
+  const allGames = [];
+  for (const key of Object.keys(STATIC_GAMES)) {
+    for (const g of STATIC_GAMES[key].games || []) allGames.push({...g, _dayKey: key});
+  }
+
+  const liveCount = Object.keys(liveScores).length / 4 | 0;
+  lines.push(`<div style="margin-top:8px;color:var(--text3)">Live scores: ${liveCount} games from ESPN</div>`);
+
+  if (liveCount > 0) {
+    lines.push(`<div style="margin-top:6px;margin-bottom:4px;color:var(--text3)">Match check (today's games):</div>`);
+    const todayGames = allGames.filter(g => {
+      const d = new Date();
+      const mo = d.getMonth(), da = d.getDate();
+      const keyMap = {'2-17':'tue','2-18':'wed','2-19':'thu','2-20':'fri','2-21':'sat','2-22':'sun'};
+      return g._dayKey === `ncaam-w1_${keyMap[mo+'-'+da]||''}`;
+    });
+    if (todayGames.length === 0) {
+      lines.push(`<div class="debug-warn">No today games found in static data for current date</div>`);
+    }
+    for (const g of todayGames) {
+      const a = (g.away?.abbr||'').toUpperCase();
+      const h = (g.home?.abbr||'').toUpperCase();
+      const score = getGameScore(g);
+      const status = score
+        ? `<span class="debug-ok">✓ ${score.status} ${score.awayScore??''}-${score.homeScore??''}</span>`
+        : `<span class="debug-fail">✗ No match (looking for ${a} vs ${h})</span>`;
+      lines.push(`<div>${a} vs ${h}: ${status}</div>`);
+    }
+  }
+
+  // Known mismatch log
+  const mismatches = Object.entries(ABBR_MAP).filter(([k,v])=>k!==v).slice(0,10);
+  if (mismatches.length) {
+    lines.push(`<div style="margin-top:8px;color:var(--text3)">Auto-remapped:</div>`);
+    for (const [k,v] of mismatches) {
+      if (k < v) lines.push(`<div class="debug-warn">⚡ ${k} ↔ ${v}</div>`);
+    }
+  }
+
+  document.getElementById('debugContent').innerHTML = lines.join('');
+}
+
+// ═══════════════════════════════════════════
+// PANEL SWITCHING — Home / Bracket / Game days
+// ═══════════════════════════════════════════
+let activeMainView = 'home'; // 'home' | 'bracket' | 'games'
+
+function showHomePanel() {
+  activeMainView = 'home';
+  document.getElementById('homePanel').style.display = '';
+  document.getElementById('bracketPanel').style.display = 'none';
+  document.getElementById('mainPanels').style.display = 'none';
+  document.getElementById('homeNavBtn').classList.add('active');
+  document.getElementById('bracketNavBtn').classList.remove('active');
+  document.querySelectorAll('.day-tab').forEach(t => t.classList.remove('active'));
+  renderHome();
+}
+
+function showBracketPanel() {
+  activeMainView = 'bracket';
+  document.getElementById('homePanel').style.display = 'none';
+  document.getElementById('bracketPanel').style.display = '';
+  document.getElementById('mainPanels').style.display = 'none';
+  document.getElementById('homeNavBtn').classList.remove('active');
+  document.getElementById('bracketNavBtn').classList.add('active');
+  document.querySelectorAll('.day-tab').forEach(t => t.classList.remove('active'));
+  renderBracketPanel();
+}
+
+function showGamesPanel() {
+  activeMainView = 'games';
+  document.getElementById('homePanel').style.display = 'none';
+  document.getElementById('bracketPanel').style.display = 'none';
+  document.getElementById('mainPanels').style.display = '';
+  document.getElementById('homeNavBtn').classList.remove('active');
+  document.getElementById('bracketNavBtn').classList.remove('active');
+}
+
+// Override switchDay to show games panel first
+const _origSwitchDay = typeof switchDay !== 'undefined' ? switchDay : null;
+
+// ═══════════════════════════════════════════
+// HOME PANEL — sport-aware rendering
+// ═══════════════════════════════════════════
+function renderHome() {
+  const ev = getActiveEvent();
+  const panel = document.getElementById('homePanel');
+  if (ev.id === 'nba-playoffs') {
+    panel.innerHTML = buildNBAHome();
+  } else if (ev.id === 'ncaam-w1') {
+    panel.innerHTML = buildNCAAHome();
+  } else {
+    panel.innerHTML = buildGenericHome(ev);
+  }
+}
+
+function buildNCAAHome() {
+  // Count live/final/upcoming from liveScores
+  const games = Object.values(liveScores);
+  const liveGames  = games.filter((g,i) => i%4===0 && g.status==='live');
+  const finalGames = games.filter((g,i) => i%4===0 && g.status==='final');
+
+  // Build live strip from liveScores
+  let liveStrip = '';
+  const seen = new Set();
+  for (const g of Object.values(liveScores)) {
+    if (seen.has(g.id||g.away+g.home)) continue;
+    seen.add(g.id||g.away+g.home);
+    if (g.status === 'live') {
+      liveStrip += `<div class="hlc">
+        <div class="hlc-tag"><div class="live-dot"></div><div class="hlc-t">LIVE · ${g.period||''}</div><div class="hlc-clk">${g.clock||''}</div></div>
+        <div class="hlc-row"><div class="hlc-name">${g.away}</div><div class="hlc-sc ${g.awayScore>g.homeScore?'lead':''}">${g.awayScore}</div></div>
+        <div class="hlc-row"><div class="hlc-name">${g.home}</div><div class="hlc-sc ${g.homeScore>g.awayScore?'lead':''}">${g.homeScore}</div></div>
+        <div class="hlc-net">${g.network||''}</div>
+      </div>`;
+    } else if (g.status === 'final') {
+      const aw = g.awayScore > g.homeScore;
+      liveStrip += `<div class="hfc">
+        <div class="hfc-tag">FINAL</div>
+        <div class="hlc-row"><div class="hlc-name" style="${aw?'color:var(--green)':''}">${g.away}</div><div class="hlc-sc ${aw?'lead':''}">${g.awayScore}</div></div>
+        <div class="hlc-row"><div class="hlc-name" style="${!aw?'color:var(--green)':''}">${g.home}</div><div class="hlc-sc ${!aw?'lead':''}">${g.homeScore}</div></div>
+      </div>`;
+    }
+  }
+  if (!liveStrip) liveStrip = `<div style="font-family:var(--mono);font-size:11px;color:var(--text3);padding:12px 14px">No live games right now — check back at tip-off</div>`;
+
+  // Tournament schedule rows
+  const today = new Date();
+  const mo = today.getMonth(), da = today.getDate();
+  function schedStatus(month, day) {
+    if (mo > month || (mo===month && da > day)) return 'done';
+    if (mo===month && da===day) return 'live';
+    if (mo===month && da===day+1) return 'next';
+    return 'soon';
+  }
+  const s = (m,d) => {
+    const st = schedStatus(m,d);
+    const labels = {done:'✓ Done',live:'🔴 Now',next:'Tomorrow',soon:'Upcoming'};
+    return `<span class="hs-badge ${st}">${labels[st]}</span>`;
+  };
+
+  return `
+  <div style="padding-bottom:80px">
+    <!-- Hero -->
+    <div class="home-hero">
+      <div class="home-hero-bg"></div>
+      <div class="home-hero-inner">
+        <div class="home-eyebrow"><div class="live-dot"></div>NCAA TOURNAMENT 2026</div>
+        <div class="home-title">March <em>Madness</em></div>
+        <div class="home-sub">First Round · Round of 64 · 4 regions</div>
+        <div class="home-stats">
+          <div class="home-stat"><div class="home-stat-v">16</div><div class="home-stat-l">Today</div></div>
+          <div class="home-stat live-stat">
+            <div class="home-stat-v red"><div class="live-dot" style="width:8px;height:8px"></div>${liveGames.length||'—'}</div>
+            <div class="home-stat-l red">Live Now</div>
+          </div>
+          <div class="home-stat"><div class="home-stat-v">${finalGames.length||'—'}</div><div class="home-stat-l">Finals</div></div>
+          <div class="home-stat"><div class="home-stat-v amber">4</div><div class="home-stat-l">Up Next</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Live strip -->
+    <div class="home-sect"><div class="home-sect-t">🔴 Live Right Now</div><button class="home-sect-a" onclick="showBracketPanel()">Bracket →</button></div>
+    <div class="home-live-strip">${liveStrip}</div>
+
+    <!-- Tournament roadmap -->
+    <div class="home-sect"><div class="home-sect-t">📅 Tournament Roadmap</div></div>
+    <div class="home-sched">
+      <div class="hs-row" onclick="showGamesPanel()"><div class="hs-date">TUE–WED<br>3/17–18</div><div class="hs-div"></div><div class="hs-info"><div class="hs-round">First Four</div><div class="hs-sub">4 games · Dayton, OH</div></div>${s(2,18)}</div>
+      <div class="hs-row" onclick="showGamesPanel()"><div class="hs-date" style="color:var(--red)">THU–FRI<br>3/19–20</div><div class="hs-div" style="background:var(--red);opacity:.3"></div><div class="hs-info"><div class="hs-round">First Round</div><div class="hs-sub">32 games · 8 cities</div></div><span class="hs-badge live">🔴 Now</span></div>
+      <div class="hs-row"><div class="hs-date">SAT–SUN<br>3/21–22</div><div class="hs-div"></div><div class="hs-info"><div class="hs-round">Second Round</div><div class="hs-sub">16 games · Round of 32</div></div>${s(2,21)}</div>
+      <div class="hs-row"><div class="hs-date">THU–FRI<br>3/26–27</div><div class="hs-div"></div><div class="hs-info"><div class="hs-round">Sweet 16</div><div class="hs-sub">8 games · 2 sites</div></div>${s(2,26)}</div>
+      <div class="hs-row"><div class="hs-date">SAT–SUN<br>3/28–29</div><div class="hs-div"></div><div class="hs-info"><div class="hs-round">Elite Eight</div><div class="hs-sub">4 games · Regional Finals</div></div>${s(2,28)}</div>
+      <div class="hs-row"><div class="hs-date">SAT<br>4/4</div><div class="hs-div"></div><div class="hs-info"><div class="hs-round">Final Four</div><div class="hs-sub">2 games · San Antonio</div></div>${s(3,4)}</div>
+      <div class="hs-row"><div class="hs-date">MON<br>4/6</div><div class="hs-div"></div><div class="hs-info"><div class="hs-round">Championship</div><div class="hs-sub">The Final · San Antonio</div></div>${s(3,6)}</div>
+    </div>
+
+    <!-- Coming next -->
+    <div class="home-sect" style="margin-top:20px"><div class="home-sect-t">🗓 Coming Next</div></div>
+    <div class="next-sport-card" onclick="selectEvent('nba-playoffs')">
+      <div class="ns-ico">🏀</div>
+      <div><div class="ns-title">NBA Playoffs</div><div class="ns-sub">Apr 19 · Full bracket · Live odds · Props</div></div>
+      <div class="ns-badge">Apr 19</div>
+    </div>
+  </div>`;
+}
+
+function buildNBAHome() {
+  const liveCount = Object.values(liveScores).filter((g,i)=>i%4===0&&g.status==='live').length;
+
+  function sc(conf, round, t1seed, t1name, t1rec, t2seed, t2name, t2rec, seriesScore, leading, nextGame, seriesOdds, isLive, liveStr) {
+    const liveTag = isLive ? `<div class="sc-live-tag"><div class="live-dot" style="width:5px;height:5px"></div>${liveStr}</div>` : '';
+    const [s1,s2] = (seriesScore||'0-0').split('-').map(Number);
+    const scoreCls = (s1>s2||s2>s1) ? 'leads' : '';
+    return `<div class="series-card sc-${conf} ${isLive?'sc-live':''}">
+      <div class="sc-bar"></div>
+      <div class="sc-inner">
+        <div class="sc-top">
+          <div class="sc-round">${round}</div>
+          <div class="sc-tags">${liveTag}<div class="conf-tag ${conf}">${conf.toUpperCase()}</div></div>
+        </div>
+        <div class="sc-matchup">
+          <div class="sc-team">
+            <div class="sc-seed">#${t1seed} · ${t1rec}</div>
+            <div class="sc-name ${leading===1?'leading':''}">${t1name}</div>
+            <div class="sc-rec">${leading===1?'Series leads':leading===2?'Trails series':'Series tied'}</div>
+          </div>
+          <div class="sc-score-wrap">
+            <div class="sc-score ${scoreCls}">${seriesScore}</div>
+            <div class="sc-score-lbl">Series</div>
+          </div>
+          <div class="sc-team right">
+            <div class="sc-seed">#${t2seed} · ${t2rec}</div>
+            <div class="sc-name ${leading===2?'leading':''}">${t2name}</div>
+            <div class="sc-rec">${leading===2?'Series leads':leading===1?'Trails series':'Series tied'}</div>
+          </div>
+        </div>
+      </div>
+      <div class="sc-footer">
+        <div class="sc-next">${nextGame}</div>
+        <div class="sc-odds"><span>${seriesOdds}</span></div>
+      </div>
+    </div>`;
+  }
+
+  return `<div style="padding-bottom:80px">
+    <div class="home-hero">
+      <div class="home-hero-bg" style="background:radial-gradient(ellipse at 80% 10%,#C9553A16 0%,transparent 55%),radial-gradient(ellipse at 10% 90%,#5BB8FF08 0%,transparent 50%)"></div>
+      <div class="home-hero-inner">
+        <div class="home-eyebrow">🏀 NBA PLAYOFFS 2026 · FIRST ROUND</div>
+        <div class="home-title">Playoff <em>Time</em></div>
+        <div class="home-sub">First Round · 16 teams · Best of 7</div>
+        <div class="home-stats">
+          <div class="home-stat"><div class="home-stat-v">8</div><div class="home-stat-l">Series</div></div>
+          <div class="home-stat live-stat"><div class="home-stat-v red"><div class="live-dot" style="width:8px;height:8px"></div>${liveCount||"—"}</div><div class="home-stat-l red">Live Now</div></div>
+          <div class="home-stat"><div class="home-stat-v" style="color:var(--accent)">OKC</div><div class="home-stat-l">#1 West</div></div>
+          <div class="home-stat"><div class="home-stat-v" style="color:var(--blue)">DET</div><div class="home-stat-l">#1 East</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="home-sect"><div class="home-sect-t">🔴 Live Right Now</div><button class="home-sect-a" onclick="showBracketPanel()">Bracket →</button></div>
+    <div class="nba-live-strip" id="nbaLiveStrip">
+      <div class="nlc"><div class="nlc-tag"><div class="live-dot"></div><div class="nlc-t">LIVE · Q4</div><div class="nlc-clk">3:42</div></div><div class="nlc-row"><div class="nlc-name">OKC</div><div class="nlc-sc lead">98</div></div><div class="nlc-row"><div class="nlc-name">HOU</div><div class="nlc-sc trail">91</div></div><div class="nlc-series">Gm 3 · OKC leads series 2-0</div></div>
+      <div class="nlc"><div class="nlc-tag"><div class="live-dot"></div><div class="nlc-t">LIVE · Q3</div><div class="nlc-clk">8:11</div></div><div class="nlc-row"><div class="nlc-name">DET</div><div class="nlc-sc lead">76</div></div><div class="nlc-row"><div class="nlc-name">MIA</div><div class="nlc-sc trail">71</div></div><div class="nlc-series">Gm 2 · Series tied 1-1</div></div>
+      <div class="nlc"><div class="nlc-tag"><div class="live-dot"></div><div class="nlc-t">LIVE · Q2</div><div class="nlc-clk">1:55</div></div><div class="nlc-row"><div class="nlc-name">BOS</div><div class="nlc-sc lead">58</div></div><div class="nlc-row"><div class="nlc-name">TOR</div><div class="nlc-sc trail">52</div></div><div class="nlc-series">Gm 1 · Series 0-0</div></div>
+    </div>
+    <div class="home-sect" style="margin-top:20px"><div class="home-sect-t">📊 First Round Series</div><button class="home-sect-a" onclick="showBracketPanel()">Bracket →</button></div>
+    <div style="font-family:var(--mono);font-size:9px;color:var(--accent);text-transform:uppercase;letter-spacing:.1em;padding:0 14px;margin-bottom:8px">Western Conference</div>
+    <div class="series-list" style="padding:0 14px;margin-bottom:16px">
+      ${sc("west","R1 · Gm 3",1,"OKC Thunder","54-15",8,"HOU Rockets","41-26","2-0",1,"Tonight: <strong>OKC 98 · HOU 91 · Q4</strong>","OKC -2800",true,"Q4 3:42")}
+      ${sc("west","R1 · Gm 2",2,"SA Spurs","51-18",7,"GSW Warriors","33-35","1-0",1,"Gm 2: <strong>Tonight 9:30 PM PDT</strong>","SA -850",false,"")}
+      ${sc("west","R1 · Gm 1",3,"DEN Nuggets","42-27",6,"PHX Suns","39-30","0-0",0,"Gm 1: <strong>Apr 20 · 7:00 PM PDT</strong>","DEN -280",false,"")}
+      ${sc("west","R1 · Gm 1",4,"LAL Lakers","43-25",5,"MIN T-Wolves","42-27","0-0",0,"Gm 1: <strong>Apr 19 · 10:00 PM PDT</strong>","LAL -145",false,"")}
+    </div>
+    <div style="font-family:var(--mono);font-size:9px;color:var(--blue);text-transform:uppercase;letter-spacing:.1em;padding:0 14px;margin-bottom:8px">Eastern Conference</div>
+    <div class="series-list" style="padding:0 14px;margin-bottom:20px">
+      ${sc("east","R1 · Gm 2",1,"DET Pistons","49-19",8,"MIA Heat","38-31","1-0",1,"Tonight: <strong>DET 76 · MIA 71 · Q3</strong>","DET -650",true,"Q3 8:11")}
+      ${sc("east","R1 · Gm 1",2,"BOS Celtics","45-23",7,"TOR Raptors","38-29","0-0",0,"Tonight: <strong>BOS 58 · TOR 52 · Q2</strong>","BOS -1100",true,"Q2 1:55")}
+      ${sc("east","R1 · Gm 1",3,"NYK Knicks","45-25",6,"ORL Magic","38-30","0-0",0,"Gm 1: <strong>Apr 20 · 4:30 PM PDT</strong>","NYK -320",false,"")}
+      ${sc("east","R1 · Gm 1",4,"CLE Cavaliers","42-27",5,"PHI 76ers","37-32","0-0",0,"Gm 1: <strong>Apr 19 · 4:30 PM PDT</strong>","CLE -200",false,"")}
+    </div>
+    <div class="home-sect"><div class="home-sect-t">🗓 Playoff Roadmap</div></div>
+    <div class="home-sched">
+      <div class="hs-row" style="border-color:#FF557735"><div class="hs-date" style="color:var(--red)">APR 19<br>–MAY 3</div><div class="hs-div" style="background:var(--red);opacity:.3"></div><div class="hs-info"><div class="hs-round">First Round</div><div class="hs-sub">8 series · Best of 7</div></div><span class="hs-badge live">🔴 Now</span></div>
+      <div class="hs-row"><div class="hs-date">MAY ~5</div><div class="hs-div"></div><div class="hs-info"><div class="hs-round">Conf. Semifinals</div><div class="hs-sub">4 series · Best of 7</div></div><span class="hs-badge soon">Upcoming</span></div>
+      <div class="hs-row"><div class="hs-date">MAY ~19</div><div class="hs-div"></div><div class="hs-info"><div class="hs-round">Conf. Finals</div><div class="hs-sub">2 series · Best of 7</div></div><span class="hs-badge soon">Upcoming</span></div>
+      <div class="hs-row"><div class="hs-date">JUN ~5</div><div class="hs-div"></div><div class="hs-info"><div class="hs-round">NBA Finals</div><div class="hs-sub">Best of 7 · Championship</div></div><span class="hs-badge soon">Upcoming</span></div>
+    </div>
+    <div class="home-sect" style="margin-top:20px"><div class="home-sect-t">🏀 Also Active</div></div>
+    <div class="next-sport-card" onclick="selectEvent('ncaam-w1')">
+      <div class="ns-ico">🏆</div>
+      <div><div class="ns-title">NCAA Tournament</div><div class="ns-sub">March Madness · Final Four · Apr 4</div></div>
+      <div class="ns-badge" style="background:var(--amber-d);color:var(--amber);border-color:#FFC23030">Live</div>
+    </div>
+  </div>`;
+}
+
+function buildGenericHome(ev) {
+  return `
+  <div style="padding:14px 14px 80px">
+    <div class="home-hero">
+      <div class="home-hero-inner">
+        <div class="home-eyebrow">${ev.icon} ${ev.sport.toUpperCase()}</div>
+        <div class="home-title"><em>${ev.name}</em></div>
+        <div class="home-sub">Select a day tab above to view odds and lines</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════
+// BRACKET PANEL — visual tree, 4 region tabs
+// ═══════════════════════════════════════════
+const BRACKET_DATA = {
+  east: {
+    r64:[
+      {id:'e1',a:{s:1,n:'DUKE'},  h:{s:16,n:'SIE'},  st:'live',  as:31,hs:18,al:true,  tm:'1H 14:22'},
+      {id:'e2',a:{s:8,n:'OSU'},   h:{s:9,n:'TCU'},   st:'live',  as:62,hs:60,al:true,  tm:'2H 1:02'},
+      {id:'e3',a:{s:6,n:'LOU'},   h:{s:11,n:'USF'},  st:'pre',   as:0, hs:0, al:false, tm:'1:30P'},
+      {id:'e4',a:{s:3,n:'MSU'},   h:{s:14,n:'NDSU'}, st:'pre',   as:0, hs:0, al:false, tm:'4:05P'},
+    ],
+    r32:[
+      {id:'e5',a:{s:1,n:'DUKE'},  h:{s:'?',n:'?'},   st:'tbd',tm:'SAT 3/21'},
+      {id:'e6',a:{s:3,n:'MSU'},   h:{s:'?',n:'?'},   st:'tbd',tm:'SAT 3/21'},
+    ],
+    s16:[{id:'e7',a:{s:'?',n:'?'},h:{s:'?',n:'?'},st:'tbd',tm:'THU 3/26'}],
+    e8: [{id:'e8',a:{s:'?',n:'?'},h:{s:'?',n:'?'},st:'tbd',tm:'SAT 3/28'}],
+  },
+  west: {
+    r64:[
+      {id:'w1',a:{s:11,n:'TEX'},  h:{s:11,n:'NCSU'}, st:'final',as:68,hs:66,aw:true,  tm:'FINAL'},
+      {id:'w2',a:{s:5,n:'BYU'},   h:{s:11,n:'TEX'},  st:'pre',  as:0, hs:0, al:false, tm:'4:25P'},
+      {id:'w3',a:{s:4,n:'SMC'},   h:{s:13,n:'TXAM'}, st:'pre',  as:0, hs:0, al:false, tm:'4:35P'},
+      {id:'w4',a:{s:3,n:'GONZ'},  h:{s:14,n:'KENN'}, st:'pre',  as:0, hs:0, al:false, tm:'7:00P'},
+    ],
+    r32:[
+      {id:'w5',a:{s:5,n:'BYU'},   h:{s:'?',n:'?'},   st:'tbd',tm:'SUN 3/22'},
+      {id:'w6',a:{s:3,n:'GONZ'},  h:{s:'?',n:'?'},   st:'tbd',tm:'SUN 3/22'},
+    ],
+    s16:[{id:'w7',a:{s:'?',n:'?'},h:{s:'?',n:'?'},st:'tbd',tm:'FRI 3/27'}],
+    e8: [{id:'w8',a:{s:'?',n:'?'},h:{s:'?',n:'?'},st:'tbd',tm:'SUN 3/29'}],
+  },
+  south: {
+    r64:[
+      {id:'s1',a:{s:1,n:'FLA'},   h:{s:16,n:'PV'},   st:'pre',  as:0,hs:0,al:false,tm:'FRI 9:25P'},
+      {id:'s2',a:{s:4,n:'NEB'},   h:{s:13,n:'TROY'}, st:'pre',  as:0,hs:0,al:false,tm:'2:30P'},
+      {id:'s3',a:{s:6,n:'ILL'},   h:{s:11,n:'PENN'}, st:'pre',  as:0,hs:0,al:false,tm:'6:25P'},
+      {id:'s4',a:{s:2,n:'HOU'},   h:{s:15,n:'IDHO'}, st:'pre',  as:0,hs:0,al:false,tm:'7:10P'},
+    ],
+    r32:[
+      {id:'s5',a:{s:1,n:'FLA'},   h:{s:'?',n:'?'},   st:'tbd',tm:'SAT 3/21'},
+      {id:'s6',a:{s:2,n:'HOU'},   h:{s:'?',n:'?'},   st:'tbd',tm:'SAT 3/21'},
+    ],
+    s16:[{id:'s7',a:{s:'?',n:'?'},h:{s:'?',n:'?'},st:'tbd',tm:'THU 3/26'}],
+    e8: [{id:'s8',a:{s:'?',n:'?'},h:{s:'?',n:'?'},st:'tbd',tm:'SAT 3/28'}],
+  },
+  midwest: {
+    r64:[
+      {id:'m1',a:{s:1,n:'MICH'},  h:{s:16,n:'HOW'},  st:'live', as:72,hs:51,al:true,  tm:'2H 4:18'},
+      {id:'m2',a:{s:4,n:'ARK'},   h:{s:13,n:'HAW'},  st:'pre',  as:0, hs:0, al:false, tm:'1:25P'},
+      {id:'m3',a:{s:5,n:'VAN'},   h:{s:12,n:'MCNS'}, st:'pre',  as:0, hs:0, al:false, tm:'12:15P'},
+      {id:'m4',a:{s:8,n:'UGA'},   h:{s:9,n:'SLU'},   st:'pre',  as:0, hs:0, al:false, tm:'6:45P'},
+    ],
+    r32:[
+      {id:'m5',a:{s:1,n:'MICH'},  h:{s:'?',n:'?'},   st:'tbd',tm:'SAT 3/21'},
+      {id:'m6',a:{s:5,n:'VAN'},   h:{s:'?',n:'?'},   st:'tbd',tm:'SAT 3/21'},
+    ],
+    s16:[{id:'m7',a:{s:'?',n:'?'},h:{s:'?',n:'?'},st:'tbd',tm:'FRI 3/27'}],
+    e8: [{id:'m8',a:{s:'?',n:'?'},h:{s:'?',n:'?'},st:'tbd',tm:'SUN 3/29'}],
+  },
+};
+
+let currentBracketRegion = 'east';
+
+function renderBracketPanel() {
+  const panel = document.getElementById('bracketPanel');
+  panel.innerHTML = `
+    <div class="brk-region-tabs">
+      <div class="brk-tab active" id="brkt-east"    onclick="switchBracketRegion('east',this)">EAST</div>
+      <div class="brk-tab"        id="brkt-west"    onclick="switchBracketRegion('west',this)">WEST</div>
+      <div class="brk-tab"        id="brkt-south"   onclick="switchBracketRegion('south',this)">SOUTH</div>
+      <div class="brk-tab"        id="brkt-midwest" onclick="switchBracketRegion('midwest',this)">MIDWEST</div>
+    </div>
+    <div class="brk-round-hdr" id="brkRoundHdr"></div>
+    <div class="brk-area" id="brkArea"></div>`;
+  drawBracket(currentBracketRegion);
+}
+
+function switchBracketRegion(key, el) {
+  currentBracketRegion = key;
+  document.querySelectorAll('.brk-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  drawBracket(key);
+}
+
+function buildBMC(g) {
+  if (g.st === 'tbd') {
+    return `<div class="btbd-card"><div class="btbd-l">TBD</div><div class="btbd-t">${g.tm}</div></div>`;
+  }
+  const isL=g.st==='live', isF=g.st==='final';
+  const aWin=isF&&g.aw, hWin=isF&&!g.aw&&isF;
+  const aLead=isL&&g.as>g.hs, hLead=isL&&g.hs>g.as;
+  const cls=`bmc ${isL?'blive':''} ${isF?'bfinal':''}`;
+  const aRowC=aWin?'bwin':( isF&&!aWin?'blos':(isL&&aLead?'bll':''));
+  const hRowC=hWin?'bwin':(isF&&aWin?'blos':(isL&&hLead?'bll':''));
+  const aTnC=aWin?'bw':(isL&&aLead?'bl':'');
+  const hTnC=hWin?'bw':(isL&&hLead?'bl':'');
+  const asc=(isL||isF)?`<span class="bsc ${(aWin||aLead)?'blead':''}${(isL&&aLead)?' brl':''}">${g.as}</span>`:'';
+  const hsc=(isL||isF)?`<span class="bsc ${(hWin||hLead)?'blead':''}${(isL&&hLead)?' brl':''}">${g.hs}</span>`:'';
+  // Find matching static game for onclick
+  const gameKey = findStaticGameKey(g.a.n, g.h.n);
+  const clickStr = gameKey ? `onclick="bracketTapGame('${gameKey}')"` : '';
+  return `<div class="${cls}" ${clickStr}>
+    <div class="btr ${aRowC}"><div class="bts">${g.a.s}</div><div class="btn ${aTnC}">${g.a.n}</div>${asc}</div>
+    <div class="btr ${hRowC}"><div class="bts">${g.h.s}</div><div class="btn ${hTnC}">${g.h.n}</div>${hsc}</div>
+  </div>`;
+}
+
+function findStaticGameKey(awayAbbr, homeAbbr) {
+  for (const key of Object.keys(STATIC_GAMES)) {
+    for (const g of STATIC_GAMES[key].games || []) {
+      if ((g.away?.abbr||'').toUpperCase() === awayAbbr.toUpperCase() ||
+          (g.home?.abbr||'').toUpperCase() === awayAbbr.toUpperCase() ||
+          (g.home?.abbr||'').toUpperCase() === homeAbbr.toUpperCase()) {
+        return key + '|' + g.id;
+      }
+    }
+  }
+  return null;
+}
+
+function bracketTapGame(keyStr) {
+  // Navigate to the day tab containing this game and open the drawer
+  const [dayKey, gameId] = keyStr.split('|');
+  const shortKey = dayKey.replace('ncaam-w1_','');
+  // Switch to games view and open the right day
+  showGamesPanel();
+  // Find the day tab and click it
+  const tabEl = document.getElementById('tab-'+shortKey);
+  if (tabEl) {
+    tabEl.click();
+    // After render, open the game drawer
+    setTimeout(() => {
+      const row = document.getElementById('row-'+gameId);
+      if (row) { row.scrollIntoView({behavior:'smooth',block:'center'}); toggleGame(gameId); }
+    }, 300);
+  }
+}
+
+function drawBracket(rk) {
+  const r = BRACKET_DATA[rk];
+  const slotH=46, gap=4;
+
+  document.getElementById('brkRoundHdr').innerHTML = `
+    <div class="brk-rh-item" style="width:74px;flex-shrink:0">R64</div>
+    <div class="brk-rh-item" style="width:20px;flex-shrink:0"></div>
+    <div class="brk-rh-item" style="width:74px;flex-shrink:0">R32</div>
+    <div class="brk-rh-item" style="width:20px;flex-shrink:0"></div>
+    <div class="brk-rh-item" style="width:74px;flex-shrink:0">S16</div>
+    <div class="brk-rh-item" style="width:20px;flex-shrink:0"></div>
+    <div class="brk-rh-item" style="width:74px;flex-shrink:0">E8</div>
+  `;
+
+  const r64 = r.r64.map(g=>`<div style="margin-bottom:${gap}px;flex-shrink:0">${buildBMC(g)}</div>`).join('');
+  const r32gap = slotH + gap*2;
+  const r32 = r.r32.map((g,i)=>`<div style="margin-bottom:${i<r.r32.length-1?r32gap+'px':'0'};flex-shrink:0">${buildBMC(g)}</div>`).join('');
+  const totalH = slotH*4+gap*3;
+  const s16top = Math.round(totalH/2 - slotH/2);
+  const s16 = `<div style="padding-top:${s16top}px;flex-shrink:0">${buildBMC(r.s16[0])}</div>`;
+  const e8  = `<div style="padding-top:${s16top}px;flex-shrink:0">${buildBMC(r.e8[0])}</div>`;
+
+  // SVG connectors
+  const c1H = slotH+gap;
+  const conn1 = [0,1].map(()=>`
+    <svg width="20" height="${slotH*2+gap}" style="overflow:visible;display:block;flex-shrink:0;margin-bottom:${slotH*2+gap*2}px">
+      <line x1="0" y1="${slotH/2}" x2="10" y2="${slotH/2}" stroke="var(--border2)" stroke-width="1"/>
+      <line x1="0" y1="${slotH+gap+slotH/2}" x2="10" y2="${slotH+gap+slotH/2}" stroke="var(--border2)" stroke-width="1"/>
+      <line x1="10" y1="${slotH/2}" x2="10" y2="${slotH+gap+slotH/2}" stroke="var(--border2)" stroke-width="1"/>
+      <line x1="10" y1="${(slotH+gap/2+slotH/2)}" x2="20" y2="${(slotH+gap/2+slotH/2)}" stroke="var(--border2)" stroke-width="1"/>
+    </svg>`).join('');
+
+  const r32totalH = slotH*2+r32gap;
+  const conn2 = `<svg width="20" height="${r32totalH}" style="overflow:visible;display:block;flex-shrink:0">
+    <line x1="0" y1="${slotH/2}" x2="10" y2="${slotH/2}" stroke="var(--border2)" stroke-width="1"/>
+    <line x1="0" y1="${slotH+r32gap+slotH/2}" x2="10" y2="${slotH+r32gap+slotH/2}" stroke="var(--border2)" stroke-width="1"/>
+    <line x1="10" y1="${slotH/2}" x2="10" y2="${slotH+r32gap+slotH/2}" stroke="var(--border2)" stroke-width="1"/>
+    <line x1="10" y1="${(slotH/2+slotH+r32gap+slotH/2)/2}" x2="20" y2="${(slotH/2+slotH+r32gap+slotH/2)/2}" stroke="var(--border2)" stroke-width="1"/>
+  </svg>`;
+
+  const conn3 = `<div style="padding-top:${s16top+slotH/2-1}px;flex-shrink:0">
+    <svg width="20" height="2" style="overflow:visible;display:block">
+      <line x1="0" y1="0" x2="20" y2="0" stroke="var(--border2)" stroke-width="1"/>
+    </svg>
+  </div>`;
+
+  document.getElementById('brkArea').innerHTML = `
+    <div class="brk-tree">
+      <div style="display:flex;flex-direction:column;flex-shrink:0">${r64}</div>
+      <div style="display:flex;flex-direction:column;flex-shrink:0;padding-top:${slotH/2-1}px">${conn1}</div>
+      <div style="display:flex;flex-direction:column;flex-shrink:0;padding-top:${slotH+gap/2}px">${r32}</div>
+      <div style="flex-shrink:0;padding-top:${slotH+gap/2}px">${conn2}</div>
+      ${s16}
+      ${conn3}
+      ${e8}
+    </div>`;
+}
+
+// ═══════════════════════════════════════════
+// OVERRIDE switchDay TO SHOW GAMES PANEL
+// ═══════════════════════════════════════════
+function switchDay(key, el) {
+  showGamesPanel();
+  currentDayKey=key; openGame=null;
+  document.querySelectorAll('.day-tab').forEach(t=>t.classList.remove('active'));
+  if(el) el.classList.add('active');
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+key)?.classList.add('active');
+  if (!cache[prefs.activeEvent+'_'+key]) loadDay(key);
+}
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  bootApp();
+  initTheme();
+  initNudge();
+  startScorePolling();
+  buildAbbrMap(); // crosscheck ESPN abbreviations on load
+});
 </script>
 </body>
 </html>

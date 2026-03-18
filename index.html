@@ -112,7 +112,7 @@ body.light .home-nav-btn.active{color:var(--accent);}
 .hs-round{font-family:var(--sans);font-size:13px;font-weight:700;color:var(--text);}
 .hs-sub{font-family:var(--mono);font-size:10px;color:var(--text3);margin-top:2px;}
 .hs-badge{font-family:var(--mono);font-size:9px;padding:3px 8px;border-radius:5px;flex-shrink:0;}
-.hs-badge.live{background:var(--red-d);color:var(--red);border:1px solid #FF557730;}
+.hs-badge.live{background:var(--green-d);color:var(--green);border:1px solid #00E88230;}
 .hs-badge.done{background:var(--green-d);color:var(--green);border:1px solid #00E88230;}
 .hs-badge.soon{background:var(--card2);color:var(--text3);border:1px solid var(--border);}
 .hs-badge.next{background:var(--amber-d);color:var(--amber);border:1px solid #FFC23030;}
@@ -258,16 +258,20 @@ body.light .ml-badge.evn { background:#1A5FA812; color:#1A5FA8; border-color:#1A
 body.light .day-tab      { color:#2A3A52; }
 body.light .week-chip    { color:#2A3A52; }
 /* Bracket light mode — darker text on cards */
-body.light .btn          { color:#0D1220; }
+body.light .btn          { color:#1E2D42; }
 body.light .bts          { color:#3A4E68; }
 body.light .bsc          { color:#2A3A52; }
 body.light .bsc.blead    { color:#006035; }
 body.light .bsc.brl      { color:#B01030; }
-body.light .bmc          { background:#FFFFFF; border-color:#C8CEDD; }
+body.light .bmc          { background:#FFFFFF; border-color:#B0BAC8; }
 body.light .bmc.blive    { border-color:#C41E3A; }
-body.light .btbd-card    { border-color:#C8CEDD; background:#F4F6FA; }
-body.light .btbd-l       { color:#8A9AB0; }
-body.light .btbd-t       { color:#4A5E78; }
+body.light .btr          { border-color:#D4D8E4; }
+body.light .btr.bwin     { background:#007A4015; }
+body.light .btr.blos     { opacity:.5; }
+body.light .btr.bll      { background:#C41E3A15; }
+body.light .btbd-card    { border-color:#B0BAC8; background:#E8EBF2; }
+body.light .btbd-l       { color:#4A5E78; }
+body.light .btbd-t       { color:#1E2D42; font-weight:600; }
 body.light .brk-tab      { color:#4A5E78; }
 body.light .brk-tab.active { color:var(--accent); }
 body.light .brk-rh-item  { color:#8A9AB0; }
@@ -2720,7 +2724,10 @@ function buildNCAAHome() {
       </div>`;
     }
   }
-  if (!liveStrip) liveStrip = `<div style="font-family:var(--mono);font-size:11px;color:var(--text3);padding:12px 14px">No live games right now — check back at tip-off</div>`;
+  if (!liveStrip) liveStrip = '';
+  const liveSection = liveStrip ? `
+    <div class="home-sect"><div class="home-sect-t">🔴 Live Right Now</div><button class="home-sect-a" onclick="showBracketPanel()">Bracket →</button></div>
+    <div class="home-live-strip">${liveStrip}</div>` : '';
 
   // Tournament schedule rows
   const today = new Date();
@@ -2758,15 +2765,13 @@ function buildNCAAHome() {
       </div>
     </div>
 
-    <!-- Live strip -->
-    <div class="home-sect"><div class="home-sect-t">🔴 Live Right Now</div><button class="home-sect-a" onclick="showBracketPanel()">Bracket →</button></div>
-    <div class="home-live-strip">${liveStrip}</div>
+    ${liveSection}
 
     <!-- Tournament roadmap -->
     <div class="home-sect"><div class="home-sect-t">📅 Tournament Roadmap</div></div>
     <div class="home-sched">
       <div class="hs-row" onclick="showGamesPanel()"><div class="hs-date">TUE–WED<br>3/17–18</div><div class="hs-div"></div><div class="hs-info"><div class="hs-round">First Four</div><div class="hs-sub">4 games · Dayton, OH</div></div>${s(2,18)}</div>
-      <div class="hs-row" onclick="showGamesPanel()"><div class="hs-date" style="color:var(--red)">THU–FRI<br>3/19–20</div><div class="hs-div" style="background:var(--red);opacity:.3"></div><div class="hs-info"><div class="hs-round">First Round</div><div class="hs-sub">32 games · 8 cities</div></div><span class="hs-badge live">🔴 Now</span></div>
+      <div class="hs-row" onclick="showGamesPanel()"><div class="hs-date" style="color:var(--green)">THU–FRI<br>3/19–20</div><div class="hs-div" style="background:var(--green);opacity:.3"></div><div class="hs-info"><div class="hs-round">First Round</div><div class="hs-sub">32 games · 8 cities</div></div><span class="hs-badge live">✓ Now</span></div>
       <div class="hs-row"><div class="hs-date">SAT–SUN<br>3/21–22</div><div class="hs-div"></div><div class="hs-info"><div class="hs-round">Second Round</div><div class="hs-sub">16 games · Round of 32</div></div>${s(2,21)}</div>
       <div class="hs-row"><div class="hs-date">THU–FRI<br>3/26–27</div><div class="hs-div"></div><div class="hs-info"><div class="hs-round">Sweet 16</div><div class="hs-sub">8 games · 2 sites</div></div>${s(2,26)}</div>
       <div class="hs-row"><div class="hs-date">SAT–SUN<br>3/28–29</div><div class="hs-div"></div><div class="hs-info"><div class="hs-round">Elite Eight</div><div class="hs-sub">4 games · Regional Finals</div></div>${s(2,28)}</div>
@@ -2837,12 +2842,13 @@ function buildNBAHome() {
         </div>
       </div>
     </div>
+    ${liveCount ? `
     <div class="home-sect"><div class="home-sect-t">🔴 Live Right Now</div><button class="home-sect-a" onclick="showBracketPanel()">Bracket →</button></div>
     <div class="nba-live-strip" id="nbaLiveStrip">
       <div class="nlc"><div class="nlc-tag"><div class="live-dot"></div><div class="nlc-t">LIVE · Q4</div><div class="nlc-clk">3:42</div></div><div class="nlc-row"><div class="nlc-name">OKC</div><div class="nlc-sc lead">98</div></div><div class="nlc-row"><div class="nlc-name">HOU</div><div class="nlc-sc trail">91</div></div><div class="nlc-series">Gm 3 · OKC leads series 2-0</div></div>
       <div class="nlc"><div class="nlc-tag"><div class="live-dot"></div><div class="nlc-t">LIVE · Q3</div><div class="nlc-clk">8:11</div></div><div class="nlc-row"><div class="nlc-name">DET</div><div class="nlc-sc lead">76</div></div><div class="nlc-row"><div class="nlc-name">MIA</div><div class="nlc-sc trail">71</div></div><div class="nlc-series">Gm 2 · Series tied 1-1</div></div>
       <div class="nlc"><div class="nlc-tag"><div class="live-dot"></div><div class="nlc-t">LIVE · Q2</div><div class="nlc-clk">1:55</div></div><div class="nlc-row"><div class="nlc-name">BOS</div><div class="nlc-sc lead">58</div></div><div class="nlc-row"><div class="nlc-name">TOR</div><div class="nlc-sc trail">52</div></div><div class="nlc-series">Gm 1 · Series 0-0</div></div>
-    </div>
+    </div>` : ''}
     <div class="home-sect" style="margin-top:20px"><div class="home-sect-t">📊 First Round Series</div><button class="home-sect-a" onclick="showBracketPanel()">Bracket →</button></div>
     <div style="font-family:var(--mono);font-size:9px;color:var(--accent);text-transform:uppercase;letter-spacing:.1em;padding:0 14px;margin-bottom:8px">Western Conference</div>
     <div class="series-list" style="padding:0 14px;margin-bottom:16px">
@@ -2860,7 +2866,7 @@ function buildNBAHome() {
     </div>
     <div class="home-sect"><div class="home-sect-t">🗓 Playoff Roadmap</div></div>
     <div class="home-sched">
-      <div class="hs-row" style="border-color:#FF557735"><div class="hs-date" style="color:var(--red)">APR 19<br>–MAY 3</div><div class="hs-div" style="background:var(--red);opacity:.3"></div><div class="hs-info"><div class="hs-round">First Round</div><div class="hs-sub">8 series · Best of 7</div></div><span class="hs-badge live">🔴 Now</span></div>
+      <div class="hs-row" style="border-color:#00E88230"><div class="hs-date" style="color:var(--green)">APR 19<br>–MAY 3</div><div class="hs-div" style="background:var(--green);opacity:.3"></div><div class="hs-info"><div class="hs-round">First Round</div><div class="hs-sub">8 series · Best of 7</div></div><span class="hs-badge live">✓ Now</span></div>
       <div class="hs-row"><div class="hs-date">MAY ~5</div><div class="hs-div"></div><div class="hs-info"><div class="hs-round">Conf. Semifinals</div><div class="hs-sub">4 series · Best of 7</div></div><span class="hs-badge soon">Upcoming</span></div>
       <div class="hs-row"><div class="hs-date">MAY ~19</div><div class="hs-div"></div><div class="hs-info"><div class="hs-round">Conf. Finals</div><div class="hs-sub">2 series · Best of 7</div></div><span class="hs-badge soon">Upcoming</span></div>
       <div class="hs-row"><div class="hs-date">JUN ~5</div><div class="hs-div"></div><div class="hs-info"><div class="hs-round">NBA Finals</div><div class="hs-sub">Best of 7 · Championship</div></div><span class="hs-badge soon">Upcoming</span></div>

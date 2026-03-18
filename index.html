@@ -445,7 +445,7 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 .day-tab.active{background:var(--accent-d);border-color:var(--accent);color:var(--accent)}
 
 /* ── MAIN ── */
-.main{padding:14px 14px 100px;overflow-anchor:none;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+.main{padding:14px 14px 100px;overflow-y:auto;-webkit-overflow-scrolling:touch;position:absolute;inset:0;}
 .panel{display:none} .panel.active{display:block}
 .round-label{font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--text3);padding:6px 2px 8px}
 
@@ -744,13 +744,11 @@ body.light .gmoney-pick{color:#5A3ECC;}
 </header>
 
 <!-- HOME PANEL -->
-<div id="homePanel" class="main"></div>
-
-<!-- BRACKET PANEL -->
-<div id="bracketPanel" class="main" style="display:none"></div>
-
-<!-- GAME PANELS -->
-<div class="main" id="mainPanels" style="display:none"></div>
+<div id="appContent" style="flex:1;overflow:hidden;position:relative;">
+  <div id="homePanel" class="main"></div>
+  <div id="bracketPanel" class="main" style="display:none"></div>
+  <div class="main" id="mainPanels" style="display:none"></div>
+</div>
 <!-- VERSION FOOTER -->
 <div class="ver-footer" id="verFooter">
   <div style="display:flex;align-items:center;gap:8px">

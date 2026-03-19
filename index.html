@@ -43,7 +43,7 @@
   --blue:#5BB8FF;  --blue-d:#5BB8FF18;
   --kalshi:#7C5CFC; --kalshi-d:#7C5CFC18;
   --accent:#FFC230; --accent-d:#FFC23018;
-  --text:#EBF2FC; --text2:#A8BDD4; --text3:#6E8BA8;
+  --text:#EBF2FC; --text2:#B8CCDF; --text3:#8AAAC4;
   --mono:'DM Mono',monospace; --sans:'Syne',sans-serif;
 }
 
@@ -233,7 +233,7 @@ body.light {
   --blue:#1A5FA8;  --blue-d:#1A5FA815;
   --kalshi:#4A2EB8; --kalshi-d:#4A2EB815;
   --accent:#B8780A; --accent-d:#B8780A15;
-  --text:#0D1220; --text2:#2A3A52; --text3:#4A5E78;
+  --text:#0D1220; --text2:#1E2E42; --text3:#3A4E66;
 }
 
 /* Light mode specific contrast fixes */
@@ -563,7 +563,33 @@ body.light .spread-mini{background:#1A5FA812;color:#1A5FA8;border-color:#1A5FA84
 .ai-tip{background:linear-gradient(135deg,var(--accent-d),transparent);border:1px solid var(--accent)44;border-radius:9px;padding:11px 13px;margin-top:4px}
 .ai-tip-head{font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:6px;font-weight:500}
 .ai-tip-text{font-size:12.5px;line-height:1.65;color:var(--text)}
-/* G-Money Smack Talk card */
+/* G-Money Picks Panel */
+.picks-hero{background:linear-gradient(135deg,#7C5CFC22,#FF557708);border:1px solid #7C5CFC30;border-radius:14px;padding:16px;margin-bottom:12px;position:relative;overflow:hidden;}
+.picks-hero::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#7C5CFC,#FF5577,#FFC230);opacity:.8;}
+.picks-stat-row{display:flex;gap:8px;margin-top:12px;}
+.picks-stat{flex:1;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:10px 8px;text-align:center;}
+.picks-stat-v{font-family:var(--sans);font-size:20px;font-weight:800;color:var(--text);}
+.picks-stat-l{font-family:var(--mono);font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-top:2px;}
+.picks-stat-v.green{color:var(--green);}
+.picks-stat-v.red{color:var(--red);}
+.picks-stat-v.amber{color:var(--amber);}
+.bankroll-bar{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:12px;}
+.bankroll-track{height:8px;background:var(--border);border-radius:4px;margin:8px 0;overflow:hidden;}
+.bankroll-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--green),#00E88280);transition:width .5s ease;}
+.pick-record-item{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px;display:flex;align-items:center;gap:10px;}
+.pick-result-badge{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:12px;font-weight:700;flex-shrink:0;}
+.pick-result-badge.win{background:var(--green-d);color:var(--green);border:1px solid #00E88230;}
+.pick-result-badge.loss{background:var(--red-d);color:var(--red);border:1px solid #FF557730;}
+.pick-result-badge.push{background:var(--card2);color:var(--text3);border:1px solid var(--border);}
+.pick-result-badge.pending{background:var(--amber-d);color:var(--amber);border:1px solid #FFC23030;}
+.pick-game{flex:1;min-width:0;}
+.pick-game-title{font-family:var(--sans);font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.pick-game-detail{font-family:var(--mono);font-size:10px;color:var(--text3);margin-top:2px;}
+.pick-pnl{font-family:var(--mono);font-size:11px;font-weight:600;text-align:right;flex-shrink:0;}
+.pick-pnl.pos{color:var(--green);}
+.pick-pnl.neg{color:var(--red);}
+/* G-Money's Brackets CSS */
+
 .smack-card{background:linear-gradient(135deg,#7C5CFC14,#FF557708);border:1px solid #7C5CFC35;border-radius:14px;padding:14px;position:relative;overflow:hidden;}
 .smack-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#7C5CFC,#FF5577,#FFC230,#00E882);opacity:.8;}
 .smack-loading{font-family:var(--mono);font-size:11px;color:var(--text3);padding:8px 0;}
@@ -705,6 +731,18 @@ body.light .gmoney-pick{color:#5A3ECC;}
       <div class="logo-event" id="eventSubtitle">NCAA Tournament</div>
     </div>
     <div class="header-right">
+      <div style="position:relative">
+        <button class="source-btn" id="sourceBtn" onclick="toggleSourcePopover()" style="margin-bottom:0;padding:4px 8px;font-size:10px">
+          <span class="src-dot"></span>
+          <span id="sourceBtnLabel">CONSENSUS</span>
+          <span class="src-caret">&#9662;</span>
+        </button>
+        <div class="source-popover hidden" id="sourcePopover">
+          <div class="src-hint">Show odds from</div>
+          <div class="src-sep"></div>
+          <div id="sourcePopoverOptions"></div>
+        </div>
+      </div>
       <button class="icon-btn" onclick="openSettings()" title="Settings" style="font-size:17px">⚙</button>
       <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle light/dark mode">🌙</button>
       <button class="icon-btn" id="mainRefresh" onclick="refreshCurrentTab()" title="Refresh">
@@ -716,24 +754,11 @@ body.light .gmoney-pick{color:#5A3ECC;}
     </div>
   </div>
 
-  <!-- SOURCE BUTTON -->
-  <div style="position:relative;margin-bottom:10px">
-    <button class="source-btn" id="sourceBtn" onclick="toggleSourcePopover()">
-      <span class="src-dot"></span>
-      <span id="sourceBtnLabel">CONSENSUS</span>
-      <span class="src-caret">&#9662;</span>
-    </button>
-    <div class="source-popover hidden" id="sourcePopover">
-      <div class="src-hint">Show odds from</div>
-      <div class="src-sep"></div>
-      <div id="sourcePopoverOptions"></div>
-    </div>
-  </div>
-
-  <!-- HOME + BRACKET quick nav -->
+  <!-- HOME + BRACKET + PICKS quick nav -->
   <div style="display:flex;align-items:center;gap:5px;margin-bottom:8px">
     <button id="homeNavBtn" class="home-nav-btn active" onclick="showHomePanel()">🏠 Home</button>
     <button id="bracketNavBtn" class="home-nav-btn" onclick="showBracketPanel()">🏆 Bracket</button>
+    <button id="picksNavBtn" class="home-nav-btn" onclick="showPicksPanel()">💰 G-Money</button>
   </div>
 
   <div class="week-bar" id="weekBar" style="display:flex;align-items:center;gap:8px"><span class="week-label" style="flex-shrink:0;min-width:28px">WEEK</span></div>
@@ -749,6 +774,9 @@ body.light .gmoney-pick{color:#5A3ECC;}
 
 <!-- BRACKET PANEL -->
 <div id="bracketPanel" class="main" style="display:none"></div>
+
+<!-- PICKS PANEL -->
+<div id="picksPanel" class="main" style="display:none"></div>
 
 <!-- GAME PANELS -->
 <div class="main" id="mainPanels" style="display:none"></div>
@@ -2593,6 +2621,8 @@ async function fetchGMoneyPick(g, elId) {
       + (rest ? "<div class=\"gmoney-text\">" + rest + "</div>" : "");
     gmoneyCache[gid] = html;
     el.innerHTML = html;
+    // Auto-log this pick for tracking
+    logGMoneyPick(gid, away, home, pick);
   } catch(e) {
     console.error("[G-Money] Failed:", e.message);
     el.innerHTML = "<div class=\"gmoney-head\"><div class=\"gmoney-title\">G-Money Bets</div></div><div class=\"gmoney-text\" style=\"color:var(--text3)\">Connection issue — reload and retry.</div>";
@@ -2931,13 +2961,162 @@ function refreshHomeStats() {
   if (finalEl) finalEl.textContent = finalCount || '—';
 }
 
+// ═══════════════════════════════════════════
+// G-MONEY PICKS PANEL — Track W/L + Bankroll
+// ═══════════════════════════════════════════
+
+// Storage keys
+const PICKS_KEY = 'gmoney_picks_2026';
+const BANKROLL_START = 1000;
+const BET_SIZE = 25; // simulated $25 per game
+
+function loadPicks() {
+  try { return JSON.parse(localStorage.getItem(PICKS_KEY) || '[]'); }
+  catch(e) { return []; }
+}
+
+function savePicks(picks) {
+  localStorage.setItem(PICKS_KEY, JSON.stringify(picks));
+}
+
+// Called when G-Money generates a pick — auto-log it
+function logGMoneyPick(gameId, awayName, homeName, pickText) {
+  const picks = loadPicks();
+  // Don't duplicate
+  if (picks.find(p => p.gameId === gameId)) return;
+  picks.push({
+    gameId,
+    game: awayName + ' vs ' + homeName,
+    pick: pickText,
+    result: 'pending', // 'win' | 'loss' | 'push' | 'pending'
+    pnl: 0,
+    date: new Date().toLocaleDateString('en-US',{month:'numeric',day:'numeric'}),
+    round: 'First Round',
+  });
+  savePicks(picks);
+}
+
+// Auto-resolve picks based on live scores
+function resolvePicksFromScores() {
+  const picks = loadPicks();
+  let changed = false;
+  for (const pick of picks) {
+    if (pick.result !== 'pending') continue;
+    // Find the score for this game
+    const score = liveScores[Object.keys(liveScores).find(k =>
+      !liveScores[k].flipped &&
+      (k.includes(pick.game.split(' vs ')[0].split(' ').pop().toUpperCase()) ||
+       k.includes(pick.game.split(' vs ')[1]?.split(' ').pop().toUpperCase() || ''))
+    )];
+    if (!score || score.status !== 'final') continue;
+    // Try to determine if pick won based on pick text
+    const pickText = (pick.pick || '').toLowerCase();
+    const awayWon = score.awayScore > score.homeScore;
+    const awayTeam = pick.game.split(' vs ')[0].split(' ').pop().toUpperCase();
+    const homeTeam = pick.game.split(' vs ')[1]?.split(' ').pop().toUpperCase() || '';
+    let result = 'push';
+    if (pickText.includes(awayTeam.toLowerCase()) && awayWon) result = 'win';
+    else if (pickText.includes(homeTeam.toLowerCase()) && !awayWon) result = 'win';
+    else if (pickText.includes(awayTeam.toLowerCase()) && !awayWon) result = 'loss';
+    else if (pickText.includes(homeTeam.toLowerCase()) && awayWon) result = 'loss';
+    pick.result = result;
+    pick.pnl = result === 'win' ? BET_SIZE : result === 'loss' ? -BET_SIZE : 0;
+    pick.score = (awayWon ? score.awayScore : score.homeScore) + '-' + (awayWon ? score.homeScore : score.awayScore);
+    changed = true;
+  }
+  if (changed) savePicks(picks);
+}
+
+function showPicksPanel() {
+  activeMainView = 'picks';
+  document.getElementById('homePanel').style.display = 'none';
+  document.getElementById('bracketPanel').style.display = 'none';
+  document.getElementById('picksPanel').style.display = '';
+  document.getElementById('mainPanels').style.display = 'none';
+  document.getElementById('homeNavBtn').classList.remove('active');
+  document.getElementById('bracketNavBtn').classList.remove('active');
+  document.getElementById('picksNavBtn').classList.add('active');
+  resolvePicksFromScores();
+  renderPicksPanel();
+}
+
+function renderPicksPanel() {
+  const picks = loadPicks();
+  const wins   = picks.filter(p => p.result === 'win').length;
+  const losses = picks.filter(p => p.result === 'loss').length;
+  const pending= picks.filter(p => p.result === 'pending').length;
+  const total  = wins + losses;
+  const pct    = total ? Math.round((wins/total)*100) : 0;
+  const pnl    = picks.reduce((s,p) => s + (p.pnl||0), 0);
+  const bankroll = BANKROLL_START + pnl;
+  const bankrollPct = Math.min(100, Math.max(0, (bankroll / (BANKROLL_START * 1.5)) * 100));
+  const pnlColor = pnl >= 0 ? 'green' : 'red';
+
+  const picksList = picks.length ? [...picks].reverse().map(p => {
+    const badge = p.result === 'win'  ? '<div class="pick-result-badge win">W</div>'
+                : p.result === 'loss' ? '<div class="pick-result-badge loss">L</div>'
+                : p.result === 'push' ? '<div class="pick-result-badge push">P</div>'
+                : '<div class="pick-result-badge pending">?</div>';
+    const pnlStr = p.result === 'pending' ? '<div class="pick-pnl" style="color:var(--text3)">$' + BET_SIZE + ' pending</div>'
+                 : p.pnl >= 0 ? '<div class="pick-pnl pos">+$' + p.pnl + '</div>'
+                 : '<div class="pick-pnl neg">-$' + Math.abs(p.pnl) + '</div>';
+    return `<div class="pick-record-item">
+      ${badge}
+      <div class="pick-game">
+        <div class="pick-game-title">${p.game}</div>
+        <div class="pick-game-detail">${p.date} · ${p.round}${p.score ? ' · ' + p.score : ''}</div>
+        <div class="pick-game-detail" style="color:var(--accent);margin-top:2px">${(p.pick||'').substring(0,60)}${(p.pick||'').length>60?'...':''}</div>
+      </div>
+      ${pnlStr}
+    </div>`;
+  }).join('') : `<div style="font-family:var(--mono);font-size:11px;color:var(--text3);padding:20px;text-align:center">
+    No picks recorded yet — open a game drawer and load G-Money's pick to start tracking! 🎯
+  </div>`;
+
+  document.getElementById('picksPanel').innerHTML = `<div style="padding-bottom:80px">
+
+    <!-- Hero Stats -->
+    <div class="picks-hero">
+      <div style="font-family:var(--mono);font-size:9px;letter-spacing:.15em;color:#B09DFF;text-transform:uppercase;margin-bottom:4px">💰 G-Money's 2026 Record</div>
+      <div style="font-family:var(--sans);font-size:22px;font-weight:800;color:var(--text)">${wins}W – ${losses}L${pending?' <span style="font-size:14px;color:var(--amber)">(${pending} pending)</span>':''}</div>
+      <div style="font-family:var(--mono);font-size:11px;color:var(--text3);margin-top:2px">NCAA Tournament 2026 · $${BET_SIZE}/game simulated</div>
+      <div class="picks-stat-row">
+        <div class="picks-stat"><div class="picks-stat-v ${pct>=55?'green':pct>=45?'amber':'red'}">${total?pct+'%':'—'}</div><div class="picks-stat-l">Win Rate</div></div>
+        <div class="picks-stat"><div class="picks-stat-v ${pnlColor}">${pnl>=0?'+':''}$${pnl}</div><div class="picks-stat-l">P&L</div></div>
+        <div class="picks-stat"><div class="picks-stat-v">${wins+losses+pending}</div><div class="picks-stat-l">Total Picks</div></div>
+        <div class="picks-stat"><div class="picks-stat-v ${bankroll>=BANKROLL_START?'green':'red'}">$${bankroll}</div><div class="picks-stat-l">Bankroll</div></div>
+      </div>
+    </div>
+
+    <!-- Bankroll tracker -->
+    <div class="bankroll-bar">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div style="font-family:var(--mono);font-size:9px;color:var(--text3);text-transform:uppercase">Simulated $1,000 Bankroll</div>
+        <div style="font-family:var(--mono);font-size:10px;color:${bankroll>=BANKROLL_START?'var(--green)':'var(--red)'}">$${bankroll} / $${BANKROLL_START}</div>
+      </div>
+      <div class="bankroll-track"><div class="bankroll-fill" style="width:${bankrollPct}%;background:${bankroll>=BANKROLL_START?'linear-gradient(90deg,var(--green),#00E88280)':'linear-gradient(90deg,var(--red),#FF557780)'}"></div></div>
+      <div style="font-family:var(--mono);font-size:9px;color:var(--text3)">$${BET_SIZE} flat bet per game · For entertainment only 🎰</div>
+    </div>
+
+    <!-- Picks list -->
+    <div style="font-family:var(--mono);font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">Pick History</div>
+    ${picksList}
+
+    <div style="font-family:var(--mono);font-size:9px;color:var(--text3);text-align:center;padding:16px;border-top:1px solid var(--border);margin-top:8px">
+      ⚠️ All picks are AI-generated for entertainment only. Not financial advice. Bet responsibly.
+    </div>
+  </div>`;
+}
+
 function showHomePanel() {
   activeMainView = 'home';
   document.getElementById('homePanel').style.display = '';
   document.getElementById('bracketPanel').style.display = 'none';
+  document.getElementById('picksPanel').style.display = 'none';
   document.getElementById('mainPanels').style.display = 'none';
   document.getElementById('homeNavBtn').classList.add('active');
   document.getElementById('bracketNavBtn').classList.remove('active');
+  document.getElementById('picksNavBtn')?.classList.remove('active');
   document.querySelectorAll('.day-tab').forEach(t => t.classList.remove('active'));
   renderHome();
   // Load smack talk after odds fetch completes — wait 30s minimum
@@ -2948,9 +3127,11 @@ function showBracketPanel() {
   activeMainView = 'bracket';
   document.getElementById('homePanel').style.display = 'none';
   document.getElementById('bracketPanel').style.display = '';
+  document.getElementById('picksPanel').style.display = 'none';
   document.getElementById('mainPanels').style.display = 'none';
   document.getElementById('homeNavBtn').classList.remove('active');
   document.getElementById('bracketNavBtn').classList.add('active');
+  document.getElementById('picksNavBtn')?.classList.remove('active');
   document.querySelectorAll('.day-tab').forEach(t => t.classList.remove('active'));
   renderBracketPanel();
 }
@@ -3554,6 +3735,18 @@ async function _doFetchBracket() {
     }
 
     console.log('[Bracket] Fetched', allEvents.length, 'events from ESPN');
+    if (allEvents.length > 0) {
+      const sample = allEvents[0];
+      const sampleComp = sample.competitions?.[0];
+      console.log('[Bracket] Sample event fields:', {
+        name: sample.name,
+        shortName: sample.shortName,
+        seasonSlug: sample.season?.slug,
+        statusDesc: sample.status?.type?.description,
+        noteHeadline: sampleComp?.notes?.[0]?.headline,
+        noteType: sampleComp?.notes?.[0]?.type,
+      });
+    }
     buildBracketFromEvents(allEvents);
     bracketDataLoaded = true;
     bracketFetchPromise = null;
@@ -3606,13 +3799,33 @@ function buildBracketFromEvents(events) {
     const comp = ev.competitions?.[0];
     if (!comp) continue;
 
-    // Get round
-    const roundName = (ev.status?.type?.description || comp.notes?.[0]?.headline || '').toLowerCase();
+    // Get round — check multiple ESPN fields
+    const roundName = [
+      ev.status?.type?.description,
+      ev.season?.slug,
+      comp.notes?.[0]?.headline,
+      comp.notes?.[0]?.type,
+      ev.name,
+      ev.shortName,
+    ].filter(Boolean).join(' ').toLowerCase();
+
     let roundKey = null;
     for (const [k,v] of Object.entries(roundMap)) {
       if (roundName.includes(k)) { roundKey = v; break; }
     }
-    if (!roundKey) continue;
+    if (!roundKey) {
+      // Try ESPN season type slugs like "ncaa-tournament-1st-round"
+      if (roundName.includes('1st') || roundName.includes('first')) roundKey = 'r64';
+      else if (roundName.includes('2nd') || roundName.includes('second')) roundKey = 'r32';
+      else if (roundName.includes('sweet') || roundName.includes('3rd')) roundKey = 's16';
+      else if (roundName.includes('elite') || roundName.includes('regional')) roundKey = 'e8';
+      else if (roundName.includes('final four') || roundName.includes('semifinal')) roundKey = 'f4';
+      else if (roundName.includes('championship') || roundName.includes('national')) roundKey = 'natty';
+    }
+    if (!roundKey) {
+      console.log('[Bracket] Unmatched round:', roundName.substring(0,80));
+      continue;
+    }
 
     // Get region
     const regionRaw = (comp.notes?.[0]?.headline || ev.name || '').toLowerCase();

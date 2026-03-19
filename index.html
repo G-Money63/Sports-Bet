@@ -3907,22 +3907,6 @@ function buildFallbackBracket() {
     midwest: {r64:[], r32:[], s16:[], e8:[]},
   };
 
-  // Round detection from game ID prefix or day key
-  function getRound(dayKey, g) {
-    const id = (g.id||'').toLowerCase();
-    if (id.startsWith('s16')) return 'r32'; // Second round (Sweet 16 feeders)
-    if (id.startsWith('e8'))  return 's16';
-    if (id.startsWith('f4'))  return 'e8';
-    // First Four games (tue/wed) feed into r64
-    const dk = dayKey.replace('ncaam-w1_','');
-    if (dk === 'tue' || dk === 'wed') return 'r64'; // First Four → count as r64
-    if (dk === 'thu' || dk === 'fri') return 'r64'; // First Round
-    if (dk === 'sat' || dk === 'sun') return 'r32'; // Second Round
-    if (dk === 'thu2'|| dk === 'fri2') return 's16';
-    if (dk === 'sat2'|| dk === 'sun2') return 'e8';
-    return 'r64';
-  }
-
   // Convert static game to bracket format with live score overlay
   function toBracket(g, dayKey) {
     const awayAbbr = (g.away?.abbr || '').toUpperCase();
@@ -3958,35 +3942,36 @@ function buildFallbackBracket() {
     };
   }
 
-  // Scan all STATIC_GAMES and sort by region
+  // Scan STATIC_GAMES — only grab First Round and First Four games for R64
+  // Later rounds (R32, S16, E8) are filled automatically by advanceWinners()
+  const r64days = ['tue','wed','thu','fri']; // First Four + First Round only
   for (const [fullKey, data] of Object.entries(STATIC_GAMES)) {
     if (!fullKey.startsWith('ncaam-w1_')) continue;
     if (!data?.games) continue;
     const dayKey = fullKey.replace('ncaam-w1_','');
+    if (!r64days.includes(dayKey)) continue; // skip R32/S16/E8 shell days
     for (const g of data.games) {
       const region = (g.region || '').toLowerCase();
       if (!byRegion[region]) continue;
-      const round = getRound(fullKey, g);
-      if (byRegion[region][round]) {
-        byRegion[region][round].push(toBracket(g, dayKey));
-      }
+      byRegion[region].r64.push(toBracket(g, fullKey));
     }
   }
 
-  // Fill any empty rounds with TBD slots
+  // Fill later rounds with TBD — advanceWinners() will populate from results
   const roundDates = {
     r32: {east:'SAT 3/21', west:'SUN 3/22', south:'SAT 3/21', midwest:'SAT 3/21'},
     s16: {east:'THU 3/26', west:'FRI 3/27', south:'THU 3/26', midwest:'FRI 3/27'},
     e8:  {east:'SAT 3/28', west:'SUN 3/29', south:'SAT 3/28', midwest:'SUN 3/29'},
   };
   for (const [rk, region] of Object.entries(byRegion)) {
-    for (const round of ['r32','s16','e8']) {
-      if (!region[round].length) {
-        region[round] = makeTBDSlots(round==='r64'?4:round==='r32'?2:1, roundDates[round][rk]||'TBD');
-      }
-    }
-    // Limit r64 to 4 games (the actual bracket matchups, not all games)
-    if (region.r64.length > 4) region.r64 = region.r64.slice(0, 4);
+    // Sort r64 by seed so bracket order is consistent
+    region.r64.sort((a,b) => (parseInt(a.a.s)||99) - (parseInt(b.a.s)||99));
+    // Limit to 4 games per region (should already be 4 but just in case)
+    region.r64 = region.r64.slice(0, 4);
+    // Set TBD slots for all later rounds
+    region.r32 = makeTBDSlots(2, roundDates.r32[rk] || 'SAT/SUN');
+    region.s16 = makeTBDSlots(1, roundDates.s16[rk] || 'THU/FRI');
+    region.e8  = makeTBDSlots(1, roundDates.e8[rk]  || 'SAT/SUN');
   }
 
   BRACKET_DATA = {
@@ -4123,91 +4108,147 @@ function drawFinalFour() {
 
 // G-Money's pre-tournament bracket picks
 const GMONEY_BRACKET = {
-  // Final Four picks
-  f4: ['MICH', 'DUKE', 'ARIZ', 'FLA'],
-  // Championship matchup
-  championship: ['MICH', 'ARIZ'],
-  // Champion
   champion: 'MICH',
-  // Region winners (Elite Eight picks)
-  regionWinners: { midwest:'MICH', east:'DUKE', west:'ARIZ', south:'FLA' },
-  // Key upset picks
-  upsets: [
-    {seed:11, team:'BYU', over:'#6', round:'R32', note:'Dybantsa too explosive for any 6-seed'},
-    {seed:10, team:'WIS', over:'#7', round:'R32', note:'Badgers peaking at right time'},
-    {seed:11, team:'MSU', over:'#6', round:'S16', note:'Fears orchestrates upset over higher seed'},
-    {seed:5,  team:'VAN', over:'#4', round:'R32', note:'Vandy hot after SEC tourney win over Florida'},
-  ],
-  analysis: 'Michigan wins it all. Best frontcourt in America with Lendeborg, motivated after losing to Duke. Arizona is the value play at +425 — easiest path of any 1-seed. Duke falls in Elite Eight to Michigan in a rematch. Florida defends until South region Final where Arizona ends their run.',
+  championship: ['MICH', 'ARIZ'],
+  analysis: "Michigan wins it all. Best frontcourt in America with Lendeborg, motivated after losing to Duke in the regular season. Arizona is the value play at +425 — easiest path of any 1-seed. Duke falls in Elite Eight to Michigan in a rematch for the ages.",
   date: 'Mar 16, 2026',
-  record: null, // will be calculated as tournament progresses
+  // Full predicted bracket by region
+  regions: {
+    east: {
+      name: 'East', color: '#4A90D9',
+      r64: [
+        {a:'DUKE',  as:1,  h:'SIE',  hs:16, pick:'DUKE',  note:'Cameron Boozer is on another level'},
+        {a:'OSU',   as:8,  h:'TCU',  hs:9,  pick:'TCU',   note:'TCU +1.5 covers in a toss-up'},
+        {a:'LOU',   as:6,  h:'USF',  hs:11, pick:'USF',   note:'11-seeds are 8-4 ATS, USF +3.5'},
+        {a:'MSU',   as:3,  h:'NDSU', hs:14, pick:'MSU',   note:'Fears too good, MSU rolls'},
+      ],
+      r32:  [{a:'DUKE', h:'TCU',  pick:'DUKE', note:'Duke handles the 8/9 winner comfortably'},
+             {a:'USF',  h:'MSU',  pick:'MSU',  note:'MSU too much size for USF upset run'}],
+      s16:  [{a:'DUKE', h:'MSU',  pick:'DUKE', note:'Battle of blue bloods — Boozer wins it'}],
+      e8:   [{a:'DUKE', h:'UCONN',pick:'DUKE', note:'Duke to the Final Four — Scheyer masterclass'}],
+    },
+    west: {
+      name: 'West', color: '#FFC230',
+      r64: [
+        {a:'ARIZ',  as:1,  h:'LIU',  hs:16, pick:'ARIZ',  note:'Arizona rolls — Burries/Peat duo unstoppable'},
+        {a:'BYU',   as:5,  h:'TEX',  hs:11, pick:'BYU',   note:'Dybantsa 30+ — BYU covers -3.5 easy'},
+        {a:'SMC',   as:4,  h:'TXAM', hs:13, pick:'SMC',   note:'Saint Mary\'s efficiency too much'},
+        {a:'GONZ',  as:3,  h:'KENN', hs:14, pick:'GONZ',  note:'Gonzaga locks it down early'},
+      ],
+      r32:  [{a:'ARIZ', h:'BYU',  pick:'ARIZ', note:'Arizona contains Dybantsa — best defense in tourney'},
+             {a:'SMC',  h:'GONZ', pick:'GONZ', note:'Gonzaga grind beats Saint Mary\'s efficiency'}],
+      s16:  [{a:'ARIZ', h:'GONZ', pick:'ARIZ', note:'Arizona pulls away late — Burries takes over'}],
+      e8:   [{a:'ARIZ', h:'KAN',  pick:'ARIZ', note:'Arizona Final Four — Peterson can\'t solve their D'}],
+    },
+    south: {
+      name: 'South', color: '#00E882',
+      r64: [
+        {a:'FLA',   as:1,  h:'LEH',  hs:16, pick:'FLA',   note:'Florida defending champs — no slip here'},
+        {a:'NEB',   as:4,  h:'TROY', hs:13, pick:'NEB',   note:'Nebraska finally gets that first win'},
+        {a:'ILL',   as:6,  h:'PENN', hs:11, pick:'ILL',   note:'Wagler drops 30 on Penn — over 146.5'},
+        {a:'HOU',   as:2,  h:'IDHO', hs:15, pick:'HOU',   note:'Houston pack D — lowest total on slate'},
+      ],
+      r32:  [{a:'FLA',  h:'NEB',  pick:'FLA',  note:'Florida too experienced for Nebraska'},
+             {a:'ILL',  h:'HOU',  pick:'HOU',  note:'Houston\'s defense shuts down Wagler'}],
+      s16:  [{a:'FLA',  h:'HOU',  pick:'FLA',  note:'Florida beats Houston in rematch of 2025 Final'}],
+      e8:   [{a:'FLA',  h:'TENN', pick:'FLA',  note:'Gators back to Final Four — defending their crown'}],
+    },
+    midwest: {
+      name: 'Midwest', color: '#FF5577',
+      r64: [
+        {a:'MICH',  as:1,  h:'HOW',  hs:16, pick:'MICH',  note:'Michigan crushes — Lendeborg 25/12'},
+        {a:'ARK',   as:4,  h:'HAW',  hs:13, pick:'ARK',   note:'Arkansas hot off SEC tourney win'},
+        {a:'VAN',   as:5,  h:'MCNS', hs:12, pick:'VAN',   note:'Vandy peaked at right time'},
+        {a:'UGA',   as:8,  h:'SLU',  hs:9,  pick:'UGA',   note:'Slight lean to Georgia — coin flip'},
+      ],
+      r32:  [{a:'MICH', h:'ARK',  pick:'MICH', note:'Michigan defense smothers Razorbacks'},
+             {a:'VAN',  h:'UGA',  pick:'VAN',  note:'Vandy\'s momentum too strong to stop'}],
+      s16:  [{a:'MICH', h:'VAN',  pick:'MICH', note:'Michigan too big — Vandy run ends here'}],
+      e8:   [{a:'MICH', h:'IOWA', pick:'MICH', note:'Michigan to Final Four — motivated and dangerous'}],
+    },
+  },
 };
+
 
 function drawGMoneyBracket() {
   document.getElementById('brkRoundHdr').innerHTML = '';
-  document.getElementById('brkArea').innerHTML = `
-    <div style="padding:14px">
 
-      <!-- Header -->
-      <div style="background:linear-gradient(135deg,#7C5CFC18,#FF557708);border:1px solid #7C5CFC35;border-radius:12px;padding:14px;margin-bottom:12px;position:relative;overflow:hidden">
-        <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#7C5CFC,#FF5577,#FFC230)"></div>
-        <div style="font-family:var(--mono);font-size:9px;color:#B09DFF;text-transform:uppercase;letter-spacing:.12em;margin-bottom:6px">💰 G-Money's Bracket · Filed ${GMONEY_BRACKET.date}</div>
-        <div style="font-family:var(--sans);font-size:13px;line-height:1.5;color:var(--text)">${GMONEY_BRACKET.analysis}</div>
-      </div>
+  // Helper: pick card
+  function pickCard(away, awayS, home, homeS, pick, note, isChamp) {
+    const aWin = pick === away, hWin = pick === home;
+    const accent = isChamp ? 'var(--amber)' : 'var(--green)';
+    return '<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:6px">'
+      + '<div style="display:flex;align-items:stretch">'
+      + '<div style="width:3px;background:' + accent + ';flex-shrink:0"></div>'
+      + '<div style="flex:1;padding:8px 10px">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'
+      + '<div style="font-family:var(--mono);font-size:11px;font-weight:700;color:' + (aWin?accent:'var(--text3)') + '">#' + awayS + ' ' + away + (aWin?' ✓':'') + '</div>'
+      + '<div style="font-family:var(--mono);font-size:9px;color:var(--text3)">vs</div>'
+      + '<div style="font-family:var(--mono);font-size:11px;font-weight:700;color:' + (hWin?accent:'var(--text3)') + '">' + home + ' #' + homeS + (hWin?' ✓':'') + '</div>'
+      + '</div>'
+      + '<div style="font-family:var(--mono);font-size:9px;color:var(--text3)">' + note + '</div>'
+      + '</div></div></div>';
+  }
 
-      <!-- Champion pick -->
-      <div style="background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px;text-align:center">
-        <div style="font-family:var(--mono);font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">🏆 G-Money's Champion</div>
-        <div style="font-family:var(--sans);font-size:32px;font-weight:800;color:var(--amber)">${GMONEY_BRACKET.champion}</div>
-        <div style="font-family:var(--mono);font-size:10px;color:var(--text3);margin-top:4px">Michigan Wolverines · Midwest #1</div>
-        <div style="font-family:var(--mono);font-size:10px;color:var(--green);margin-top:4px">Backed at +350 odds</div>
-      </div>
+  function regionSection(rk) {
+    const rd = GMONEY_BRACKET.regions[rk];
+    if (!rd) return '';
+    let html = '<div style="background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:12px;position:relative;overflow:hidden">'
+      + '<div style="position:absolute;top:0;left:0;width:3px;bottom:0;background:' + rd.color + '"></div>'
+      + '<div style="font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:' + rd.color + ';margin-bottom:10px;padding-left:6px">' + rd.name + ' Region</div>';
 
-      <!-- Final Four -->
-      <div style="font-family:var(--mono);font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">Final Four Picks</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
-        ${GMONEY_BRACKET.f4.map(team => {
-          const actual = Object.values(liveScores).filter(g=>!g.flipped&&g.status==='final');
-          const correct = null; // will auto-verify as results come in
-          return `<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:8px">
-            <div style="width:32px;height:32px;border-radius:8px;background:var(--amber-d);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:10px;font-weight:700;color:var(--amber);flex-shrink:0">${team}</div>
-            <div>
-              <div style="font-family:var(--sans);font-size:12px;font-weight:600;color:var(--text)">${team}</div>
-              <div style="font-family:var(--mono);font-size:9px;color:var(--text3)">Final Four</div>
-            </div>
-          </div>`;
-        }).join('')}
-      </div>
+    const rounds = [
+      {key:'r64', label:'First Round', games: rd.r64},
+      {key:'r32', label:'Second Round', games: rd.r32},
+      {key:'s16', label:'Sweet 16', games: rd.s16},
+      {key:'e8',  label:'Elite Eight', games: rd.e8},
+    ];
+    for (const round of rounds) {
+      if (!round.games || !round.games.length) continue;
+      html += '<div style="font-family:var(--mono);font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin:8px 0 4px">' + round.label + '</div>';
+      for (const g of round.games) {
+        html += pickCard(g.a, g.as, g.h, g.hs, g.pick, g.note, round.key==='e8');
+      }
+    }
+    html += '</div>';
+    return html;
+  }
 
-      <!-- Championship -->
-      <div style="font-family:var(--mono);font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">Championship Game</div>
-      <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between">
-        <div style="text-align:center;flex:1">
-          <div style="font-family:var(--sans);font-size:18px;font-weight:800;color:var(--amber)">${GMONEY_BRACKET.championship[0]}</div>
-          <div style="font-family:var(--mono);font-size:9px;color:var(--green)">G-Money's Pick</div>
-        </div>
-        <div style="font-family:var(--mono);font-size:12px;color:var(--text3)">vs</div>
-        <div style="text-align:center;flex:1">
-          <div style="font-family:var(--sans);font-size:18px;font-weight:800;color:var(--text)">${GMONEY_BRACKET.championship[1]}</div>
-          <div style="font-family:var(--mono);font-size:9px;color:var(--text3)">Runner-up</div>
-        </div>
-      </div>
+  let html = '<div style="padding:14px">'
+    // Header
+    + '<div style="background:linear-gradient(135deg,#7C5CFC18,#FF557708);border:1px solid #7C5CFC35;border-radius:12px;padding:14px;margin-bottom:12px;position:relative;overflow:hidden">'
+    + '<div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#7C5CFC,#FF5577,#FFC230)"></div>'
+    + '<div style="font-family:var(--mono);font-size:9px;color:#B09DFF;text-transform:uppercase;letter-spacing:.12em;margin-bottom:6px">💰 G-Money\'s Bracket · Filed ' + GMONEY_BRACKET.date + '</div>'
+    + '<div style="font-family:var(--sans);font-size:12px;line-height:1.5;color:var(--text)">' + GMONEY_BRACKET.analysis + '</div>'
+    + '</div>'
 
-      <!-- Upset picks -->
-      <div style="font-family:var(--mono);font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">💣 G-Money's Upset Picks</div>
-      ${GMONEY_BRACKET.upsets.map(u => `
-        <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px;display:flex;align-items:flex-start;gap:10px">
-          <div style="background:var(--red-d);border:1px solid #FF557730;border-radius:6px;padding:2px 7px;font-family:var(--mono);font-size:10px;color:var(--red);flex-shrink:0">#${u.seed}</div>
-          <div>
-            <div style="font-family:var(--sans);font-size:12px;font-weight:600;color:var(--text)">${u.team} upsets ${u.over} seed in ${u.round}</div>
-            <div style="font-family:var(--mono);font-size:10px;color:var(--text3);margin-top:2px">${u.note}</div>
-          </div>
-        </div>`).join('')}
+    // Champion
+    + '<div style="background:var(--card2);border:1px solid var(--amber);border-radius:12px;padding:12px;margin-bottom:12px;text-align:center">'
+    + '<div style="font-family:var(--mono);font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">🏆 Champion</div>'
+    + '<div style="font-family:var(--sans);font-size:28px;font-weight:800;color:var(--amber)">' + GMONEY_BRACKET.champion + '</div>'
+    + '<div style="font-family:var(--mono);font-size:9px;color:var(--green);margin-top:4px">Michigan Wolverines · Backed at +350</div>'
+    + '</div>'
 
-      <div style="font-family:var(--mono);font-size:9px;color:var(--text3);text-align:center;padding:12px;border-top:1px solid var(--border);margin-top:4px">
-        G-Money's bracket locked in before tournament · For entertainment only
-      </div>
-    </div>`;
+    // Championship game
+    + '<div style="font-family:var(--mono);font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">🏆 Championship · Mon Apr 6</div>'
+    + pickCard(GMONEY_BRACKET.championship[0], '1', GMONEY_BRACKET.championship[1], '1', GMONEY_BRACKET.champion, 'Michigan\'s Lendeborg outduels Arizona — G-Money\'s pick wins it all', true)
+
+    // Final Four
+    + '<div style="font-family:var(--mono);font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin:10px 0 6px">Final Four · Sat Apr 4</div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px">'
+    + ['MICH','DUKE','ARIZ','FLA'].map(t => '<div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px;text-align:center"><div style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--amber)">' + t + '</div></div>').join('')
+    + '</div>'
+
+    // All 4 regions
+    + regionSection('east')
+    + regionSection('west')
+    + regionSection('south')
+    + regionSection('midwest')
+
+    + '<div style="font-family:var(--mono);font-size:9px;color:var(--text3);text-align:center;padding:12px;border-top:1px solid var(--border)">G-Money\'s bracket locked in before tournament · For entertainment only 🎯</div>'
+    + '</div>';
+
+  document.getElementById('brkArea').innerHTML = html;
 }
 
 

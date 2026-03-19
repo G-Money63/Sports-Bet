@@ -4021,43 +4021,73 @@ function drawBracket(rk) {
   }
 
   const SH=50, SG=6;
-  function col(games, lbl, pad) {
-    return '<div style="display:flex;flex-direction:column;flex-shrink:0">'
-      +'<div style="font-family:var(--mono);font-size:7px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;height:14px;line-height:14px">'+lbl+'</div>'
-      +(pad?'<div style="height:'+pad+'px"></div>':'')
-      +games.map(g=>'<div style="margin-bottom:'+SG+'px">'+card(g)+'</div>').join('')
+
+  // Flex-based layout — no pixel math, cards self-align
+  function connSvg(h) {
+    const mid = h/2;
+    return '<svg width="18" height="'+h+'" style="flex-shrink:0;overflow:visible;display:block">'
+      +'<line x1="0" y1="0" x2="9" y2="0" stroke="var(--border2)" stroke-width="1"/>'
+      +'<line x1="0" y1="'+h+'" x2="9" y2="'+h+'" stroke="var(--border2)" stroke-width="1"/>'
+      +'<line x1="9" y1="0" x2="9" y2="'+h+'" stroke="var(--border2)" stroke-width="1"/>'
+      +'<line x1="9" y1="'+mid+'" x2="18" y2="'+mid+'" stroke="var(--border2)" stroke-width="1"/>'
+      +'</svg>';
+  }
+
+  // One pair: two R64 cards + connector + one R32 card, all flex-aligned
+  function pair(g1, g2, r32slot) {
+    const pairH = SH*2 + SG;
+    return '<div style="display:flex;align-items:stretch;flex-shrink:0">'
+      // two R64 stacked
+      +'<div style="display:flex;flex-direction:column;flex-shrink:0">'
+      +'<div style="margin-bottom:'+SG+'px">'+card(g1)+'</div>'
+      +card(g2)
+      +'</div>'
+      // connector
+      +'<div style="display:flex;align-items:center;flex-shrink:0">'+connSvg(pairH)+'</div>'
+      // R32 slot centered
+      +'<div style="display:flex;align-items:center;flex-shrink:0">'+card(r32slot)+'</div>'
       +'</div>';
   }
 
-  const LH = 14; // label height
-  const R32_PAD = (SH+SG)/2;                    // 29 — centers R32[0] on R64[0]+R64[1]
-  const S16_PAD = R32_PAD + (SH+SG);            // 87 — centers S16[0] on R32[0]+R32[1]
-  const E8_PAD  = S16_PAD;                       // same — E8 connects straight from S16
+  const p0 = pair(r64[0], r64[1], r32[0]);
+  const p1 = pair(r64[2], r64[3], r32[1]);
 
-  // conn1: 4 R64 games → 2 R32 slots. Height = 4 slots. Top = LH (after label)
-  // conn2: 2 R32 games → 1 S16 slot. Gap between R32[0] and R32[1] = SH+SG
-  const R32_GAP = SH + SG; // gap between two R32 cards
-  const CONN2_H = SH + R32_GAP + SH; // full height of conn2
+  // S16 + E8 alongside both pairs
+  const pairsTotalH = SH*2+SG;
+  const twoGroupH = pairsTotalH*2+SG;
+
+  const rightCols =
+    '<div style="display:flex;align-items:center;flex-shrink:0;align-self:stretch">'+connSvg(twoGroupH)+'</div>'
+    +'<div style="display:flex;align-items:center;flex-shrink:0;align-self:stretch">'+card(s16[0])+'</div>'
+    +'<div style="display:flex;align-items:center;flex-shrink:0;align-self:stretch">'
+    +'<svg width="18" height="2" style="overflow:visible;display:block"><line x1="0" y1="0" x2="18" y2="0" stroke="var(--border2)" stroke-width="1"/></svg>'
+    +'</div>'
+    +'<div style="display:flex;align-items:center;flex-shrink:0;align-self:stretch">'+card(e8[0])+'</div>';
+
+  const labels =
+    '<div style="display:flex;gap:0;margin-bottom:4px;padding-left:0">'
+    +'<div style="width:82px;flex-shrink:0;font-family:var(--mono);font-size:7px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em">R64</div>'
+    +'<div style="width:18px;flex-shrink:0"></div>'
+    +'<div style="width:82px;flex-shrink:0;font-family:var(--mono);font-size:7px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em">R32</div>'
+    +'<div style="width:18px;flex-shrink:0"></div>'
+    +'<div style="width:82px;flex-shrink:0;font-family:var(--mono);font-size:7px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em">S16</div>'
+    +'<div style="width:18px;flex-shrink:0"></div>'
+    +'<div style="width:82px;flex-shrink:0;font-family:var(--mono);font-size:7px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em">E8</div>'
+    +'</div>';
 
   document.getElementById('brkRoundHdr').innerHTML =
     '<div style="font-family:var(--mono);font-size:8px;color:var(--text3);padding:2px 0;text-transform:uppercase;letter-spacing:.08em">'+rk.toUpperCase()+' REGION</div>';
 
   document.getElementById('brkArea').innerHTML =
-    '<div style="display:flex;align-items:flex-start;gap:0;padding:6px 14px 80px;overflow-x:auto">'
-    + col(r64,'R64',0)
-    + conn(4,SH,SG,LH)
-    + col(r32,'R32',R32_PAD)
-    + '<div style="flex-shrink:0;margin-top:'+(LH+R32_PAD+SH/2)+'px">'
-    +   '<svg width="18" height="'+(SH+R32_GAP)+'" style="overflow:visible;display:block">'
-    +     '<line x1="0" y1="0" x2="9" y2="0" stroke="var(--border2)" stroke-width="1"/>'
-    +     '<line x1="0" y1="'+(SH+R32_GAP)+'" x2="9" y2="'+(SH+R32_GAP)+'" stroke="var(--border2)" stroke-width="1"/>'
-    +     '<line x1="9" y1="0" x2="9" y2="'+(SH+R32_GAP)+'" stroke="var(--border2)" stroke-width="1"/>'
-    +     '<line x1="9" y1="'+((SH+R32_GAP)/2)+'" x2="18" y2="'+((SH+R32_GAP)/2)+'" stroke="var(--border2)" stroke-width="1"/>'
-    +   '</svg>'
+    '<div style="padding:6px 14px 80px;overflow-x:auto">'
+    + labels
+    + '<div style="display:flex;align-items:stretch;flex-shrink:0">'
+    +   '<div style="display:flex;flex-direction:column;flex-shrink:0">'
+    +     '<div style="margin-bottom:'+SG+'px">'+p0+'</div>'
+    +     p1
+    +   '</div>'
+    +   rightCols
     + '</div>'
-    + col(s16,'S16',S16_PAD)
-    + '<div style="flex-shrink:0;margin-top:'+(LH+S16_PAD+SH/2-1)+'px"><svg width="18" height="2" style="overflow:visible"><line x1="0" y1="0" x2="18" y2="0" stroke="var(--border2)" stroke-width="1"/></svg></div>'
-    + col(e8,'E8',E8_PAD)
     + '</div>';
 }
 
@@ -4153,7 +4183,7 @@ function drawFinalFour() {
 const GMONEY_BRACKET = {
   champion: 'MICH',
   championship: ['MICH','ARIZ'],
-  analysis: "Michigan wins it all. Best frontcourt in America with Lendeborg. Arizona is the value play at +425 — easiest path of any 1-seed. Duke falls in Elite Eight to Michigan in a rematch for the ages.",
+  analysis: "Michigan wins it all. Best frontcourt in America with Lendeborg. Path: beats the South region, then faces Arizona in the Championship. Arizona wins the West, beats Duke in the Final Four. MICH vs ARIZ in the title game — Michigan's size wins it.",
   date: 'Mar 16, 2026',
   regions: {
     east: { name:'East',
@@ -4227,8 +4257,25 @@ function drawGMoneyBracket() {
     +'<div style="text-align:center;background:var(--card2);border:1px solid var(--amber);border-radius:8px;padding:10px;margin-bottom:10px"><div style="font-family:var(--mono);font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">🏆 Champion</div><div style="font-family:var(--sans);font-size:24px;font-weight:800;color:var(--amber)">'+GMONEY_BRACKET.champion+'</div><div style="font-family:var(--mono);font-size:9px;color:var(--green);margin-top:2px">Michigan · +350 backed</div></div>'
     +'<div style="font-family:var(--mono);font-size:8px;color:var(--text3);text-transform:uppercase;margin-bottom:5px">Championship · Apr 6</div>'
     +'<div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 12px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center"><span style="font-family:var(--sans);font-size:14px;font-weight:800;color:var(--amber)">'+GMONEY_BRACKET.championship[0]+'</span><span style="font-family:var(--mono);font-size:9px;color:var(--text3)">vs</span><span style="font-family:var(--sans);font-size:14px;font-weight:800;color:var(--text)">'+GMONEY_BRACKET.championship[1]+'</span></div>'
-    +'<div style="font-family:var(--mono);font-size:8px;color:var(--text3);text-transform:uppercase;margin-bottom:5px">Final Four · Apr 4</div>'
-    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px">'+['MICH·Midwest','DUKE·East','ARIZ·West','FLA·South'].map(s=>{const[t,r]=s.split('·');return '<div style="background:var(--card);border:1px solid var(--border);border-radius:7px;padding:7px;text-align:center"><div style="font-family:var(--sans);font-size:12px;font-weight:700;color:var(--text)">'+t+'</div><div style="font-family:var(--mono);font-size:8px;color:var(--text3)">'+r+'</div></div>';}).join('')+'</div>';
+    +'<div style="font-family:var(--mono);font-size:8px;color:var(--text3);text-transform:uppercase;margin-bottom:5px">Final Four · Apr 4 · Houston</div>'
+    +'<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px">'
+    // Semifinal 1: East vs West
+    +'<div style="background:var(--card);border:1px solid var(--border);border-radius:7px;padding:7px">'
+    +'<div style="font-family:var(--mono);font-size:7px;color:var(--text3);margin-bottom:4px">SEMIFINAL 1 · East vs West</div>'
+    +'<div style="display:flex;justify-content:space-between;align-items:center">'
+    +'<div style="font-family:var(--sans);font-size:12px;font-weight:700;color:var(--text)">DUKE <span style="font-family:var(--mono);font-size:8px;color:var(--text3)">#1 East</span></div>'
+    +'<div style="font-family:var(--mono);font-size:9px;color:var(--text3)">vs</div>'
+    +'<div style="font-family:var(--sans);font-size:12px;font-weight:700;color:var(--green)">ARIZ → <span style="font-family:var(--mono);font-size:8px;color:var(--text3)">#1 West</span></div>'
+    +'</div></div>'
+    // Semifinal 2: South vs Midwest
+    +'<div style="background:var(--card);border:1px solid var(--border);border-radius:7px;padding:7px">'
+    +'<div style="font-family:var(--mono);font-size:7px;color:var(--text3);margin-bottom:4px">SEMIFINAL 2 · South vs Midwest</div>'
+    +'<div style="display:flex;justify-content:space-between;align-items:center">'
+    +'<div style="font-family:var(--sans);font-size:12px;font-weight:700;color:var(--text)">FLA <span style="font-family:var(--mono);font-size:8px;color:var(--text3)">#1 South</span></div>'
+    +'<div style="font-family:var(--mono);font-size:9px;color:var(--text3)">vs</div>'
+    +'<div style="font-family:var(--sans);font-size:12px;font-weight:700;color:var(--green)">MICH → <span style="font-family:var(--mono);font-size:8px;color:var(--text3)">#1 Midwest</span></div>'
+    +'</div></div>'
+    +'</div>';
   for(const[rk,rd] of Object.entries(gb)){
     const col=regionColors[rk]||'var(--accent)';
     html+='<div style="margin-bottom:12px;border:1px solid var(--border);border-radius:8px;overflow:hidden"><div style="padding:5px 10px;font-family:var(--mono);font-size:8px;font-weight:500;text-transform:uppercase;letter-spacing:.1em;color:'+col+';border-bottom:1px solid var(--border)">'+rd.name+' Region</div><div style="display:flex;align-items:flex-start;padding:8px 10px;overflow-x:auto;gap:0">'+gcol(rd.r64,'R64',0)+conn(4,SH,SG,13)+gcol(rd.r32,'R32',(SH+SG)/2)+conn(2,SH,SH+SG*5,13+(SH+SG)/2)+gcol(rd.s16,'S16',(SH+SG)*1.5)+'<div style="flex-shrink:0;margin-top:'+(13+(SH+SG)*1.5+SH/2)+'px"><svg width="14" height="2" style="overflow:visible"><line x1="0" y1="0" x2="14" y2="0" stroke="var(--border2)" stroke-width="1"/></svg></div>'+gcol(rd.e8,'E8',(SH+SG)*3.5-SG)+'</div></div>';

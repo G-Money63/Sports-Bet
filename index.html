@@ -1885,7 +1885,7 @@ const STATIC_GAMES = {
        sharpAngle:'Gonzaga runs one of the fastest paces in the country — OVER 153.5 is live. Ryan Nembhard OVER 17.5 points is a strong prop. Gonzaga covers easily.'},
       {id:'f5',timeET:'9:25 PM ET',network:'TNT',region:'South',
        away:{name:'Florida Gators',abbr:'FLA',seed:1,record:'26-7'},
-       home:{name:'Prairie View A&M Panthers',abbr:'PV',seed:16,record:'18-17'},
+       home:{name:'Lehigh Mountain Hawks',abbr:'LEH',seed:16,record:'19-16'},
        moneyline:{away:'-4000',home:'+1800'},
        spread:{line:-19.5,favTeam:'Florida Gators',juice:'-110'},
        total:{line:145.5,overJuice:'-110',underJuice:'-110'},
@@ -3898,12 +3898,24 @@ function buildFallbackBracket() {
       const home = (g.home?.abbr||'').toUpperCase();
       const live = getLiveState(g);
       const result = getGameResult(g);
+      // Also check liveScores with fuzzy matching
+      const scoreData = getGameScore(g);
       let st = 'pre', as = 0, hs = 0, aw = false, tm = g.timeET||'';
       if (result) {
         st = 'final'; as = result.awayScore; hs = result.homeScore; aw = as > hs; tm = 'FINAL';
+      } else if (scoreData && scoreData.status === 'final') {
+        const fl = scoreData.flipped || scoreData.home === away;
+        as = fl ? (scoreData.homeScore||0) : (scoreData.awayScore||0);
+        hs = fl ? (scoreData.awayScore||0) : (scoreData.homeScore||0);
+        st = 'final'; aw = as > hs; tm = 'FINAL';
+      } else if (scoreData && scoreData.status === 'live') {
+        const fl = scoreData.flipped || scoreData.home === away;
+        as = fl ? (scoreData.homeScore||0) : (scoreData.awayScore||0);
+        hs = fl ? (scoreData.awayScore||0) : (scoreData.homeScore||0);
+        st = 'live'; tm = scoreData.period ? 'P'+scoreData.period : 'LIVE';
       } else if (live) {
         st = live.status === 'live' ? 'live' : 'pre';
-        as = live.awayScore||0; hs = live.homeScore||0; aw = false;
+        as = live.awayScore||0; hs = live.homeScore||0;
         tm = live.status==='live' ? (live.period?'P'+live.period+(live.clock?' '+live.clock:''):'LIVE') : tm;
       }
       return { id, a:{s:g.away?.seed||'?', n:away}, h:{s:g.home?.seed||'?', n:home}, st, as, hs, aw, tm };
@@ -3950,16 +3962,17 @@ function drawBracket(rk) {
   if (!r) return;
 
   // r64 already has correct state from buildFallbackBracket (result + liveScores)
-  // Just re-check liveScores for any live/final updates since last build
+  // Re-check live/final updates using fuzzy score lookup
   const r64 = r.r64.map(g => {
     if (g.st === 'tbd' || g.st === 'final') return g; // already settled
-    const s = liveScores[g.a.n+'-'+g.h.n] || liveScores[g.h.n+'-'+g.a.n];
+    const fakeG = { away:{abbr:g.a.n}, home:{abbr:g.h.n} };
+    const s = getGameScore(fakeG);
     if (!s) return g;
     const fl = s.flipped || s.home === g.a.n;
-    const as = fl ? s.homeScore : s.awayScore;
-    const hs = fl ? s.awayScore : s.homeScore;
+    const as = fl ? (s.homeScore||0) : (s.awayScore||0);
+    const hs = fl ? (s.awayScore||0) : (s.homeScore||0);
     if (s.status === 'final') return {...g, st:'final', as, hs, aw:as>hs, tm:'FINAL'};
-    if (s.status === 'live')  return {...g, st:'live',  as, hs, aw:false, tm:(s.period?'P'+s.period+(s.clock?' '+s.clock:''):'LIVE')};
+    if (s.status === 'live')  return {...g, st:'live',  as, hs, tm:(s.period?'P'+s.period+(s.clock?' '+s.clock:''):'LIVE')};
     return g;
   });
 

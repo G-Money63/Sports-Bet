@@ -3707,27 +3707,28 @@ async function fetchBracketData() {
 
 async function _doFetchBracket() {
   try {
-    // ESPN scoreboard with groups=50 returns NCAA tournament games across all rounds
-    const dates = [];
-    const now = new Date();
-    // Fetch a window of dates covering the full tournament (Mar 17 - Apr 6)
+    // Use the same ESPN endpoint that works for live scores - groups=100
     const urls = [
-      'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?limit=100&groups=50&dates=20260319',
-      'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?limit=100&groups=50&dates=20260320',
-      'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?limit=100&groups=50&dates=20260321',
-      'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?limit=100&groups=50&dates=20260322',
-      'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?limit=100&groups=50&dates=20260326',
-      'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?limit=100&groups=50&dates=20260327',
-      'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?limit=100&groups=50&dates=20260328',
-      'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?limit=100&groups=50&dates=20260329',
-      'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?limit=100&groups=50&dates=20260404',
-      'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?limit=100&groups=50&dates=20260406',
+      'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?limit=100&groups=100&dates=20260319',
+      'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?limit=100&groups=100&dates=20260320',
+      'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?limit=100&groups=100&dates=20260321',
+      'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?limit=100&groups=100&dates=20260322',
+      'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?limit=100&groups=100&dates=20260326',
+      'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?limit=100&groups=100&dates=20260327',
+      'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?limit=100&groups=100&dates=20260328',
+      'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?limit=100&groups=100&dates=20260329',
+      'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?limit=100&groups=100&dates=20260404',
+      'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?limit=100&groups=100&dates=20260406',
     ];
 
-    // Also use proxy scores if available to get today's data
     const allEvents = [];
-    const fetches = urls.map(url => fetch(url).then(r=>r.json()).catch(()=>null));
+    const fetches = urls.map(url => fetch(url).then(r=>r.json()).catch(e => { console.warn('[Bracket] URL failed:', url.slice(-8), e.message); return null; }));
     const results = await Promise.allSettled(fetches);
+    for (const r of results) {
+      if (r.status === 'fulfilled' && r.value?.events) {
+        allEvents.push(...r.value.events);
+      }
+    }
     for (const r of results) {
       if (r.status === 'fulfilled' && r.value?.events) {
         allEvents.push(...r.value.events);
@@ -3745,8 +3746,17 @@ async function _doFetchBracket() {
         statusDesc: sample.status?.type?.description,
         noteHeadline: sampleComp?.notes?.[0]?.headline,
         noteType: sampleComp?.notes?.[0]?.type,
+        evStatus: sample.status?.type?.name,
       });
     }
+
+    // If ESPN returned nothing useful, use liveScores as source of truth for today
+    if (allEvents.length === 0) {
+      console.warn('[Bracket] No ESPN events — falling back to liveScores');
+      buildFallbackBracket();
+      return;
+    }
+
     buildBracketFromEvents(allEvents);
     bracketDataLoaded = true;
     bracketFetchPromise = null;
@@ -3911,54 +3921,39 @@ function makeTBDSlots(count, label) {
 }
 
 function buildFallbackBracket() {
-  // Minimal fallback using known R64 matchups from static data
+  // Use liveScores to get real current game states
+  function liveGame(awayAbbr, homeAbbr, seed1, seed2, tm) {
+    const key = awayAbbr + '-' + homeAbbr;
+    const s = liveScores[key] || liveScores[homeAbbr+'-'+awayAbbr];
+    if (!s) return {id:awayAbbr+homeAbbr, a:{s:seed1,n:awayAbbr}, h:{s:seed2,n:homeAbbr}, st:'pre', as:0, hs:0, tm};
+    const flipped = s.flipped || s.home === awayAbbr;
+    const as = flipped ? s.homeScore : s.awayScore;
+    const hs = flipped ? s.awayScore : s.homeScore;
+    const st = s.status === 'live' ? 'live' : s.status === 'final' ? 'final' : 'pre';
+    const aw = st === 'final' ? as > hs : false;
+    return {id:awayAbbr+homeAbbr, a:{s:seed1,n:awayAbbr}, h:{s:seed2,n:homeAbbr}, st, as, hs, aw, al:st==='live'&&as>hs, tm: st==='final'?'FINAL':st==='live'?'LIVE':tm};
+  }
   BRACKET_DATA = {
     east: {
-      r64:[
-        {id:'e1',a:{s:1,n:'DUKE'}, h:{s:16,n:'SIE'},  st:'pre',as:0,hs:0,tm:'12:00P'},
-        {id:'e2',a:{s:8,n:'OSU'},  h:{s:9,n:'TCU'},   st:'pre',as:0,hs:0,tm:'2:00P'},
-        {id:'e3',a:{s:5,n:'USF'},  h:{s:12,n:'LOU'},  st:'pre',as:0,hs:0,tm:'4:00P'},
-        {id:'e4',a:{s:3,n:'MSU'},  h:{s:14,n:'NDSU'}, st:'pre',as:0,hs:0,tm:'6:00P'},
-      ],
-      r32: makeTBDSlots(2,'SAT 3/21'),
-      s16: makeTBDSlots(1,'THU 3/26'),
-      e8:  makeTBDSlots(1,'SAT 3/28'),
+      r64:[ liveGame('SIE','DUKE',16,1,'12:00P'), liveGame('OSU','TCU',8,9,'2:00P'), liveGame('USF','LOU',11,6,'4:00P'), liveGame('NDSU','MSU',14,3,'4:05P') ],
+      r32: makeTBDSlots(2,'SAT 3/21'), s16: makeTBDSlots(1,'THU 3/26'), e8: makeTBDSlots(1,'SAT 3/28'),
     },
     west: {
-      r64:[
-        {id:'w1',a:{s:1,n:'ARIZ'}, h:{s:16,n:'PV'},   st:'pre',as:0,hs:0,tm:'12:00P'},
-        {id:'w2',a:{s:5,n:'BYU'},  h:{s:12,n:'TEX'},  st:'pre',as:0,hs:0,tm:'2:00P'},
-        {id:'w3',a:{s:4,n:'SMC'},  h:{s:13,n:'TXAM'}, st:'pre',as:0,hs:0,tm:'4:00P'},
-        {id:'w4',a:{s:3,n:'GONZ'}, h:{s:14,n:'KENN'}, st:'pre',as:0,hs:0,tm:'7:00P'},
-      ],
-      r32: makeTBDSlots(2,'SUN 3/22'),
-      s16: makeTBDSlots(1,'FRI 3/27'),
-      e8:  makeTBDSlots(1,'SUN 3/29'),
+      r64:[ liveGame('PV','LEH',16,1,'3:40P'), liveGame('TEX','BYU',11,5,'4:25P'), liveGame('TXAM','SMC',13,4,'4:35P'), liveGame('KENN','GONZ',14,3,'7:00P') ],
+      r32: makeTBDSlots(2,'SUN 3/22'), s16: makeTBDSlots(1,'FRI 3/27'), e8: makeTBDSlots(1,'SUN 3/29'),
     },
     south: {
-      r64:[
-        {id:'s1',a:{s:1,n:'FLA'},  h:{s:16,n:'LEH'},  st:'pre',as:0,hs:0,tm:'12:00P'},
-        {id:'s2',a:{s:4,n:'NEB'},  h:{s:13,n:'TROY'}, st:'pre',as:0,hs:0,tm:'2:00P'},
-        {id:'s3',a:{s:6,n:'ILL'},  h:{s:11,n:'PENN'}, st:'pre',as:0,hs:0,tm:'4:00P'},
-        {id:'s4',a:{s:2,n:'HOU'},  h:{s:15,n:'IDHO'}, st:'pre',as:0,hs:0,tm:'7:00P'},
-      ],
-      r32: makeTBDSlots(2,'SAT 3/21'),
-      s16: makeTBDSlots(1,'THU 3/26'),
-      e8:  makeTBDSlots(1,'SAT 3/28'),
+      r64:[ liveGame('LEH','FLA',16,1,'FRI'), liveGame('TROY','NEB',13,4,'2:30P'), liveGame('PENN','ILL',11,6,'6:25P'), liveGame('IDHO','HOU',15,2,'7:10P') ],
+      r32: makeTBDSlots(2,'SAT 3/21'), s16: makeTBDSlots(1,'THU 3/26'), e8: makeTBDSlots(1,'SAT 3/28'),
     },
     midwest: {
-      r64:[
-        {id:'m1',a:{s:1,n:'MICH'}, h:{s:16,n:'HOW'},  st:'pre',as:0,hs:0,tm:'12:00P'},
-        {id:'m2',a:{s:4,n:'ARK'},  h:{s:13,n:'HAW'},  st:'pre',as:0,hs:0,tm:'2:00P'},
-        {id:'m3',a:{s:5,n:'VAN'},  h:{s:12,n:'MCN'},  st:'pre',as:0,hs:0,tm:'4:00P'},
-        {id:'m4',a:{s:8,n:'UGA'},  h:{s:9,n:'SLU'},   st:'pre',as:0,hs:0,tm:'6:00P'},
-      ],
-      r32: makeTBDSlots(2,'SAT 3/21'),
-      s16: makeTBDSlots(1,'FRI 3/27'),
-      e8:  makeTBDSlots(1,'SUN 3/29'),
+      r64:[ liveGame('HOW','MICH',16,1,'4:10P'), liveGame('HAW','ARK',13,4,'1:25P'), liveGame('MCN','VAN',12,5,'12:15P'), liveGame('SLU','UGA',9,8,'6:45P') ],
+      r32: makeTBDSlots(2,'SAT 3/21'), s16: makeTBDSlots(1,'FRI 3/27'), e8: makeTBDSlots(1,'SUN 3/29'),
     },
+    finalfour: { f4: makeTBDSlots(2,'SAT 4/4 · Houston'), natty: makeTBDSlots(1,'MON 4/6 · Houston') },
   };
   bracketDataLoaded = true;
+  console.log('[Bracket] Fallback bracket built with liveScores data');
 }
 
 

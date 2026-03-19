@@ -1594,7 +1594,7 @@ const STATIC_GAMES = {
          {player:'LJ Owens',team:'UMBC',market:'Points',line:14.5,overOdds:'-112',underOdds:'-108'},
          {player:'Shy Odom',team:'Howard',market:'Points',line:13.5,overOdds:'-108',underOdds:'-112'}
        ],
-       sharpAngle:'Winner faces Michigan in the First Round. UMBC is on a 12-game win streak and has the better 3-point shooting — take UMBC -2.5. The winner plays a brutal draw against the title favorite.'},
+       sharpAngle:'Winner faces Michigan in the First Round. UMBC is on a 12-game win streak and has the better 3-point shooting — take UMBC -2.5. The winner plays a brutal draw against the title favorite.',result:{winner:'HOW',awayScore:83,homeScore:86,status:'final'}},
       {id:'t2',timeET:'9:15 PM ET',network:'truTV',region:'West',
        away:{name:'Texas Longhorns',abbr:'TEX',seed:11,record:'18-14'},
        home:{name:'NC State Wolfpack',abbr:'NCSU',seed:11,record:'20-13'},
@@ -1613,7 +1613,7 @@ const STATIC_GAMES = {
          {player:'Arterio Morris',team:'Texas',market:'Points',line:15.5,overOdds:'-110',underOdds:'-110'},
          {player:'Michael OConnell',team:'NC State',market:'Points',line:14.5,overOdds:'-108',underOdds:'-112'}
        ],
-       sharpAngle:'Winner faces BYU in the West Region. NC State is the slight favorite but Texas has tournament experience. Take Texas +1.5 for value — the Longhorns are a dangerous 11-seed with size.'}
+       sharpAngle:'Winner faces BYU in the West Region. NC State is the slight favorite but Texas has tournament experience. Take Texas +1.5 for value — the Longhorns are a dangerous 11-seed with size.',result:{winner:'TEX',awayScore:68,homeScore:66,status:'final'}}
     ]
   },
   'ncaam-w1_wed': {
@@ -1637,7 +1637,7 @@ const STATIC_GAMES = {
          {player:'Nasir Whitlock',team:'Lehigh',market:'Points',line:20.5,overOdds:'-115',underOdds:'-105'},
          {player:'Kordell Charles',team:'Prairie View',market:'Points',line:13.5,overOdds:'-108',underOdds:'-112'}
        ],
-       sharpAngle:'Lehigh has the best player in the game in Nasir Whitlock (21.1 PPG, 45% from 3). Lehigh has lost just one game since Feb — take Lehigh +2.0 and Whitlock OVER 20.5 points. Winner faces Florida.'},
+       sharpAngle:'Lehigh has the best player in the game in Nasir Whitlock (21.1 PPG, 45% from 3). Lehigh has lost just one game since Feb — take Lehigh +2.0 and Whitlock OVER 20.5 points. Winner faces Florida.',result:{winner:'LEH',awayScore:58,homeScore:74,status:'final'}},
       {id:'w2',timeET:'9:15 PM ET',network:'truTV',region:'Midwest',
        away:{name:'Miami OH RedHawks',abbr:'M-OH',seed:11,record:'31-1'},
        home:{name:'SMU Mustangs',abbr:'SMU',seed:11,record:'20-13'},
@@ -1656,7 +1656,7 @@ const STATIC_GAMES = {
          {player:'Boopie Miller',team:'SMU',market:'Points',line:18.5,overOdds:'-115',underOdds:'-105'},
          {player:'AJ Clayton',team:'Miami OH',market:'Points',line:15.5,overOdds:'-110',underOdds:'-110'}
        ],
-       sharpAngle:'Miami OH is 31-1 — the best record in the country. They lost their perfect season in the MAC tourney but are still elite. Take Miami OH -4.0 — they are heavily motivated after that heartbreak loss. Winner faces Tennessee.'}
+       sharpAngle:'Miami OH is 31-1 — the best record in the country. They lost their perfect season in the MAC tourney but are still elite. Take Miami OH -4.0 — they are heavily motivated after that heartbreak loss. Winner faces Tennessee.',result:{winner:'M-OH',awayScore:72,homeScore:68,status:'final'}}
     ]
   },
   'ncaam-w1_thu': {
@@ -2759,6 +2759,13 @@ async function fetchLiveScores() {
     }
     liveScores = newScores;
     console.log('liveScores keys:', Object.keys(newScores));
+    // Rebuild bracket with fresh live scores so winners show correctly
+    if (bracketDataLoaded) {
+      buildFallbackBracket();
+      if (document.getElementById('bracketPanel')?.style.display !== 'none') {
+        drawBracket(currentBracketRegion);
+      }
+    }
     // Check if any game just went final — schedule post-game bracket refresh
     const hasFinal = (data.games||[]).some(g => g.status === 'final');
     const hadLive  = (data.games||[]).some(g => g.status === 'live');
@@ -3935,6 +3942,13 @@ function buildFallbackBracket() {
       aw = st === 'final' && as > hs;
       al = st === 'live'  && as > hs;
       tm = st === 'final' ? 'FINAL' : st === 'live' ? (s.period ? 'P'+s.period+' '+s.clock : 'LIVE') : tm;
+    } else if (g.result && g.result.status === 'final') {
+      // Use hardcoded result from static data
+      st = 'final';
+      as = g.result.awayScore || 0;
+      hs = g.result.homeScore || 0;
+      aw = as > hs;
+      tm = 'FINAL';
     }
     return {
       id:  g.id || (awayAbbr+homeAbbr),
@@ -4065,10 +4079,12 @@ function renderBracketPanel() {
     <div class="brk-round-hdr" id="brkRoundHdr"></div>
     <div class="brk-area" id="brkArea"><div style="padding:20px;font-family:var(--mono);font-size:11px;color:var(--text3)">⚡ Loading bracket...</div></div>`;
 
-  // Fetch from ESPN then draw
-  fetchBracketData().then(() => {
-    drawBracket(currentBracketRegion);
-  });
+  // Build immediately from static data so bracket shows right away
+  buildFallbackBracket();
+  drawBracket(currentBracketRegion);
+
+  // Then try ESPN overlay for future rounds in background
+  fetchBracketData();
 }
 
 function drawFinalFour() {
@@ -4243,42 +4259,46 @@ function resolveBracketGame(g) {
 }
 
 // After R64 finals, fill in R32 TBD slots with winners
-function resolveR32Winners(region) {
-  const r = BRACKET_DATA[region];
-  const r64 = r.r64.map(resolveBracketGame);
+function resolveWinner(game) {
+  // Returns the winning team object from a final game
+  if (!game || game.st !== 'final') return null;
+  return game.aw ? game.a : game.h;
+}
 
-  // Each pair of R64 games feeds one R32 slot
-  // Games 0+1 → R32[0], Games 2+3 → R32[1]
-  const resolved = r.r32.map((slot, i) => {
-    const g1 = r64[i*2];
-    const g2 = r64[i*2+1];
-
-    // Get winner of g1
-    let team1 = slot.a; // default (top seed)
-    if (g1 && g1.st === 'final') {
-      team1 = g1.aw ? g1.a : g1.h;
-    } else if (g1 && g1.st !== 'tbd') {
-      team1 = g1.a; // keep top seed as placeholder while live
-    }
-
-    // Get winner of g2 for home slot
-    let team2 = slot.h;
-    if (g2 && g2.st === 'final') {
-      team2 = g2.aw ? g2.a : g2.h;
-    } else if (g2 && g2.st !== 'tbd') {
-      team2 = g2.h;
-    }
-
-    const hasWinner = g1?.st === 'final' || g2?.st === 'final';
+function advanceWinners(games, slots) {
+  // Takes completed games and fills TBD slots with winners
+  // Pairs: games[0]+games[1] → slots[0], games[2]+games[3] → slots[1]
+  return slots.map((slot, i) => {
+    const g1 = games[i*2];
+    const g2 = games[i*2+1];
+    const w1 = resolveWinner(g1);
+    const w2 = resolveWinner(g2);
+    if (!w1 && !w2) return slot; // nothing to fill yet
     return {
       ...slot,
-      a: team1,
-      h: team2,
-      st: hasWinner ? 'pre' : 'tbd',
-      tm: hasWinner ? slot.tm : slot.tm
+      a:  w1 || slot.a,
+      h:  w2 || slot.h,
+      st: (w1 || w2) ? 'pre' : 'tbd',
     };
   });
-  return { ...r, r64, r32: resolved };
+}
+
+function resolveR32Winners(region) {
+  const r = BRACKET_DATA[region];
+
+  // Resolve live scores for all R64 games
+  const r64 = r.r64.map(resolveBracketGame);
+
+  // R64 winners → R32
+  const r32 = advanceWinners(r64, r.r32.map(resolveBracketGame));
+
+  // R32 winners → S16
+  const s16 = advanceWinners(r32, r.s16.map(resolveBracketGame));
+
+  // S16 winners → E8
+  const e8  = advanceWinners(s16, r.e8.map(resolveBracketGame));
+
+  return { ...r, r64, r32, s16, e8 };
 }
 
 function buildBMC(g) {

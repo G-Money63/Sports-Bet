@@ -1968,6 +1968,56 @@ const STATIC_GAMES = {
 // ═══════════════════════════════════════════
 // LOAD DAY — orchestrates all sources
 // ═══════════════════════════════════════════
+// Build game data dynamically from ESPN live scores when no static data exists
+// Used for Second Round, Sweet 16, Elite Eight etc.
+function buildDynamicDayData(dayKey, dayInfo) {
+  if (!dayInfo) return null;
+  const ev = getActiveEvent();
+
+  // Filter liveScores to games that are scheduled/live/final for this day
+  const games = [];
+  const seen = new Set();
+  for (const g of Object.values(liveScores)) {
+    if (!g || seen.has(g.id||g.away+'-'+g.home)) continue;
+    seen.add(g.id||g.away+'-'+g.home);
+    if (g.flipped) continue; // skip duplicates
+
+    // Build a minimal game object compatible with renderPanel
+    games.push({
+      id:       g.id || (g.away + '-' + g.home),
+      timeET:   g.clock || 'TBD',
+      network:  g.network || 'TBS/CBS',
+      region:   '',
+      away: {
+        abbr:   g.away,
+        name:   g.awayFull || g.away,
+        seed:   '',
+        record: ''
+      },
+      home: {
+        abbr:   g.home,
+        name:   g.homeFull || g.home,
+        seed:   '',
+        record: ''
+      },
+      spread:     null,
+      total:      null,
+      moneyline:  null,
+      sharpAngle: '',
+      playerProps: [],
+      books: []
+    });
+  }
+
+  if (!games.length) return null;
+
+  return {
+    day:   dayInfo.long || dayInfo.label,
+    round: dayInfo.round || dayInfo.label,
+    games
+  };
+}
+
 async function loadDay(dayKey) {
   const ev       = getActiveEvent();
   const dayInfo  = getActiveWeek().days.find(d=>d.key===dayKey);
@@ -1985,6 +2035,12 @@ async function loadDay(dayKey) {
     cache[cacheKey] = staticData;
   } else if (!staticData) {
     panel.innerHTML = buildLoadingUI(ev);
+    // Try to build dynamic data from ESPN scores for rounds without static data
+    const dynamicData = buildDynamicDayData(dayKey, dayInfo);
+    if (dynamicData && dynamicData.games && dynamicData.games.length) {
+      renderPanel(dayKey, dynamicData);
+      cache[cacheKey] = dynamicData;
+    }
   }
 
   // ── Step 2: Try live update via proxy ────────────────────────
@@ -3092,34 +3148,50 @@ function buildNCAAHome() {
   const finalGames = games.filter((g,i) => i%4===0 && g.status==='final');
 
   // Build strips — split live games vs final results
-  let liveStrip = '', finalStrip = '';
+  // Build single chronological strip — live first, then finals
+  let combinedStrip = '';
   const seen = new Set();
+  // Live games first
   for (const g of Object.values(liveScores)) {
     if (seen.has(g.id||g.away+g.home)) continue;
     seen.add(g.id||g.away+g.home);
     if (g.status === 'live') {
-      liveStrip += `<div class="hlc">
+      combinedStrip += `<div class="hlc">
         <div class="hlc-tag"><div class="live-dot"></div><div class="hlc-t">LIVE · ${g.period||''}</div><div class="hlc-clk">${g.clock||''}</div></div>
-        <div class="hlc-row"><div class="hlc-name">${g.away}</div><div class="hlc-sc ${g.awayScore>g.homeScore?'lead':''}">${g.awayScore}</div></div>
-        <div class="hlc-row"><div class="hlc-name">${g.home}</div><div class="hlc-sc ${g.homeScore>g.awayScore?'lead':''}">${g.homeScore}</div></div>
+        <div class="hlc-row"><div class="hlc-name">${g.away}</div><div class="hlc-sc ${g.awayScore>g.homeScore?'lead':''}\">${g.awayScore}</div></div>
+        <div class="hlc-row"><div class="hlc-name">${g.home}</div><div class="hlc-sc ${g.homeScore>g.awayScore?'lead':''}\">${g.homeScore}</div></div>
         <div class="hlc-net">${g.network||''}</div>
-      </div>`;
-    } else if (g.status === 'final') {
-      const aw = g.awayScore > g.homeScore;
-      finalStrip += `<div class="hfc">
-        <div class="hfc-tag">FINAL</div>
-        <div class="hlc-row"><div class="hlc-name" style="${aw?'color:var(--green)':''}">${g.away}</div><div class="hlc-sc ${aw?'lead':''}">${g.awayScore}</div></div>
-        <div class="hlc-row"><div class="hlc-name" style="${!aw?'color:var(--green)':''}">${g.home}</div><div class="hlc-sc ${!aw?'lead':''}">${g.homeScore}</div></div>
       </div>`;
     }
   }
-  // Only show sections when there's content — correct title + icon per state
-  const liveSection = liveStrip ? `
-    <div class="home-sect"><div class="home-sect-t" style="display:flex;align-items:center;gap:6px"><div class="live-dot" style="width:6px;height:6px;flex-shrink:0"></div>Live Right Now</div><button class="home-sect-a" onclick="showBracketPanel()">Bracket →</button></div>
-    <div class="home-live-strip">${liveStrip}</div>` : '';
-  const finalSection = finalStrip ? `
-    <div class="home-sect"><div class="home-sect-t">✓ Recent Results</div><button class="home-sect-a" onclick="showGamesPanel()">See all →</button></div>
-    <div class="home-live-strip">${finalStrip}</div>` : '';
+  // Then finals
+  const seen2 = new Set();
+  for (const g of Object.values(liveScores)) {
+    if (seen2.has(g.id||g.away+g.home)) continue;
+    seen2.add(g.id||g.away+g.home);
+    if (g.status === 'final') {
+      const aw = g.awayScore > g.homeScore;
+      combinedStrip += `<div class="hfc">
+        <div class="hfc-tag">FINAL</div>
+        <div class="hlc-row"><div class="hlc-name" style="${aw?'color:var(--green)':''}">${g.away}</div><div class="hlc-sc ${aw?'lead':''}\">${g.awayScore}</div></div>
+        <div class="hlc-row"><div class="hlc-name" style="${!aw?'color:var(--green)':''}">${g.home}</div><div class="hlc-sc ${!aw?'lead':''}\">${g.homeScore}</div></div>
+      </div>`;
+    }
+  }
+  const hasLive  = combinedStrip.includes('live-dot');
+  const hasFinal = combinedStrip.includes('hfc-tag');
+  const sectTitle = hasLive && hasFinal ? '🔴 Live · ✓ Results'
+                  : hasLive             ? '🔴 Live Right Now'
+                  : hasFinal            ? '✓ Recent Results'
+                  : '';
+  const liveSection  = '';
+  const finalSection = '';
+  const combinedSection = combinedStrip ? `
+    <div class="home-sect">
+      <div class="home-sect-t" style="display:flex;align-items:center;gap:6px">${hasLive?'<div class="live-dot" style="width:6px;height:6px;flex-shrink:0"></div>':''}${sectTitle}</div>
+      <button class="home-sect-a" onclick="${hasLive?'showBracketPanel()':'showGamesPanel()'}">See all →</button>
+    </div>
+    <div class="home-live-strip">${combinedStrip}</div>` : '';
 
   // Tournament schedule rows
   const today = new Date();
@@ -3158,8 +3230,7 @@ function buildNCAAHome() {
       </div>
     </div>
 
-    ${liveSection}
-    ${finalSection}
+    ${combinedSection}
 
     <!-- G-Money Smack Talk -->
     <div class="home-sect"><div class="home-sect-t">🎤 G-Money Smack Talk</div><button class="home-sect-a" onclick="loadSmackTalk(true)">↻ Refresh</button></div>

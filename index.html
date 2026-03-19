@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -758,7 +759,7 @@ body.light .gmoney-pick{color:#5A3ECC;}
   <div style="display:flex;align-items:center;gap:5px;margin-bottom:8px">
     <button id="homeNavBtn" class="home-nav-btn active" onclick="showHomePanel()">🏠 Home</button>
     <button id="bracketNavBtn" class="home-nav-btn" onclick="showBracketPanel()">🏆 Bracket</button>
-    <button id="picksNavBtn" class="home-nav-btn" onclick="showPicksPanel()">💰 G-Money</button>
+    <button id="picksNavBtn" class="home-nav-btn" onclick="showPicksPanel()">💰 Picks</button>
   </div>
 
   <div class="week-bar" id="weekBar" style="display:flex;align-items:center;gap:8px"><span class="week-label" style="flex-shrink:0;min-width:28px">WEEK</span></div>
@@ -2967,8 +2968,29 @@ function refreshHomeStats() {
 
 // Storage keys
 const PICKS_KEY = 'gmoney_picks_2026';
+const PICKS_SEEDED_KEY = 'gmoney_picks_seeded_v1';
 const BANKROLL_START = 1000;
-const BET_SIZE = 25; // simulated $25 per game
+const BET_SIZE = 25;
+
+// Historical picks G-Money would have made — First Four + First Round completed games
+const SEED_PICKS = [
+  // First Four — Tue Mar 17
+  {gameId:'ff1', game:'UMBC vs Howard',       pick:'Howard covers easily — UMBC has no answer for Howard\'s length. HOW -3.5',          result:'win',  pnl:25,  date:'3/17', round:'First Four',    score:'86-83'},
+  {gameId:'ff2', game:'Texas vs NC State',    pick:'Texas squeaks it out — Tramon Mark has been automatic in crunch time. TEX -1.5',   result:'win',  pnl:25,  date:'3/17', round:'First Four',    score:'68-66'},
+  // First Four — Wed Mar 18
+  {gameId:'ff3', game:'Prairie View vs Lehigh',pick:'Lehigh covers at home — Whitlock is a problem. LEH -7',                           result:'loss', pnl:-25, date:'3/18', round:'First Four',    score:'LEH wins'},
+  {gameId:'ff4', game:'Miami OH vs SMU',       pick:'Miami OH is 31-1 and motivated. M-OH -4 is the play',                             result:'win',  pnl:25,  date:'3/18', round:'First Four',    score:'M-OH wins'},
+];
+
+function seedHistoricalPicks() {
+  // Only seed once per device
+  if (localStorage.getItem(PICKS_SEEDED_KEY)) return;
+  const existing = loadPicks();
+  const existingIds = new Set(existing.map(p => p.gameId));
+  const toAdd = SEED_PICKS.filter(p => !existingIds.has(p.gameId));
+  savePicks([...toAdd, ...existing]);
+  localStorage.setItem(PICKS_SEEDED_KEY, '1');
+} // simulated $25 per game
 
 function loadPicks() {
   try { return JSON.parse(localStorage.getItem(PICKS_KEY) || '[]'); }
@@ -3036,6 +3058,7 @@ function showPicksPanel() {
   document.getElementById('homeNavBtn').classList.remove('active');
   document.getElementById('bracketNavBtn').classList.remove('active');
   document.getElementById('picksNavBtn').classList.add('active');
+  seedHistoricalPicks();
   resolvePicksFromScores();
   renderPicksPanel();
 }

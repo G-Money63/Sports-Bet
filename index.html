@@ -4006,21 +4006,9 @@ function drawBracket(rk) {
       +'</div>';
   }
 
-  // SVG connector: n input games → n/2 output slots
-  function conn(n, sh, sg, extraTop) {
-    const h = n * sh + (n-1) * sg;
-    let s = '<svg width="18" height="'+h+'" style="flex-shrink:0;overflow:visible;margin-top:'+(extraTop||0)+'px">';
-    for (let i=0; i<n; i+=2) {
-      const y1 = i*(sh+sg)+sh/2, y2=(i+1)*(sh+sg)+sh/2, mid=(y1+y2)/2;
-      s+='<line x1="0" y1="'+y1+'" x2="9" y2="'+y1+'" stroke="var(--border2)" stroke-width="1"/>'
-        +'<line x1="0" y1="'+y2+'" x2="9" y2="'+y2+'" stroke="var(--border2)" stroke-width="1"/>'
-        +'<line x1="9" y1="'+y1+'" x2="9" y2="'+y2+'" stroke="var(--border2)" stroke-width="1"/>'
-        +'<line x1="9" y1="'+mid+'" x2="18" y2="'+mid+'" stroke="var(--border2)" stroke-width="1"/>';
-    }
-    return s+'</svg>';
-  }
-
-  const SH=50, SG=6;
+  // Card height: 2 rows (~22px each) + divider (1px) + optional FINAL label (10px) ≈ 56px
+  // Use 56 for connector math so SVGs align with actual rendered cards
+  const SH=56, SG=6;
 
   // Flex-based layout — no pixel math, cards self-align
   function connSvg(h) {
@@ -4052,9 +4040,9 @@ function drawBracket(rk) {
   const p0 = pair(r64[0], r64[1], r32[0]);
   const p1 = pair(r64[2], r64[3], r32[1]);
 
-  // S16 + E8 alongside both pairs
-  const pairsTotalH = SH*2+SG;
-  const twoGroupH = pairsTotalH*2+SG;
+  // S16 + E8 span the full height of both pairs
+  const pairH = SH*2 + SG;
+  const twoGroupH = pairH*2 + SG;
 
   const rightCols =
     '<div style="display:flex;align-items:center;flex-shrink:0;align-self:stretch">'+connSvg(twoGroupH)+'</div>'
@@ -4182,7 +4170,7 @@ function drawFinalFour() {
 
 const GMONEY_BRACKET = {
   champion: 'MICH',
-  championship: ['MICH','ARIZ'],
+  championship: ['MICH','FLA'],
   analysis: "Michigan wins it all. Best frontcourt in America with Lendeborg. Path: beats the South region, then faces Arizona in the Championship. Arizona wins the West, beats Duke in the Final Four. MICH vs ARIZ in the title game — Michigan's size wins it.",
   date: 'Mar 16, 2026',
   regions: {
@@ -4228,6 +4216,7 @@ const GMONEY_BRACKET = {
 function drawGMoneyBracket() {
   document.getElementById('brkRoundHdr').innerHTML = '';
   const gb = GMONEY_BRACKET.regions;
+
   function gcard(g) {
     const aWin=g.pick===g.a, hWin=g.pick===g.h;
     return '<div style="width:80px;flex-shrink:0;background:var(--card);border:0.5px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:5px">'
@@ -4243,59 +4232,89 @@ function drawGMoneyBracket() {
       +'<div style="padding:2px 5px;font-family:var(--mono);font-size:7px;color:var(--text3);border-top:1px solid var(--border)">'+g.note+'</div>'
       +'</div>';
   }
-  function conn(n,sh,sg,mt){
+
+  function connSvg(n,sh,sg,mt) {
     const h=n*sh+(n-1)*sg;
     let s='<svg width="14" height="'+h+'" style="flex-shrink:0;overflow:visible;margin-top:'+(mt||0)+'px">';
-    for(let i=0;i<n;i+=2){const y1=i*(sh+sg)+sh/2,y2=(i+1)*(sh+sg)+sh/2,mid=(y1+y2)/2;
-      s+='<line x1="0" y1="'+y1+'" x2="7" y2="'+y1+'" stroke="var(--border2)" stroke-width="1"/><line x1="0" y1="'+y2+'" x2="7" y2="'+y2+'" stroke="var(--border2)" stroke-width="1"/><line x1="7" y1="'+y1+'" x2="7" y2="'+y2+'" stroke="var(--border2)" stroke-width="1"/><line x1="7" y1="'+mid+'" x2="14" y2="'+mid+'" stroke="var(--border2)" stroke-width="1"/>';}
-    return s+'</svg>';}
-  const SH=54,SG=5;
-  function gcol(games,lbl,pad){return '<div style="display:flex;flex-direction:column;flex-shrink:0"><div style="font-family:var(--mono);font-size:7px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;height:13px;line-height:13px">'+lbl+'</div>'+(pad?'<div style="height:'+pad+'px"></div>':'')+games.map(g=>'<div>'+gcard(g)+'</div>').join('')+'</div>';}
-  const regionColors={east:'#185FA5',west:'#854F0B',south:'#0F6E56',midwest:'#72243E'};
-  let html='<div style="padding:10px">'
-    +'<div style="background:var(--card2);border-left:3px solid #B09DFF;border-radius:6px;padding:10px 12px;margin-bottom:10px"><div style="font-family:var(--mono);font-size:8px;color:#B09DFF;text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">💰 G-Money\'s Bracket · Locked Mar 16</div><div style="font-family:var(--sans);font-size:11px;line-height:1.5;color:var(--text)">'+GMONEY_BRACKET.analysis+'</div></div>'
-    +'<div style="text-align:center;background:var(--card2);border:1px solid var(--amber);border-radius:8px;padding:10px;margin-bottom:10px"><div style="font-family:var(--mono);font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">🏆 Champion</div><div style="font-family:var(--sans);font-size:24px;font-weight:800;color:var(--amber)">'+GMONEY_BRACKET.champion+'</div><div style="font-family:var(--mono);font-size:9px;color:var(--green);margin-top:2px">Michigan · +350 backed</div></div>'
-    +'<div style="font-family:var(--mono);font-size:8px;color:var(--text3);text-transform:uppercase;margin-bottom:5px">Championship · Apr 6</div>'
-    +'<div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 12px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center"><span style="font-family:var(--sans);font-size:14px;font-weight:800;color:var(--amber)">'+GMONEY_BRACKET.championship[0]+'</span><span style="font-family:var(--mono);font-size:9px;color:var(--text3)">vs</span><span style="font-family:var(--sans);font-size:14px;font-weight:800;color:var(--text)">'+GMONEY_BRACKET.championship[1]+'</span></div>'
-    +'<div style="font-family:var(--mono);font-size:8px;color:var(--text3);text-transform:uppercase;margin-bottom:5px">Final Four · Apr 4 · Houston</div>'
-    +'<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px">'
-    // Semifinal 1: East vs West
-    +'<div style="background:var(--card);border:1px solid var(--border);border-radius:7px;padding:7px">'
-    +'<div style="font-family:var(--mono);font-size:7px;color:var(--text3);margin-bottom:4px">SEMIFINAL 1 · East vs West</div>'
-    +'<div style="display:flex;justify-content:space-between;align-items:center">'
-    +'<div style="font-family:var(--sans);font-size:12px;font-weight:700;color:var(--text)">DUKE <span style="font-family:var(--mono);font-size:8px;color:var(--text3)">#1 East</span></div>'
-    +'<div style="font-family:var(--mono);font-size:9px;color:var(--text3)">vs</div>'
-    +'<div style="font-family:var(--sans);font-size:12px;font-weight:700;color:var(--green)">ARIZ → <span style="font-family:var(--mono);font-size:8px;color:var(--text3)">#1 West</span></div>'
-    +'</div></div>'
-    // Semifinal 2: South vs Midwest
-    +'<div style="background:var(--card);border:1px solid var(--border);border-radius:7px;padding:7px">'
-    +'<div style="font-family:var(--mono);font-size:7px;color:var(--text3);margin-bottom:4px">SEMIFINAL 2 · South vs Midwest</div>'
-    +'<div style="display:flex;justify-content:space-between;align-items:center">'
-    +'<div style="font-family:var(--sans);font-size:12px;font-weight:700;color:var(--text)">FLA <span style="font-family:var(--mono);font-size:8px;color:var(--text3)">#1 South</span></div>'
-    +'<div style="font-family:var(--mono);font-size:9px;color:var(--text3)">vs</div>'
-    +'<div style="font-family:var(--sans);font-size:12px;font-weight:700;color:var(--green)">MICH → <span style="font-family:var(--mono);font-size:8px;color:var(--text3)">#1 Midwest</span></div>'
-    +'</div></div>'
-    +'</div>';
-  for(const[rk,rd] of Object.entries(gb)){
-    const col=regionColors[rk]||'var(--accent)';
-    html+='<div style="margin-bottom:12px;border:1px solid var(--border);border-radius:8px;overflow:hidden"><div style="padding:5px 10px;font-family:var(--mono);font-size:8px;font-weight:500;text-transform:uppercase;letter-spacing:.1em;color:'+col+';border-bottom:1px solid var(--border)">'+rd.name+' Region</div><div style="display:flex;align-items:flex-start;padding:8px 10px;overflow-x:auto;gap:0">'+gcol(rd.r64,'R64',0)+conn(4,SH,SG,13)+gcol(rd.r32,'R32',(SH+SG)/2)+conn(2,SH,SH+SG*5,13+(SH+SG)/2)+gcol(rd.s16,'S16',(SH+SG)*1.5)+'<div style="flex-shrink:0;margin-top:'+(13+(SH+SG)*1.5+SH/2)+'px"><svg width="14" height="2" style="overflow:visible"><line x1="0" y1="0" x2="14" y2="0" stroke="var(--border2)" stroke-width="1"/></svg></div>'+gcol(rd.e8,'E8',(SH+SG)*3.5-SG)+'</div></div>';
+    for(let i=0;i<n;i+=2){
+      const y1=i*(sh+sg)+sh/2,y2=(i+1)*(sh+sg)+sh/2,mid=(y1+y2)/2;
+      s+='<line x1="0" y1="'+y1+'" x2="7" y2="'+y1+'" stroke="var(--border2)" stroke-width="1"/>'
+        +'<line x1="0" y1="'+y2+'" x2="7" y2="'+y2+'" stroke="var(--border2)" stroke-width="1"/>'
+        +'<line x1="7" y1="'+y1+'" x2="7" y2="'+y2+'" stroke="var(--border2)" stroke-width="1"/>'
+        +'<line x1="7" y1="'+mid+'" x2="14" y2="'+mid+'" stroke="var(--border2)" stroke-width="1"/>';
+    }
+    return s+'</svg>';
   }
-  html+='<div style="font-family:var(--mono);font-size:8px;color:var(--text3);text-align:center;padding:10px 0">For entertainment only 🎯</div></div>';
-  document.getElementById('brkArea').innerHTML=html;
+
+  const SH=54,SG=5;
+  function gcol(games,lbl,pad) {
+    return '<div style="display:flex;flex-direction:column;flex-shrink:0">'
+      +'<div style="font-family:var(--mono);font-size:7px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;height:13px;line-height:13px">'+lbl+'</div>'
+      +(pad?'<div style="height:'+pad+'px"></div>':'')
+      +games.map(g=>'<div>'+gcard(g)+'</div>').join('')+'</div>';
+  }
+
+  const regionColors={east:'#185FA5',west:'#854F0B',south:'#0F6E56',midwest:'#72243E'};
+
+  let html='<div style="padding:10px">'
+
+    // ── Analysis header ──
+    +'<div style="background:var(--card2);border-left:3px solid #B09DFF;border-radius:6px;padding:10px 12px;margin-bottom:12px">'
+    +'<div style="font-family:var(--mono);font-size:8px;color:#B09DFF;text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">💰 G-Money\'s Bracket · Locked Mar 16</div>'
+    +'<div style="font-family:var(--sans);font-size:11px;line-height:1.5;color:var(--text)">Michigan wins it all. Beats the South region, advances to face Arizona in the Championship. Arizona wins the West, beats Duke in the Final Four. MICH vs ARIZ in the title — Michigan\'s size wins it.</div>'
+    +'</div>'
+
+    // ── 4 Regions ──
+    +'<div style="font-family:var(--mono);font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Regional Brackets</div>';
+
+  for(const [rk,rd] of Object.entries(gb)) {
+    const col = regionColors[rk]||'var(--accent)';
+    html += '<div style="margin-bottom:10px;border:1px solid var(--border);border-radius:8px;overflow:hidden">'
+      +'<div style="padding:5px 10px;font-family:var(--mono);font-size:8px;font-weight:500;text-transform:uppercase;letter-spacing:.1em;color:'+col+';border-bottom:1px solid var(--border)">'+rd.name+' Region → <span style="color:var(--green)">'+rd.e8[0].pick+' to Final Four</span></div>'
+      +'<div style="display:flex;align-items:flex-start;padding:8px 10px;overflow-x:auto;gap:0">'
+      +gcol(rd.r64,'R64',0)
+      +connSvg(4,SH,SG,13)
+      +gcol(rd.r32,'R32',(SH+SG)/2)
+      +connSvg(2,SH,SH+SG*5,13+(SH+SG)/2)
+      +gcol(rd.s16,'S16',(SH+SG)*1.5)
+      +'<div style="flex-shrink:0;margin-top:'+(13+(SH+SG)*1.5+SH/2)+'px"><svg width="14" height="2" style="overflow:visible"><line x1="0" y1="0" x2="14" y2="0" stroke="var(--border2)" stroke-width="1"/></svg></div>'
+      +gcol(rd.e8,'E8',(SH+SG)*3.5-SG)
+      +'</div></div>';
+  }
+
+  // ── Final Four ──
+  html += '<div style="font-family:var(--mono);font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin:12px 0 6px">Final Four · Apr 4 · Houston</div>'
+    +'<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px">'
+    +'<div style="background:var(--card);border:1px solid var(--border);border-radius:7px;padding:8px 12px">'
+    +'<div style="font-family:var(--mono);font-size:7px;color:var(--text3);margin-bottom:5px">SEMIFINAL 1 · West vs Midwest</div>'
+    +'<div style="display:flex;justify-content:space-between;align-items:center">'
+    +'<span style="font-family:var(--sans);font-size:13px;font-weight:700;color:var(--text)">ARIZ <span style="font-family:var(--mono);font-size:8px;color:var(--text3)">#1 West</span></span>'
+    +'<span style="font-family:var(--mono);font-size:9px;color:var(--text3)">vs</span>'
+    +'<span style="font-family:var(--sans);font-size:13px;font-weight:700;color:var(--green)">MICH ✓ <span style="font-family:var(--mono);font-size:8px">#1 Midwest</span></span>'
+    +'</div></div>'
+    +'<div style="background:var(--card);border:1px solid var(--border);border-radius:7px;padding:8px 12px">'
+    +'<div style="font-family:var(--mono);font-size:7px;color:var(--text3);margin-bottom:5px">SEMIFINAL 2 · East vs South</div>'
+    +'<div style="display:flex;justify-content:space-between;align-items:center">'
+    +'<span style="font-family:var(--sans);font-size:13px;font-weight:700;color:var(--text)">DUKE <span style="font-family:var(--mono);font-size:8px;color:var(--text3)">#1 East</span></span>'
+    +'<span style="font-family:var(--mono);font-size:9px;color:var(--text3)">vs</span>'
+    +'<span style="font-family:var(--sans);font-size:13px;font-weight:700;color:var(--green)">FLA ✓ <span style="font-family:var(--mono);font-size:8px">#1 South</span></span>'
+    +'</div></div>'
+    +'</div>'
+
+  // ── Championship ──
+    +'<div style="background:var(--card2);border:1px solid var(--amber);border-radius:10px;padding:12px;text-align:center;margin-bottom:6px">'
+    +'<div style="font-family:var(--mono);font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">🏆 National Championship · Apr 6 · Houston</div>'
+    +'<div style="display:flex;justify-content:center;align-items:center;gap:12px;margin-bottom:6px">'
+    +'<span style="font-family:var(--sans);font-size:16px;font-weight:800;color:var(--text)">FLA</span>'
+    +'<span style="font-family:var(--mono);font-size:11px;color:var(--text3)">vs</span>'
+    +'<span style="font-family:var(--sans);font-size:16px;font-weight:800;color:var(--amber)">MICH</span>'
+    +'</div>'
+    +'<div style="font-family:var(--sans);font-size:22px;font-weight:800;color:var(--amber)">MICHIGAN WINS 🏆</div>'
+    +'<div style="font-family:var(--mono);font-size:9px;color:var(--green);margin-top:3px">+350 · G-Money backed before tournament</div>'
+    +'</div>'
+
+    +'<div style="font-family:var(--mono);font-size:8px;color:var(--text3);text-align:center;padding:8px 0">For entertainment only 🎯</div>'
+    +'</div>';
+
+  document.getElementById('brkArea').innerHTML = html;
 }
-
-
-// ═══════════════════════════════════════════
-// INIT
-// ═══════════════════════════════════════════
-document.addEventListener('DOMContentLoaded', () => {
-  bootApp();
-  initTheme();
-  initNudge();
-  startScorePolling();
-  buildAbbrMap();
-
-});
-</script>
-</body>
-</html>

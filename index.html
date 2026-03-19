@@ -3941,13 +3941,29 @@ function buildFallbackBracket() {
     return {id:g.id||(awayAbbr+homeAbbr), a:{s:g.away?.seed||'?',n:awayAbbr}, h:{s:g.home?.seed||'?',n:homeAbbr}, st,as,hs,aw,al,tm};
   }
 
-  // Only First Round (thu/fri) goes into r64
-  for (const day of ['thu','fri']) {
+  // Explicitly map each region's R64 game IDs - no ambiguity
+  const R64_MAP = {
+    east:    ['g1','g2','g3','g4'],      // DUKE,OSU/TCU,LOU/USF,MSU
+    west:    ['g15','g16','g19','f1'],   // BYU/TEX,SMC/TXAM,GONZ/KENN,ARIZ/LIU
+    south:   ['g9','g17','g20','f5'],    // NEB/TROY,ILL/PENN,HOU/IDHO,FLA/LEH
+    midwest: ['g14','g11','g12','g6'],   // MICH/HOW,VAN/MCNS,ARK/HAW,UGA/SLU
+  };
+
+  // Get all games from thu/fri/wed into a lookup by ID
+  const gameById = {};
+  for (const day of ['tue','wed','thu','fri']) {
     const data = STATIC_GAMES['ncaam-w1_'+day];
     if (!data?.games) continue;
     for (const g of data.games) {
-      const region=(g.region||'').toLowerCase();
-      if (byRegion[region]) byRegion[region].r64.push(toBracket(g));
+      if (g.id) gameById[g.id] = g;
+    }
+  }
+
+  // Only First Round (thu/fri) goes into r64
+  for (const [region, ids] of Object.entries(R64_MAP)) {
+    for (const id of ids) {
+      const g = gameById[id];
+      if (g) byRegion[region].r64.push(toBracket(g));
     }
   }
 
@@ -3957,8 +3973,6 @@ function buildFallbackBracket() {
     e8: {east:'SAT 3/28',west:'SUN 3/29',south:'SAT 3/28',midwest:'SUN 3/29'},
   };
   for (const [rk, region] of Object.entries(byRegion)) {
-    region.r64.sort((a,b)=>(parseInt(a.a.s)||99)-(parseInt(b.a.s)||99));
-    if (region.r64.length > 4) region.r64 = region.r64.slice(0,4);
     region.r32 = makeTBDSlots(2, dates.r32[rk]||'SAT/SUN');
     region.s16 = makeTBDSlots(1, dates.s16[rk]||'THU/FRI');
     region.e8  = makeTBDSlots(1, dates.e8[rk] ||'SAT/SUN');
@@ -4103,59 +4117,59 @@ const GMONEY_BRACKET = {
   championship: ['MICH', 'ARIZ'],
   analysis: "Michigan wins it all. Best frontcourt in America with Lendeborg, motivated after losing to Duke in the regular season. Arizona is the value play at +425 — easiest path of any 1-seed. Duke falls in Elite Eight to Michigan in a rematch for the ages.",
   date: 'Mar 16, 2026',
-  // Full predicted bracket by region
+  // Full predicted bracket by region - matches R64_MAP game IDs exactly
   regions: {
     east: {
       name: 'East', color: '#4A90D9',
       r64: [
-        {a:'DUKE',  as:1,  h:'SIE',  hs:16, pick:'DUKE',  note:'Cameron Boozer is on another level'},
-        {a:'OSU',   as:8,  h:'TCU',  hs:9,  pick:'TCU',   note:'TCU +1.5 covers in a toss-up'},
-        {a:'LOU',   as:6,  h:'USF',  hs:11, pick:'USF',   note:'11-seeds are 8-4 ATS, USF +3.5'},
-        {a:'MSU',   as:3,  h:'NDSU', hs:14, pick:'MSU',   note:'Fears too good, MSU rolls'},
+        {a:'DUKE', as:1,  h:'SIE',  hs:16, pick:'DUKE', note:'Boozer is on another level — Duke by 20+'},
+        {a:'OSU',  as:8,  h:'TCU',  hs:9,  pick:'TCU',  note:'TCU +1.5 covers in a toss-up game'},
+        {a:'LOU',  as:6,  h:'USF',  hs:11, pick:'USF',  note:'11-seeds are 8-4 ATS — USF +3.5'},
+        {a:'MSU',  as:3,  h:'NDSU', hs:14, pick:'MSU',  note:'Fears too good, MSU rolls comfortably'},
       ],
-      r32:  [{a:'DUKE', h:'TCU',  pick:'DUKE', note:'Duke handles the 8/9 winner comfortably'},
-             {a:'USF',  h:'MSU',  pick:'MSU',  note:'MSU too much size for USF upset run'}],
-      s16:  [{a:'DUKE', h:'MSU',  pick:'DUKE', note:'Battle of blue bloods — Boozer wins it'}],
-      e8:   [{a:'DUKE', h:'UCONN',pick:'DUKE', note:'Duke to the Final Four — Scheyer masterclass'}],
+      r32:  [{a:'DUKE', as:1, h:'TCU',  hs:9,  pick:'DUKE', note:'Duke handles 8/9 winner easily'},
+             {a:'USF',  as:11,h:'MSU',  hs:3,  pick:'MSU',  note:'MSU too much size for USF\'s run'}],
+      s16:  [{a:'DUKE', as:1, h:'MSU',  hs:3,  pick:'DUKE', note:'Boozer wins blue blood battle'}],
+      e8:   [{a:'DUKE', as:1, h:'CONN', hs:2,  pick:'DUKE', note:'Duke to Final Four — Scheyer masterclass'}],
     },
     west: {
       name: 'West', color: '#FFC230',
       r64: [
-        {a:'ARIZ',  as:1,  h:'LIU',  hs:16, pick:'ARIZ',  note:'Arizona rolls — Burries/Peat duo unstoppable'},
-        {a:'BYU',   as:5,  h:'TEX',  hs:11, pick:'BYU',   note:'Dybantsa 30+ — BYU covers -3.5 easy'},
-        {a:'SMC',   as:4,  h:'TXAM', hs:13, pick:'SMC',   note:'Saint Mary\'s efficiency too much'},
-        {a:'GONZ',  as:3,  h:'KENN', hs:14, pick:'GONZ',  note:'Gonzaga locks it down early'},
+        {a:'BYU',  as:5,  h:'TEX',  hs:11, pick:'BYU',  note:'Dybantsa 30+ — BYU covers -3.5 easily'},
+        {a:'SMC',  as:4,  h:'TXAM', hs:13, pick:'SMC',  note:'Saint Mary\'s efficiency wins out'},
+        {a:'GONZ', as:3,  h:'KENN', hs:14, pick:'GONZ', note:'Gonzaga locks it down early'},
+        {a:'ARIZ', as:1,  h:'LIU',  hs:16, pick:'ARIZ', note:'Arizona rolls — Burries/Peat unstoppable'},
       ],
-      r32:  [{a:'ARIZ', h:'BYU',  pick:'ARIZ', note:'Arizona contains Dybantsa — best defense in tourney'},
-             {a:'SMC',  h:'GONZ', pick:'GONZ', note:'Gonzaga grind beats Saint Mary\'s efficiency'}],
-      s16:  [{a:'ARIZ', h:'GONZ', pick:'ARIZ', note:'Arizona pulls away late — Burries takes over'}],
-      e8:   [{a:'ARIZ', h:'KAN',  pick:'ARIZ', note:'Arizona Final Four — Peterson can\'t solve their D'}],
+      r32:  [{a:'BYU',  as:5, h:'SMC',  hs:4,  pick:'BYU',  note:'Dybantsa too good for Saint Mary\'s'},
+             {a:'GONZ', as:3, h:'ARIZ', hs:1,  pick:'ARIZ', note:'Arizona contains Gonzaga — best D in tourney'}],
+      s16:  [{a:'BYU',  as:5, h:'ARIZ', hs:1,  pick:'ARIZ', note:'Arizona pulls away late — Burries takes over'}],
+      e8:   [{a:'ARIZ', as:1, h:'KAN',  hs:2,  pick:'ARIZ', note:'Arizona Final Four — Peterson can\'t solve their D'}],
     },
     south: {
       name: 'South', color: '#00E882',
       r64: [
-        {a:'FLA',   as:1,  h:'LEH',  hs:16, pick:'FLA',   note:'Florida defending champs — no slip here'},
-        {a:'NEB',   as:4,  h:'TROY', hs:13, pick:'NEB',   note:'Nebraska finally gets that first win'},
-        {a:'ILL',   as:6,  h:'PENN', hs:11, pick:'ILL',   note:'Wagler drops 30 on Penn — over 146.5'},
-        {a:'HOU',   as:2,  h:'IDHO', hs:15, pick:'HOU',   note:'Houston pack D — lowest total on slate'},
+        {a:'NEB',  as:4,  h:'TROY', hs:13, pick:'NEB',  note:'Nebraska finally gets that first ever win'},
+        {a:'ILL',  as:6,  h:'PENN', hs:11, pick:'ILL',  note:'Wagler drops 30 — take the over 146.5'},
+        {a:'HOU',  as:2,  h:'IDHO', hs:15, pick:'HOU',  note:'Houston pack D — lowest total on slate'},
+        {a:'FLA',  as:1,  h:'LEH',  hs:16, pick:'FLA',  note:'Florida defending champs — no slip here'},
       ],
-      r32:  [{a:'FLA',  h:'NEB',  pick:'FLA',  note:'Florida too experienced for Nebraska'},
-             {a:'ILL',  h:'HOU',  pick:'HOU',  note:'Houston\'s defense shuts down Wagler'}],
-      s16:  [{a:'FLA',  h:'HOU',  pick:'FLA',  note:'Florida beats Houston in rematch of 2025 Final'}],
-      e8:   [{a:'FLA',  h:'TENN', pick:'FLA',  note:'Gators back to Final Four — defending their crown'}],
+      r32:  [{a:'NEB',  as:4, h:'ILL',  hs:6,  pick:'ILL',  note:'Illinois too talented for Nebraska'},
+             {a:'HOU',  as:2, h:'FLA',  hs:1,  pick:'FLA',  note:'Florida too experienced — 2025 rematch'}],
+      s16:  [{a:'ILL',  as:6, h:'FLA',  hs:1,  pick:'FLA',  note:'Florida beats Illinois — defending crown'}],
+      e8:   [{a:'FLA',  as:1, h:'TENN', hs:2,  pick:'FLA',  note:'Gators back to Final Four — defending'}],
     },
     midwest: {
       name: 'Midwest', color: '#FF5577',
       r64: [
-        {a:'MICH',  as:1,  h:'HOW',  hs:16, pick:'MICH',  note:'Michigan crushes — Lendeborg 25/12'},
-        {a:'ARK',   as:4,  h:'HAW',  hs:13, pick:'ARK',   note:'Arkansas hot off SEC tourney win'},
-        {a:'VAN',   as:5,  h:'MCNS', hs:12, pick:'VAN',   note:'Vandy peaked at right time'},
-        {a:'UGA',   as:8,  h:'SLU',  hs:9,  pick:'UGA',   note:'Slight lean to Georgia — coin flip'},
+        {a:'MICH', as:1,  h:'HOW',  hs:16, pick:'MICH', note:'Michigan crushes — Lendeborg 25/12 game'},
+        {a:'VAN',  as:5,  h:'MCNS', hs:12, pick:'VAN',  note:'Vandy peaked at right time — cover -4'},
+        {a:'ARK',  as:4,  h:'HAW',  hs:13, pick:'ARK',  note:'Arkansas hot off SEC tourney win'},
+        {a:'UGA',  as:8,  h:'SLU',  hs:9,  pick:'UGA',  note:'Slight lean Georgia — coin flip game'},
       ],
-      r32:  [{a:'MICH', h:'ARK',  pick:'MICH', note:'Michigan defense smothers Razorbacks'},
-             {a:'VAN',  h:'UGA',  pick:'VAN',  note:'Vandy\'s momentum too strong to stop'}],
-      s16:  [{a:'MICH', h:'VAN',  pick:'MICH', note:'Michigan too big — Vandy run ends here'}],
-      e8:   [{a:'MICH', h:'IOWA', pick:'MICH', note:'Michigan to Final Four — motivated and dangerous'}],
+      r32:  [{a:'MICH', as:1, h:'VAN',  hs:5,  pick:'MICH', note:'Michigan defense smothers Vanderbilt'},
+             {a:'ARK',  as:4, h:'UGA',  hs:8,  pick:'ARK',  note:'Arkansas size advantage wins out'}],
+      s16:  [{a:'MICH', as:1, h:'ARK',  hs:4,  pick:'MICH', note:'Michigan too big — Lendeborg dominates'}],
+      e8:   [{a:'MICH', as:1, h:'IOWA', hs:2,  pick:'MICH', note:'Michigan to Final Four — on a mission'}],
     },
   },
 };

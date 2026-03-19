@@ -866,8 +866,6 @@ const EVENTS = [
     oddsApiSport:'basketball_ncaab', kalshiKeyword:'NCAA',
     weeks:[
       { label:'Wk 1 — R64/R32', days:[
-        {key:'tue',label:'TUE 3/17',long:'Tuesday March 17 2026',round:'First Four — Dayton OH'},
-        {key:'wed',label:'WED 3/18',long:'Wednesday March 18 2026',round:'First Four — Dayton OH'},
         {key:'thu',label:'THU 3/19',long:'Thursday March 19 2026',round:'First Round'},
         {key:'fri',label:'FRI 3/20',long:'Friday March 20 2026',round:'First Round'},
         {key:'sat',label:'SAT 3/21',long:'Saturday March 21 2026',round:'Second Round'},
@@ -3028,15 +3026,10 @@ const PICKS_SEEDED_KEY = 'gmoney_picks_seeded_v1';
 const BANKROLL_START = 1000;
 const BET_SIZE = 25;
 
-// Historical picks G-Money would have made — First Four + First Round completed games
+// G-Money's picks — First Round and beyond (First Four not included, play-in games don't count in bracket pools)
 const SEED_PICKS = [
-  // First Four Tue Mar 17
-  {gameId:'ff1', game:'UMBC vs Howard',        betOn:'Howard -3.5 ATS', odds:-110, betType:'ATS', result:'win',  score:'HOW 86 – UMBC 83', date:'3/17', round:'First Four'},
-  {gameId:'ff2', game:'Texas vs NC State',      betOn:'Texas -1.5 ATS',  odds:-110, betType:'ATS', result:'win',  score:'TEX 68 – NCST 66', date:'3/17', round:'First Four'},
-  // First Four Wed Mar 18
-  {gameId:'ff3', game:'Prairie View vs Lehigh', betOn:'Lehigh -7 ATS',   odds:-110, betType:'ATS', result:'loss', score:'LEH 74 – PV 58',   date:'3/18', round:'First Four'},
-  {gameId:'ff4', game:'Miami OH vs SMU',         betOn:'Miami OH ML',     odds:-175, betType:'ML',  result:'win',  score:'M-OH 72 – SMU 68', date:'3/18', round:'First Four'},
 ];
+
 
 // Calculate payout for a winning bet
 function calcPayout(betAmt, odds) {
@@ -3565,7 +3558,6 @@ function buildNCAAHome() {
     <!-- Tournament roadmap -->
     <div class="home-sect"><div class="home-sect-t">📅 Tournament Roadmap</div></div>
     <div class="home-sched">
-      <div class="hs-row" onclick="showGamesPanel()"><div class="hs-date">TUE–WED<br>3/17–18</div><div class="hs-div"></div><div class="hs-info"><div class="hs-round">First Four</div><div class="hs-sub">4 games · Dayton, OH</div></div>${s(2,18)}</div>
       <div class="hs-row" onclick="showGamesPanel()"><div class="hs-date" style="color:var(--green)">THU–FRI<br>3/19–20</div><div class="hs-div" style="background:var(--green);opacity:.3"></div><div class="hs-info"><div class="hs-round">First Round</div><div class="hs-sub">32 games · 8 cities</div></div><span class="hs-badge live">✓ Now</span></div>
       <div class="hs-row"><div class="hs-date">SAT–SUN<br>3/21–22</div><div class="hs-div"></div><div class="hs-info"><div class="hs-round">Second Round</div><div class="hs-sub">16 games · Round of 32</div></div>${s(2,21)}</div>
       <div class="hs-row"><div class="hs-date">THU–FRI<br>3/26–27</div><div class="hs-div"></div><div class="hs-info"><div class="hs-round">Sweet 16</div><div class="hs-sub">8 games · 2 sites</div></div>${s(2,26)}</div>
@@ -4037,18 +4029,35 @@ function drawBracket(rk) {
       +'</div>';
   }
 
+  const LH = 14; // label height
+  const R32_PAD = (SH+SG)/2;                    // 29 — centers R32[0] on R64[0]+R64[1]
+  const S16_PAD = R32_PAD + (SH+SG);            // 87 — centers S16[0] on R32[0]+R32[1]
+  const E8_PAD  = S16_PAD;                       // same — E8 connects straight from S16
+
+  // conn1: 4 R64 games → 2 R32 slots. Height = 4 slots. Top = LH (after label)
+  // conn2: 2 R32 games → 1 S16 slot. Gap between R32[0] and R32[1] = SH+SG
+  const R32_GAP = SH + SG; // gap between two R32 cards
+  const CONN2_H = SH + R32_GAP + SH; // full height of conn2
+
   document.getElementById('brkRoundHdr').innerHTML =
     '<div style="font-family:var(--mono);font-size:8px;color:var(--text3);padding:2px 0;text-transform:uppercase;letter-spacing:.08em">'+rk.toUpperCase()+' REGION</div>';
 
   document.getElementById('brkArea').innerHTML =
     '<div style="display:flex;align-items:flex-start;gap:0;padding:6px 14px 80px;overflow-x:auto">'
     + col(r64,'R64',0)
-    + conn(4,SH,SG,14)
-    + col(r32,'R32',(SH+SG)/2)
-    + conn(2,SH,SH+SG*4,14+(SH+SG)/2)
-    + col(s16,'S16',(SH+SG)*1.5)
-    + '<div style="flex-shrink:0;margin-top:'+(14+(SH+SG)*1.5+SH/2)+'px"><svg width="18" height="2" style="overflow:visible"><line x1="0" y1="0" x2="18" y2="0" stroke="var(--border2)" stroke-width="1"/></svg></div>'
-    + col(e8,'E8',(SH+SG)*3.5-SG)
+    + conn(4,SH,SG,LH)
+    + col(r32,'R32',R32_PAD)
+    + '<div style="flex-shrink:0;margin-top:'+(LH+R32_PAD+SH/2)+'px">'
+    +   '<svg width="18" height="'+(SH+R32_GAP)+'" style="overflow:visible;display:block">'
+    +     '<line x1="0" y1="0" x2="9" y2="0" stroke="var(--border2)" stroke-width="1"/>'
+    +     '<line x1="0" y1="'+(SH+R32_GAP)+'" x2="9" y2="'+(SH+R32_GAP)+'" stroke="var(--border2)" stroke-width="1"/>'
+    +     '<line x1="9" y1="0" x2="9" y2="'+(SH+R32_GAP)+'" stroke="var(--border2)" stroke-width="1"/>'
+    +     '<line x1="9" y1="'+((SH+R32_GAP)/2)+'" x2="18" y2="'+((SH+R32_GAP)/2)+'" stroke="var(--border2)" stroke-width="1"/>'
+    +   '</svg>'
+    + '</div>'
+    + col(s16,'S16',S16_PAD)
+    + '<div style="flex-shrink:0;margin-top:'+(LH+S16_PAD+SH/2-1)+'px"><svg width="18" height="2" style="overflow:visible"><line x1="0" y1="0" x2="18" y2="0" stroke="var(--border2)" stroke-width="1"/></svg></div>'
+    + col(e8,'E8',E8_PAD)
     + '</div>';
 }
 

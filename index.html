@@ -783,7 +783,7 @@ body.light .gmoney-pick{color:#5A3ECC;}
   <div style="display:flex;align-items:center;gap:5px;margin-bottom:8px">
     <button id="homeNavBtn" class="home-nav-btn active" onclick="showHomePanel()">🏠 Home</button>
     <button id="bracketNavBtn" class="home-nav-btn" onclick="showBracketPanel()">🏆 Bracket</button>
-    <button id="picksNavBtn" class="home-nav-btn" onclick="showPicksPanel()">💰 Picks</button>
+    <button id="picksNavBtn" class="home-nav-btn" onclick="showPicksPanel()">💰 G-Money Picks</button>
   </div>
 
   <div class="week-bar" id="weekBar" style="display:flex;align-items:center;gap:8px"><span class="week-label" style="flex-shrink:0;min-width:28px">WEEK</span></div>
@@ -3794,210 +3794,59 @@ async function fetchBracketData() {
 }
 
 async function _doFetchBracket() {
+  // Step 1: Build immediately from STATIC_GAMES (guaranteed to work)
+  buildFallbackBracket();
+
+  // Step 2: Try ESPN to get R32/S16/E8 data as it becomes available
   try {
-    // Use the same ESPN endpoint that works for live scores - groups=100
     const urls = [
-      'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?limit=100&groups=100&dates=20260319',
-      'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?limit=100&groups=100&dates=20260320',
-      'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?limit=100&groups=100&dates=20260321',
-      'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?limit=100&groups=100&dates=20260322',
-      'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?limit=100&groups=100&dates=20260326',
-      'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?limit=100&groups=100&dates=20260327',
-      'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?limit=100&groups=100&dates=20260328',
-      'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?limit=100&groups=100&dates=20260329',
-      'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?limit=100&groups=100&dates=20260404',
-      'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?limit=100&groups=100&dates=20260406',
+      'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?limit=100&dates=20260321',
+      'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?limit=100&dates=20260322',
+      'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?limit=100&dates=20260326',
+      'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?limit=100&dates=20260327',
+      'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?limit=100&dates=20260328',
+      'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?limit=100&dates=20260329',
+      'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?limit=100&dates=20260404',
+      'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?limit=100&dates=20260406',
     ];
 
     const allEvents = [];
-    const fetches = urls.map(url => fetch(url).then(r=>r.json()).catch(e => { console.warn('[Bracket] URL failed:', url.slice(-8), e.message); return null; }));
+    const fetches = urls.map(url =>
+      fetch(url, {signal: AbortSignal.timeout(5000)})
+        .then(r => r.json())
+        .catch(() => null)
+    );
     const results = await Promise.allSettled(fetches);
     for (const r of results) {
       if (r.status === 'fulfilled' && r.value?.events) {
         allEvents.push(...r.value.events);
       }
     }
+
+    console.log('[Bracket] ESPN returned', allEvents.length, 'future round events');
+    if (allEvents.length > 0) {
+      const sample = allEvents[0];
+      const comp = sample.competitions?.[0];
+      console.log('[Bracket] Sample:', {
+        name: sample.name,
+        statusDesc: sample.status?.type?.description,
+        seasonSlug: sample.season?.slug,
+        noteHeadline: comp?.notes?.[0]?.headline,
+      });
+      // Overlay ESPN data on top of our static bracket
+      overlayESPNBracket(allEvents);
+    }
+    bracketFetchPromise = null;
+  } catch(e) {
+    console.warn('[Bracket] ESPN fetch failed:', e.message);
+    bracketFetchPromise = null;
+  }
+}
     for (const r of results) {
       if (r.status === 'fulfilled' && r.value?.events) {
         allEvents.push(...r.value.events);
       }
     }
-
-    console.log('[Bracket] Fetched', allEvents.length, 'events from ESPN');
-    if (allEvents.length > 0) {
-      const sample = allEvents[0];
-      const sampleComp = sample.competitions?.[0];
-      console.log('[Bracket] Sample event fields:', {
-        name: sample.name,
-        shortName: sample.shortName,
-        seasonSlug: sample.season?.slug,
-        statusDesc: sample.status?.type?.description,
-        noteHeadline: sampleComp?.notes?.[0]?.headline,
-        noteType: sampleComp?.notes?.[0]?.type,
-        evStatus: sample.status?.type?.name,
-      });
-    }
-
-    // If ESPN returned nothing useful, use liveScores as source of truth for today
-    if (allEvents.length === 0) {
-      console.warn('[Bracket] No ESPN events — falling back to liveScores');
-      buildFallbackBracket();
-      return;
-    }
-
-    buildBracketFromEvents(allEvents);
-    bracketDataLoaded = true;
-    bracketFetchPromise = null;
-  } catch(e) {
-    console.error('[Bracket] Fetch failed:', e.message);
-    bracketFetchPromise = null;
-    // Use hardcoded seed structure as fallback
-    buildFallbackBracket();
-  }
-}
-
-function buildBracketFromEvents(events) {
-  // Reset
-  const bd = {
-    east:    { r64:[], r32:[], s16:[], e8:[] },
-    west:    { r64:[], r32:[], s16:[], e8:[] },
-    south:   { r64:[], r32:[], s16:[], e8:[] },
-    midwest: { r64:[], r32:[], s16:[], e8:[] },
-  };
-
-  // Region name → key map
-  const regionMap = {
-    'east':'east', 'east region':'east',
-    'west':'west', 'west region':'west',
-    'south':'south', 'south region':'south',
-    'midwest':'midwest', 'midwest region':'midwest',
-    'mid-west':'midwest',
-  };
-
-  // Round name → slot map
-  const roundMap = {
-    'first round':        'r64',
-    'first round game':   'r64',
-    'second round':       'r32',
-    'sweet 16':           's16',
-    'sweet sixteen':      's16',
-    'elite eight':        'e8',
-    'elite 8':            'e8',
-    'regional final':     'e8',
-    'regional semifinal': 's16',
-    'final four':         'f4',
-    'national semifinal': 'f4',
-    'semifinal':          'f4',
-    'championship':       'natty',
-    'national championship': 'natty',
-    'title game':         'natty',
-  };
-
-  for (const ev of events) {
-    const comp = ev.competitions?.[0];
-    if (!comp) continue;
-
-    // Get round — check multiple ESPN fields
-    const roundName = [
-      ev.status?.type?.description,
-      ev.season?.slug,
-      comp.notes?.[0]?.headline,
-      comp.notes?.[0]?.type,
-      ev.name,
-      ev.shortName,
-    ].filter(Boolean).join(' ').toLowerCase();
-
-    let roundKey = null;
-    for (const [k,v] of Object.entries(roundMap)) {
-      if (roundName.includes(k)) { roundKey = v; break; }
-    }
-    if (!roundKey) {
-      // Try ESPN season type slugs like "ncaa-tournament-1st-round"
-      if (roundName.includes('1st') || roundName.includes('first')) roundKey = 'r64';
-      else if (roundName.includes('2nd') || roundName.includes('second')) roundKey = 'r32';
-      else if (roundName.includes('sweet') || roundName.includes('3rd')) roundKey = 's16';
-      else if (roundName.includes('elite') || roundName.includes('regional')) roundKey = 'e8';
-      else if (roundName.includes('final four') || roundName.includes('semifinal')) roundKey = 'f4';
-      else if (roundName.includes('championship') || roundName.includes('national')) roundKey = 'natty';
-    }
-    if (!roundKey) {
-      console.log('[Bracket] Unmatched round:', roundName.substring(0,80));
-      continue;
-    }
-
-    // Get region
-    const regionRaw = (comp.notes?.[0]?.headline || ev.name || '').toLowerCase();
-    let regionKey = null;
-    for (const [k,v] of Object.entries(regionMap)) {
-      if (regionRaw.includes(k)) { regionKey = v; break; }
-    }
-    // f4 and natty games have no region — allow them through
-    if (!regionKey && roundKey !== 'f4' && roundKey !== 'natty') continue;
-
-    // Get teams
-    const comps = comp.competitors || [];
-    const away = comps.find(c=>c.homeAway==='away');
-    const home = comps.find(c=>c.homeAway==='home');
-    if (!away || !home) continue;
-
-    const awaySeed = parseInt(away.curatedRank?.current || away.seed || 0);
-    const homeSeed = parseInt(home.curatedRank?.current || home.seed || 0);
-    const awayAbbr = away.team?.abbreviation || away.team?.shortDisplayName || '?';
-    const homeAbbr = home.team?.abbreviation || home.team?.shortDisplayName || '?';
-
-    // Status
-    const statusName = ev.status?.type?.name || '';
-    const completed  = ev.status?.type?.completed || false;
-    let st = 'pre';
-    if (statusName === 'STATUS_IN_PROGRESS') st = 'live';
-    else if (completed || statusName.includes('FINAL')) st = 'final';
-
-    const as = parseInt(away.score || 0);
-    const hs = parseInt(home.score || 0);
-    const aw = st === 'final' ? as > hs : false;
-    const al = st === 'live'  ? as > hs : false;
-
-    // Time display
-    const gameDate = new Date(ev.date || '');
-    const tm = st === 'final' ? 'FINAL'
-             : st === 'live'  ? (ev.status?.displayClock || 'LIVE')
-             : gameDate.toLocaleDateString('en-US',{month:'numeric',day:'numeric'}) + ' ' +
-               gameDate.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
-
-    const game = {
-      id:  ev.id,
-      a:   { s: awaySeed || '?', n: awayAbbr },
-      h:   { s: homeSeed || '?', n: homeAbbr },
-      st, as, hs, aw, al, tm
-    };
-
-    // f4 and natty are not region-specific
-    if (roundKey === 'f4' || roundKey === 'natty') {
-      bd.finalfour[roundKey].push(game);
-      continue;
-    }
-  }
-
-  // Sort each round by seed
-  for (const region of Object.values(bd)) {
-    for (const round of Object.values(region)) {
-      round.sort((a,b) => (a.a.s||99) - (b.a.s||99));
-    }
-  }
-
-  // Fill TBD slots for rounds with no data yet
-  for (const [rk, region] of Object.entries(bd)) {
-    if (rk === 'finalfour') continue;
-    if (!region.r32.length) region.r32 = makeTBDSlots(2, 'SAT/SUN');
-    if (!region.s16.length) region.s16 = makeTBDSlots(1, 'THU/FRI 3/26-27');
-    if (!region.e8.length)  region.e8  = makeTBDSlots(1, 'SAT/SUN 3/28-29');
-  }
-  if (!bd.finalfour.f4.length)    bd.finalfour.f4    = makeTBDSlots(2, 'SAT 4/4 · Houston');
-  if (!bd.finalfour.natty.length) bd.finalfour.natty = makeTBDSlots(1, 'MON 4/6 · Houston');
-
-  BRACKET_DATA = bd;
-  console.log('[Bracket] Built bracket:', Object.entries(bd).map(([k,v])=>k+':r64='+v.r64.length+',r32='+v.r32.length+',s16='+v.s16.length+',e8='+v.e8.length).join(' | '));
-}
 
 function makeTBDSlots(count, label) {
   return Array.from({length:count}, (_,i) => ({
@@ -4009,43 +3858,141 @@ function makeTBDSlots(count, label) {
 }
 
 function buildFallbackBracket() {
-  // Use liveScores to get real current game states
-  function liveGame(awayAbbr, homeAbbr, seed1, seed2, tm) {
-    const key = awayAbbr + '-' + homeAbbr;
-    const s = liveScores[key] || liveScores[homeAbbr+'-'+awayAbbr];
-    if (!s) return {id:awayAbbr+homeAbbr, a:{s:seed1,n:awayAbbr}, h:{s:seed2,n:homeAbbr}, st:'pre', as:0, hs:0, tm};
-    const flipped = s.flipped || s.home === awayAbbr;
-    const as = flipped ? s.homeScore : s.awayScore;
-    const hs = flipped ? s.awayScore : s.homeScore;
-    const st = s.status === 'live' ? 'live' : s.status === 'final' ? 'final' : 'pre';
-    const aw = st === 'final' ? as > hs : false;
-    return {id:awayAbbr+homeAbbr, a:{s:seed1,n:awayAbbr}, h:{s:seed2,n:homeAbbr}, st, as, hs, aw, al:st==='live'&&as>hs, tm: st==='final'?'FINAL':st==='live'?'LIVE':tm};
+  // Build directly from STATIC_GAMES — our authoritative source
+  // Convert a static game object to bracket format with live score overlay
+  function fromStatic(g) {
+    if (!g) return null;
+    const awayAbbr = (g.away?.abbr || '').toUpperCase();
+    const homeAbbr = (g.home?.abbr || '').toUpperCase();
+    // Check liveScores for current state
+    const s = liveScores[awayAbbr+'-'+homeAbbr] || liveScores[homeAbbr+'-'+awayAbbr];
+    let st = 'pre', as = 0, hs = 0, aw = false, al = false, tm = g.timeET || g.timePT || '';
+    if (s) {
+      const flipped = s.flipped;
+      as = flipped ? s.homeScore : s.awayScore;
+      hs = flipped ? s.awayScore : s.homeScore;
+      st = s.status === 'live' ? 'live' : s.status === 'final' ? 'final' : 'pre';
+      aw = st === 'final' && as > hs;
+      al = st === 'live'  && as > hs;
+      tm = st === 'final' ? 'FINAL' : st === 'live' ? (s.period ? 'P'+s.period : 'LIVE') : tm;
+    }
+    return {
+      id: g.id || awayAbbr+homeAbbr,
+      a:  {s: g.away?.seed || '?', n: awayAbbr},
+      h:  {s: g.home?.seed || '?', n: homeAbbr},
+      st, as, hs, aw, al, tm
+    };
   }
+
+  function getR64(eventKey) {
+    const data = STATIC_GAMES[eventKey];
+    if (!data?.games) return [];
+    return data.games.map(fromStatic).filter(Boolean);
+  }
+
   BRACKET_DATA = {
     east: {
-      r64:[ liveGame('SIE','DUKE',16,1,'12:00P'), liveGame('OSU','TCU',8,9,'2:00P'), liveGame('USF','LOU',11,6,'4:00P'), liveGame('NDSU','MSU',14,3,'4:05P') ],
+      r64: getR64('ncaam-w1_thu'),
       r32: makeTBDSlots(2,'SAT 3/21'), s16: makeTBDSlots(1,'THU 3/26'), e8: makeTBDSlots(1,'SAT 3/28'),
     },
     west: {
-      r64:[ liveGame('PV','LEH',16,1,'3:40P'), liveGame('TEX','BYU',11,5,'4:25P'), liveGame('TXAM','SMC',13,4,'4:35P'), liveGame('KENN','GONZ',14,3,'7:00P') ],
+      r64: getR64('ncaam-w1_fri').slice(0,4),
       r32: makeTBDSlots(2,'SUN 3/22'), s16: makeTBDSlots(1,'FRI 3/27'), e8: makeTBDSlots(1,'SUN 3/29'),
     },
     south: {
-      r64:[ liveGame('LEH','FLA',16,1,'FRI'), liveGame('TROY','NEB',13,4,'2:30P'), liveGame('PENN','ILL',11,6,'6:25P'), liveGame('IDHO','HOU',15,2,'7:10P') ],
+      r64: getR64('ncaam-w1_fri').slice(4,8),
       r32: makeTBDSlots(2,'SAT 3/21'), s16: makeTBDSlots(1,'THU 3/26'), e8: makeTBDSlots(1,'SAT 3/28'),
     },
     midwest: {
-      r64:[ liveGame('HOW','MICH',16,1,'4:10P'), liveGame('HAW','ARK',13,4,'1:25P'), liveGame('MCN','VAN',12,5,'12:15P'), liveGame('SLU','UGA',9,8,'6:45P') ],
+      r64: getR64('ncaam-w1_thu').slice(4,8),
       r32: makeTBDSlots(2,'SAT 3/21'), s16: makeTBDSlots(1,'FRI 3/27'), e8: makeTBDSlots(1,'SUN 3/29'),
     },
     finalfour: { f4: makeTBDSlots(2,'SAT 4/4 · Houston'), natty: makeTBDSlots(1,'MON 4/6 · Houston') },
   };
+
+  // Better approach — map games to regions by region field in static data
+  const allRegions = {east:[], west:[], south:[], midwest:[]};
+  for (const key of Object.keys(STATIC_GAMES)) {
+    if (!key.startsWith('ncaam-w1_')) continue;
+    const data = STATIC_GAMES[key];
+    if (!data?.games) continue;
+    for (const g of data.games) {
+      const region = (g.region || '').toLowerCase();
+      if (allRegions[region]) allRegions[region].push(fromStatic(g));
+    }
+  }
+
+  // If we got region data use it, otherwise keep the slice-based approach
+  for (const [rk, games] of Object.entries(allRegions)) {
+    if (games.length >= 2) BRACKET_DATA[rk].r64 = games;
+  }
+
   bracketDataLoaded = true;
-  console.log('[Bracket] Fallback bracket built with liveScores data');
+  console.log('[Bracket] Built from STATIC_GAMES:', Object.entries(BRACKET_DATA).map(([k,v])=>k+':'+(v.r64?.length||0)).join(' '));
 }
 
 
-let currentBracketRegion = 'east';
+function overlayESPNBracket(events) {
+  // Use ESPN data to update R32/S16/E8/F4/Natty — same logic as buildBracketFromEvents
+  // but only updates slots, doesn't replace R64 (which comes from STATIC_GAMES)
+  const roundMap = {
+    'second round':'r32', '2nd round':'r32',
+    'sweet 16':'s16', 'sweet sixteen':'s16', 'regional semifinal':'s16',
+    'elite eight':'e8', 'elite 8':'e8', 'regional final':'e8',
+    'final four':'f4', 'national semifinal':'f4', 'semifinal':'f4',
+    'championship':'natty', 'national championship':'natty',
+  };
+  const regionMap = {
+    'east':'east','west':'west','south':'south','midwest':'midwest','mid-west':'midwest'
+  };
+
+  const newData = {east:{r32:[],s16:[],e8:[]},west:{r32:[],s16:[],e8:[]},south:{r32:[],s16:[],e8:[]},midwest:{r32:[],s16:[],e8:[]},finalfour:{f4:[],natty:[]}};
+
+  for (const ev of events) {
+    const comp = ev.competitions?.[0];
+    if (!comp) continue;
+    const roundRaw = [ev.status?.type?.description, comp.notes?.[0]?.headline, ev.name, ev.season?.slug].filter(Boolean).join(' ').toLowerCase();
+    let roundKey = null;
+    for (const [k,v] of Object.entries(roundMap)) { if (roundRaw.includes(k)) { roundKey = v; break; } }
+    if (!roundKey) continue;
+
+    const comps = comp.competitors || [];
+    const away = comps.find(c=>c.homeAway==='away');
+    const home = comps.find(c=>c.homeAway==='home');
+    if (!away||!home) continue;
+
+    const st = ev.status?.type?.completed ? 'final' : ev.status?.type?.name==='STATUS_IN_PROGRESS' ? 'live' : 'pre';
+    const as = parseInt(away.score||0), hs = parseInt(home.score||0);
+    const game = {
+      id: ev.id,
+      a: {s: parseInt(away.seed||away.curatedRank?.current||0)||'?', n: away.team?.abbreviation||'?'},
+      h: {s: parseInt(home.seed||home.curatedRank?.current||0)||'?', n: home.team?.abbreviation||'?'},
+      st, as, hs, aw: st==='final'&&as>hs, al: st==='live'&&as>hs,
+      tm: st==='final'?'FINAL':st==='live'?(ev.status?.displayClock||'LIVE'):(new Date(ev.date).toLocaleDateString('en-US',{month:'numeric',day:'numeric'}))
+    };
+
+    if (roundKey==='f4'||roundKey==='natty') { newData.finalfour[roundKey].push(game); continue; }
+    const regionRaw = [comp.notes?.[0]?.headline,ev.name].filter(Boolean).join(' ').toLowerCase();
+    let regionKey = null;
+    for (const [k,v] of Object.entries(regionMap)) { if (regionRaw.includes(k)) { regionKey=v; break; } }
+    if (regionKey) newData[regionKey][roundKey].push(game);
+  }
+
+  // Merge into BRACKET_DATA
+  for (const [rk, region] of Object.entries(newData)) {
+    if (rk === 'finalfour') {
+      if (region.f4.length)    BRACKET_DATA.finalfour.f4    = region.f4;
+      if (region.natty.length) BRACKET_DATA.finalfour.natty = region.natty;
+      continue;
+    }
+    for (const [round, games] of Object.entries(region)) {
+      if (games.length) BRACKET_DATA[rk][round] = games;
+    }
+  }
+  console.log('[Bracket] ESPN overlay applied');
+}
+
+
 
 function renderBracketPanel() {
   const panel = document.getElementById('bracketPanel');
@@ -4056,6 +4003,7 @@ function renderBracketPanel() {
       <div class="brk-tab"        id="brkt-south"    onclick="switchBracketRegion('south',this)">SOUTH</div>
       <div class="brk-tab"        id="brkt-midwest"  onclick="switchBracketRegion('midwest',this)">MIDWEST</div>
       <div class="brk-tab"        id="brkt-finalfour" onclick="switchBracketRegion('finalfour',this)">🏆 F4</div>
+      <div class="brk-tab"        id="brkt-gmoney"   onclick="switchBracketRegion('gmoney',this)" style="color:#B09DFF">💰 G-Money</div>
     </div>
     <div class="brk-round-hdr" id="brkRoundHdr"></div>
     <div class="brk-area" id="brkArea"><div style="padding:20px;font-family:var(--mono);font-size:11px;color:var(--text3)">⚡ Loading bracket...</div></div>`;
@@ -4100,7 +4048,96 @@ function drawFinalFour() {
     </div>`;
 }
 
-// Auto-refresh bracket and scores a few minutes after a game goes final
+// G-Money's pre-tournament bracket picks
+const GMONEY_BRACKET = {
+  // Final Four picks
+  f4: ['MICH', 'DUKE', 'ARIZ', 'FLA'],
+  // Championship matchup
+  championship: ['MICH', 'ARIZ'],
+  // Champion
+  champion: 'MICH',
+  // Region winners (Elite Eight picks)
+  regionWinners: { midwest:'MICH', east:'DUKE', west:'ARIZ', south:'FLA' },
+  // Key upset picks
+  upsets: [
+    {seed:11, team:'BYU', over:'#6', round:'R32', note:'Dybantsa too explosive for any 6-seed'},
+    {seed:10, team:'WIS', over:'#7', round:'R32', note:'Badgers peaking at right time'},
+    {seed:11, team:'MSU', over:'#6', round:'S16', note:'Fears orchestrates upset over higher seed'},
+    {seed:5,  team:'VAN', over:'#4', round:'R32', note:'Vandy hot after SEC tourney win over Florida'},
+  ],
+  analysis: 'Michigan wins it all. Best frontcourt in America with Lendeborg, motivated after losing to Duke. Arizona is the value play at +425 — easiest path of any 1-seed. Duke falls in Elite Eight to Michigan in a rematch. Florida defends until South region Final where Arizona ends their run.',
+  date: 'Mar 16, 2026',
+  record: null, // will be calculated as tournament progresses
+};
+
+function drawGMoneyBracket() {
+  document.getElementById('brkRoundHdr').innerHTML = '';
+  document.getElementById('brkArea').innerHTML = `
+    <div style="padding:14px">
+
+      <!-- Header -->
+      <div style="background:linear-gradient(135deg,#7C5CFC18,#FF557708);border:1px solid #7C5CFC35;border-radius:12px;padding:14px;margin-bottom:12px;position:relative;overflow:hidden">
+        <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#7C5CFC,#FF5577,#FFC230)"></div>
+        <div style="font-family:var(--mono);font-size:9px;color:#B09DFF;text-transform:uppercase;letter-spacing:.12em;margin-bottom:6px">💰 G-Money's Bracket · Filed ${GMONEY_BRACKET.date}</div>
+        <div style="font-family:var(--sans);font-size:13px;line-height:1.5;color:var(--text)">${GMONEY_BRACKET.analysis}</div>
+      </div>
+
+      <!-- Champion pick -->
+      <div style="background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px;text-align:center">
+        <div style="font-family:var(--mono);font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">🏆 G-Money's Champion</div>
+        <div style="font-family:var(--sans);font-size:32px;font-weight:800;color:var(--amber)">${GMONEY_BRACKET.champion}</div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--text3);margin-top:4px">Michigan Wolverines · Midwest #1</div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--green);margin-top:4px">Backed at +350 odds</div>
+      </div>
+
+      <!-- Final Four -->
+      <div style="font-family:var(--mono);font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">Final Four Picks</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+        ${GMONEY_BRACKET.f4.map(team => {
+          const actual = Object.values(liveScores).filter(g=>!g.flipped&&g.status==='final');
+          const correct = null; // will auto-verify as results come in
+          return `<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:8px">
+            <div style="width:32px;height:32px;border-radius:8px;background:var(--amber-d);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:10px;font-weight:700;color:var(--amber);flex-shrink:0">${team}</div>
+            <div>
+              <div style="font-family:var(--sans);font-size:12px;font-weight:600;color:var(--text)">${team}</div>
+              <div style="font-family:var(--mono);font-size:9px;color:var(--text3)">Final Four</div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+
+      <!-- Championship -->
+      <div style="font-family:var(--mono);font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">Championship Game</div>
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between">
+        <div style="text-align:center;flex:1">
+          <div style="font-family:var(--sans);font-size:18px;font-weight:800;color:var(--amber)">${GMONEY_BRACKET.championship[0]}</div>
+          <div style="font-family:var(--mono);font-size:9px;color:var(--green)">G-Money's Pick</div>
+        </div>
+        <div style="font-family:var(--mono);font-size:12px;color:var(--text3)">vs</div>
+        <div style="text-align:center;flex:1">
+          <div style="font-family:var(--sans);font-size:18px;font-weight:800;color:var(--text)">${GMONEY_BRACKET.championship[1]}</div>
+          <div style="font-family:var(--mono);font-size:9px;color:var(--text3)">Runner-up</div>
+        </div>
+      </div>
+
+      <!-- Upset picks -->
+      <div style="font-family:var(--mono);font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">💣 G-Money's Upset Picks</div>
+      ${GMONEY_BRACKET.upsets.map(u => `
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px;display:flex;align-items:flex-start;gap:10px">
+          <div style="background:var(--red-d);border:1px solid #FF557730;border-radius:6px;padding:2px 7px;font-family:var(--mono);font-size:10px;color:var(--red);flex-shrink:0">#${u.seed}</div>
+          <div>
+            <div style="font-family:var(--sans);font-size:12px;font-weight:600;color:var(--text)">${u.team} upsets ${u.over} seed in ${u.round}</div>
+            <div style="font-family:var(--mono);font-size:10px;color:var(--text3);margin-top:2px">${u.note}</div>
+          </div>
+        </div>`).join('')}
+
+      <div style="font-family:var(--mono);font-size:9px;color:var(--text3);text-align:center;padding:12px;border-top:1px solid var(--border);margin-top:4px">
+        G-Money's bracket locked in before tournament · For entertainment only
+      </div>
+    </div>`;
+}
+
+
 let _autoRefreshTimer = null;
 function schedulePostGameRefresh() {
   if (_autoRefreshTimer) return; // already scheduled
@@ -4243,12 +4280,9 @@ function bracketTapGame(keyStr) {
 }
 
 function drawBracket(rk) {
-  // Final Four tab gets its own layout
-  if (rk === 'finalfour') {
-    drawFinalFour();
-    return;
-  }
-  const r = resolveR32Winners(rk); // auto-fill R32 from R64 results
+  if (rk === 'finalfour') { drawFinalFour(); return; }
+  if (rk === 'gmoney')    { drawGMoneyBracket(); return; }
+  const r = resolveR32Winners(rk);
   const slotH=46, gap=4;
 
   document.getElementById('brkRoundHdr').innerHTML = `

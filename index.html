@@ -54,7 +54,7 @@ body.light .home-nav-btn{color:var(--text3);}
 body.light .home-nav-btn.active{color:var(--accent);}
 
 /* ── VERSION FOOTER ── */
-.ver-footer{position:fixed;bottom:0;left:0;right:0;max-width:100%;background:var(--surface);border-top:1px solid var(--border);padding:6px 14px;display:flex;align-items:center;justify-content:space-between;z-index:40;}
+.ver-footer{position:fixed;bottom:0;left:0;right:0;max-width:100%;background:var(--surface);border-top:1px solid var(--border);padding:6px 14px;padding-bottom:max(6px,env(safe-area-inset-bottom));display:flex;align-items:center;justify-content:space-between;z-index:40;}
 .ver-badge{font-family:var(--mono);font-size:9px;background:var(--card2);border:1px solid var(--border2);border-radius:4px;padding:2px 8px;color:var(--text3);cursor:pointer;transition:all .15s;}
 .ver-badge:hover{border-color:var(--accent);color:var(--accent);}
 .ver-date{font-family:var(--mono);font-size:9px;color:var(--text3);}

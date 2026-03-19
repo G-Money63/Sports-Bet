@@ -4043,14 +4043,23 @@ function drawBracket(rk) {
   // S16 + E8 span the full height of both pairs
   const pairH = SH*2 + SG;
   const twoGroupH = pairH*2 + SG;
+  // Midpoints of each pair group — where connectors should land
+  const mid0 = pairH / 2;          // center of top pair
+  const mid1 = pairH + SG + pairH / 2; // center of bottom pair
+  const midAll = (mid0 + mid1) / 2; // center between both pairs → S16
+
+  const conn2Svg = '<svg width="18" height="'+twoGroupH+'" style="flex-shrink:0;overflow:visible;display:block">'
+    +'<line x1="0" y1="'+mid0+'" x2="9" y2="'+mid0+'" stroke="var(--border2)" stroke-width="1"/>'
+    +'<line x1="0" y1="'+mid1+'" x2="9" y2="'+mid1+'" stroke="var(--border2)" stroke-width="1"/>'
+    +'<line x1="9" y1="'+mid0+'" x2="9" y2="'+mid1+'" stroke="var(--border2)" stroke-width="1"/>'
+    +'<line x1="9" y1="'+midAll+'" x2="18" y2="'+midAll+'" stroke="var(--border2)" stroke-width="1"/>'
+    +'</svg>';
 
   const rightCols =
-    '<div style="display:flex;align-items:center;flex-shrink:0;align-self:stretch">'+connSvg(twoGroupH)+'</div>'
-    +'<div style="display:flex;align-items:center;flex-shrink:0;align-self:stretch">'+card(s16[0])+'</div>'
-    +'<div style="display:flex;align-items:center;flex-shrink:0;align-self:stretch">'
-    +'<svg width="18" height="2" style="overflow:visible;display:block"><line x1="0" y1="0" x2="18" y2="0" stroke="var(--border2)" stroke-width="1"/></svg>'
-    +'</div>'
-    +'<div style="display:flex;align-items:center;flex-shrink:0;align-self:stretch">'+card(e8[0])+'</div>';
+    '<div style="display:flex;align-items:flex-start;flex-shrink:0">'+conn2Svg+'</div>'
+    +'<div style="display:flex;align-items:flex-start;flex-shrink:0;padding-top:'+(midAll - SH/2)+'px">'+card(s16[0])+'</div>'
+    +'<div style="display:flex;align-items:flex-start;flex-shrink:0;padding-top:'+(midAll - 1)+'px"><svg width="18" height="2" style="overflow:visible;display:block"><line x1="0" y1="0" x2="18" y2="0" stroke="var(--border2)" stroke-width="1"/></svg></div>'
+    +'<div style="display:flex;align-items:flex-start;flex-shrink:0;padding-top:'+(midAll - SH/2)+'px">'+card(e8[0])+'</div>';
 
   const labels =
     '<div style="display:flex;gap:0;margin-bottom:4px;padding-left:0">'
@@ -4171,7 +4180,7 @@ function drawFinalFour() {
 const GMONEY_BRACKET = {
   champion: 'MICH',
   championship: ['MICH','FLA'],
-  analysis: "Michigan wins it all. Best frontcourt in America with Lendeborg. Path: beats the South region, then faces Arizona in the Championship. Arizona wins the West, beats Duke in the Final Four. MICH vs ARIZ in the title game — Michigan's size wins it.",
+  analysis: "Michigan wins it all. Beats Arizona in the West/Midwest Final Four semifinal — Lendeborg too big. Florida beats Duke in the other semifinal. Then MICH vs FLA in the Championship — title favorite beats the defending champ.",
   date: 'Mar 16, 2026',
   regions: {
     east: { name:'East',
@@ -4261,7 +4270,7 @@ function drawGMoneyBracket() {
     // ── Analysis header ──
     +'<div style="background:var(--card2);border-left:3px solid #B09DFF;border-radius:6px;padding:10px 12px;margin-bottom:12px">'
     +'<div style="font-family:var(--mono);font-size:8px;color:#B09DFF;text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">💰 G-Money\'s Bracket · Locked Mar 16</div>'
-    +'<div style="font-family:var(--sans);font-size:11px;line-height:1.5;color:var(--text)">Michigan wins it all. Beats the South region, advances to face Arizona in the Championship. Arizona wins the West, beats Duke in the Final Four. MICH vs ARIZ in the title — Michigan\'s size wins it.</div>'
+    +'<div style="font-family:var(--sans);font-size:11px;line-height:1.5;color:var(--text)">'+GMONEY_BRACKET.analysis+'</div>'
     +'</div>'
 
     // ── 4 Regions ──

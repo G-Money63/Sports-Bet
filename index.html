@@ -3899,7 +3899,6 @@ function makeTBDSlots(count, label) {
 }
 
 function buildFallbackBracket() {
-  // Collect ALL static games organized by region and round
   const byRegion = {
     east:    {r64:[], r32:[], s16:[], e8:[]},
     west:    {r64:[], r32:[], s16:[], e8:[]},
@@ -3907,86 +3906,78 @@ function buildFallbackBracket() {
     midwest: {r64:[], r32:[], s16:[], e8:[]},
   };
 
-  // Convert static game to bracket format with live score overlay
-  function toBracket(g, dayKey) {
-    const awayAbbr = (g.away?.abbr || '').toUpperCase();
-    const homeAbbr = (g.home?.abbr || '').toUpperCase();
-    // Check liveScores for real-time state
-    const s = liveScores[awayAbbr+'-'+homeAbbr] ||
-              liveScores[homeAbbr+'-'+awayAbbr] ||
-              liveScores[awayAbbr+homeAbbr] ||
-              liveScores[homeAbbr+awayAbbr];
-    let st = 'pre', as = 0, hs = 0, aw = false, al = false;
-    let tm = g.timeET || g.timePT || '';
-    if (s) {
-      const flipped = !!(s.flipped || (s.home && s.home === awayAbbr));
-      as = flipped ? (s.homeScore||0) : (s.awayScore||0);
-      hs = flipped ? (s.awayScore||0) : (s.homeScore||0);
-      st = s.status === 'live' ? 'live' : s.status === 'final' ? 'final' : 'pre';
-      aw = st === 'final' && as > hs;
-      al = st === 'live'  && as > hs;
-      tm = st === 'final' ? 'FINAL' : st === 'live' ? (s.period ? 'P'+s.period+' '+s.clock : 'LIVE') : tm;
-    } else if (g.result && g.result.status === 'final') {
-      // Use hardcoded result from static data
-      st = 'final';
-      as = g.result.awayScore || 0;
-      hs = g.result.homeScore || 0;
-      aw = as > hs;
-      tm = 'FINAL';
-    }
-    return {
-      id:  g.id || (awayAbbr+homeAbbr),
-      a:   {s: g.away?.seed || '?', n: awayAbbr},
-      h:   {s: g.home?.seed || '?', n: homeAbbr},
-      st, as, hs, aw, al, tm
-    };
-  }
-
-  // Scan STATIC_GAMES — only grab First Round and First Four games for R64
-  // Later rounds (R32, S16, E8) are filled automatically by advanceWinners()
-  const r64days = ['tue','wed','thu','fri']; // First Four + First Round only
-  for (const [fullKey, data] of Object.entries(STATIC_GAMES)) {
-    if (!fullKey.startsWith('ncaam-w1_')) continue;
+  // Get First Four winners to slot into R64
+  const ffWinners = {}; // loser abbr → winner abbr (winner replaces loser in bracket)
+  for (const day of ['tue','wed']) {
+    const data = STATIC_GAMES['ncaam-w1_'+day];
     if (!data?.games) continue;
-    const dayKey = fullKey.replace('ncaam-w1_','');
-    if (!r64days.includes(dayKey)) continue; // skip R32/S16/E8 shell days
     for (const g of data.games) {
-      const region = (g.region || '').toLowerCase();
-      if (!byRegion[region]) continue;
-      byRegion[region].r64.push(toBracket(g, fullKey));
+      const winner = getStaticWinner(g);
+      if (!winner) continue;
+      const awayAbbr = (g.away?.abbr||'').toUpperCase();
+      const homeAbbr = (g.home?.abbr||'').toUpperCase();
+      const loser = winner === awayAbbr ? homeAbbr : awayAbbr;
+      ffWinners[loser] = winner;
     }
   }
 
-  // Fill later rounds with TBD — advanceWinners() will populate from results
-  const roundDates = {
-    r32: {east:'SAT 3/21', west:'SUN 3/22', south:'SAT 3/21', midwest:'SAT 3/21'},
-    s16: {east:'THU 3/26', west:'FRI 3/27', south:'THU 3/26', midwest:'FRI 3/27'},
-    e8:  {east:'SAT 3/28', west:'SUN 3/29', south:'SAT 3/28', midwest:'SUN 3/29'},
+  function toBracket(g) {
+    const rawAway = (g.away?.abbr||'').toUpperCase();
+    const rawHome = (g.home?.abbr||'').toUpperCase();
+    const awayAbbr = ffWinners[rawAway] || rawAway;
+    const homeAbbr = ffWinners[rawHome] || rawHome;
+    const s = liveScores[awayAbbr+'-'+homeAbbr] || liveScores[homeAbbr+'-'+awayAbbr]
+           || liveScores[rawAway+'-'+rawHome]    || liveScores[rawHome+'-'+rawAway];
+    let st='pre', as=0, hs=0, aw=false, al=false, tm=g.timeET||'';
+    if (s) {
+      const fl = !!(s.flipped || s.home===awayAbbr);
+      as=fl?(s.homeScore||0):(s.awayScore||0); hs=fl?(s.awayScore||0):(s.homeScore||0);
+      st=s.status==='live'?'live':s.status==='final'?'final':'pre';
+      aw=st==='final'&&as>hs; al=st==='live'&&as>hs;
+      tm=st==='final'?'FINAL':st==='live'?(s.period?'P'+s.period+' '+s.clock:'LIVE'):tm;
+    } else if (g.result?.status==='final') {
+      st='final'; as=g.result.awayScore||0; hs=g.result.homeScore||0; aw=as>hs; tm='FINAL';
+    }
+    return {id:g.id||(awayAbbr+homeAbbr), a:{s:g.away?.seed||'?',n:awayAbbr}, h:{s:g.home?.seed||'?',n:homeAbbr}, st,as,hs,aw,al,tm};
+  }
+
+  // Only First Round (thu/fri) goes into r64
+  for (const day of ['thu','fri']) {
+    const data = STATIC_GAMES['ncaam-w1_'+day];
+    if (!data?.games) continue;
+    for (const g of data.games) {
+      const region=(g.region||'').toLowerCase();
+      if (byRegion[region]) byRegion[region].r64.push(toBracket(g));
+    }
+  }
+
+  const dates = {
+    r32:{east:'SAT 3/21',west:'SUN 3/22',south:'SAT 3/21',midwest:'SAT 3/21'},
+    s16:{east:'THU 3/26',west:'FRI 3/27',south:'THU 3/26',midwest:'FRI 3/27'},
+    e8: {east:'SAT 3/28',west:'SUN 3/29',south:'SAT 3/28',midwest:'SUN 3/29'},
   };
   for (const [rk, region] of Object.entries(byRegion)) {
-    // Sort r64 by seed so bracket order is consistent
-    region.r64.sort((a,b) => (parseInt(a.a.s)||99) - (parseInt(b.a.s)||99));
-    // Limit to 4 games per region (should already be 4 but just in case)
-    region.r64 = region.r64.slice(0, 4);
-    // Set TBD slots for all later rounds
-    region.r32 = makeTBDSlots(2, roundDates.r32[rk] || 'SAT/SUN');
-    region.s16 = makeTBDSlots(1, roundDates.s16[rk] || 'THU/FRI');
-    region.e8  = makeTBDSlots(1, roundDates.e8[rk]  || 'SAT/SUN');
+    region.r64.sort((a,b)=>(parseInt(a.a.s)||99)-(parseInt(b.a.s)||99));
+    if (region.r64.length > 4) region.r64 = region.r64.slice(0,4);
+    region.r32 = makeTBDSlots(2, dates.r32[rk]||'SAT/SUN');
+    region.s16 = makeTBDSlots(1, dates.s16[rk]||'THU/FRI');
+    region.e8  = makeTBDSlots(1, dates.e8[rk] ||'SAT/SUN');
   }
 
   BRACKET_DATA = {
     ...byRegion,
-    finalfour: {
-      f4:    makeTBDSlots(2,'SAT 4/4 · Houston'),
-      natty: makeTBDSlots(1,'MON 4/6 · Houston')
-    }
+    finalfour: {f4:makeTBDSlots(2,'SAT 4/4 · Houston'), natty:makeTBDSlots(1,'MON 4/6 · Houston')}
   };
-
   bracketDataLoaded = true;
-  console.log('[Bracket] Built from STATIC_GAMES:',
-    Object.entries(byRegion).map(([k,v])=>k+' r64:'+v.r64.length+' r32:'+v.r32.length).join(' | '));
+  console.log('[Bracket] Built:', Object.entries(byRegion).map(([k,v])=>k+':'+v.r64.length).join(' '));
 }
 
+function getStaticWinner(g) {
+  if (!g?.result || g.result.status !== 'final') return null;
+  if (g.result.winner) return g.result.winner.toUpperCase();
+  const aw = (g.result.awayScore||0) > (g.result.homeScore||0);
+  return aw ? (g.away?.abbr||'').toUpperCase() : (g.home?.abbr||'').toUpperCase();
+}
 
 function overlayESPNBracket(events) {
   // Use ESPN data to update R32/S16/E8/F4/Natty — same logic as buildBracketFromEvents
@@ -4171,86 +4162,93 @@ const GMONEY_BRACKET = {
 
 
 function drawGMoneyBracket() {
-  document.getElementById('brkRoundHdr').innerHTML = '';
+  document.getElementById('brkRoundHdr').innerHTML =
+    '<div style="font-family:var(--mono);font-size:9px;color:#B09DFF;padding:8px 14px;text-transform:uppercase;letter-spacing:.1em">💰 G-Money\'s Full Predicted Bracket · Locked Mar 16</div>';
 
-  // Helper: pick card
-  function pickCard(away, awayS, home, homeS, pick, note, isChamp) {
-    const aWin = pick === away, hWin = pick === home;
-    const accent = isChamp ? 'var(--amber)' : 'var(--green)';
-    return '<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:6px">'
-      + '<div style="display:flex;align-items:stretch">'
-      + '<div style="width:3px;background:' + accent + ';flex-shrink:0"></div>'
-      + '<div style="flex:1;padding:8px 10px">'
-      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'
-      + '<div style="font-family:var(--mono);font-size:11px;font-weight:700;color:' + (aWin?accent:'var(--text3)') + '">#' + awayS + ' ' + away + (aWin?' ✓':'') + '</div>'
-      + '<div style="font-family:var(--mono);font-size:9px;color:var(--text3)">vs</div>'
-      + '<div style="font-family:var(--mono);font-size:11px;font-weight:700;color:' + (hWin?accent:'var(--text3)') + '">' + home + ' #' + homeS + (hWin?' ✓':'') + '</div>'
-      + '</div>'
-      + '<div style="font-family:var(--mono);font-size:9px;color:var(--text3)">' + note + '</div>'
-      + '</div></div></div>';
+  const gb = GMONEY_BRACKET.regions;
+  const slotH=46, gap=4;
+
+  // Build a bracket card for G-Money's predicted matchup
+  function gmc(away, awayS, home, homeS, pick, bust) {
+    // bust = team that actually lost (bracket busted for this pick)
+    const aWin = pick===away, hWin = pick===home;
+    const aBust = bust===away, hBust = bust===home;
+    const aColor = aBust ? 'var(--red)' : aWin ? 'var(--green)' : 'var(--text2)';
+    const hColor = hBust ? 'var(--red)' : hWin ? 'var(--green)' : 'var(--text2)';
+    const aDec   = aBust ? 'line-through' : 'none';
+    const hDec   = hBust ? 'line-through' : 'none';
+    return '<div class="bmc" style="position:relative">'
+      + '<div class="btr"><div class="bts">' + awayS + '</div>'
+      + '<div class="btn" style="color:' + aColor + ';text-decoration:' + aDec + '">' + away + (aWin&&!aBust?' →':'') + '</div></div>'
+      + '<div class="btr"><div class="bts">' + homeS + '</div>'
+      + '<div class="btn" style="color:' + hColor + ';text-decoration:' + hDec + '">' + home + (hWin&&!hBust?' →':'') + '</div></div>'
+      + (aBust||hBust ? '<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-family:var(--mono);font-size:8px;color:var(--red);background:var(--card);padding:1px 4px;border-radius:3px;border:1px solid var(--red)">BUST</div>' : '')
+      + '</div>';
   }
 
-  function regionSection(rk) {
-    const rd = GMONEY_BRACKET.regions[rk];
-    if (!rd) return '';
-    let html = '<div style="background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:12px;position:relative;overflow:hidden">'
-      + '<div style="position:absolute;top:0;left:0;width:3px;bottom:0;background:' + rd.color + '"></div>'
-      + '<div style="font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:' + rd.color + ';margin-bottom:10px;padding-left:6px">' + rd.name + ' Region</div>';
-
-    const rounds = [
-      {key:'r64', label:'First Round', games: rd.r64},
-      {key:'r32', label:'Second Round', games: rd.r32},
-      {key:'s16', label:'Sweet 16', games: rd.s16},
-      {key:'e8',  label:'Elite Eight', games: rd.e8},
-    ];
-    for (const round of rounds) {
-      if (!round.games || !round.games.length) continue;
-      html += '<div style="font-family:var(--mono);font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin:8px 0 4px">' + round.label + '</div>';
-      for (const g of round.games) {
-        html += pickCard(g.a, g.as, g.h, g.hs, g.pick, g.note, round.key==='e8');
-      }
+  // Check if a team actually lost (bracket busted) based on liveScores
+  function checkBust(predictedWinner) {
+    // Look through all final scores to see if predictedWinner lost
+    for (const g of Object.values(liveScores)) {
+      if (g.flipped || g.status !== 'final') continue;
+      const loser = g.awayScore > g.homeScore ? g.home : g.away;
+      if (loser && loser.toUpperCase() === predictedWinner.toUpperCase()) return loser.toUpperCase();
     }
-    html += '</div>';
-    return html;
+    return null;
   }
 
-  let html = '<div style="padding:14px">'
-    // Header
-    + '<div style="background:linear-gradient(135deg,#7C5CFC18,#FF557708);border:1px solid #7C5CFC35;border-radius:12px;padding:14px;margin-bottom:12px;position:relative;overflow:hidden">'
-    + '<div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#7C5CFC,#FF5577,#FFC230)"></div>'
-    + '<div style="font-family:var(--mono);font-size:9px;color:#B09DFF;text-transform:uppercase;letter-spacing:.12em;margin-bottom:6px">💰 G-Money\'s Bracket · Filed ' + GMONEY_BRACKET.date + '</div>'
-    + '<div style="font-family:var(--sans);font-size:12px;line-height:1.5;color:var(--text)">' + GMONEY_BRACKET.analysis + '</div>'
+  function regionBracket(rk) {
+    const rd = gb[rk];
+    if (!rd) return '';
+    const col = rd.color || 'var(--accent)';
+
+    const r64html = rd.r64.map(g => '<div style="margin-bottom:'+gap+'px;flex-shrink:0">'+gmc(g.a,g.as,g.h,g.hs,g.pick,checkBust(g.pick))+'</div>').join('');
+    const r32gap = slotH + gap*2;
+    const r32html = rd.r32.map((g,i) => '<div style="margin-bottom:'+(i<rd.r32.length-1?r32gap+'px':'0')+';flex-shrink:0">'+gmc(g.a,g.as,g.h,g.hs,g.pick,checkBust(g.pick))+'</div>').join('');
+    const totalH = slotH*4+gap*3;
+    const s16top = Math.round(totalH/2-slotH/2);
+    const s16html = '<div style="padding-top:'+s16top+'px;flex-shrink:0">'+gmc(rd.s16[0].a,rd.s16[0].as,rd.s16[0].h,rd.s16[0].hs,rd.s16[0].pick,checkBust(rd.s16[0].pick))+'</div>';
+    const e8html  = '<div style="padding-top:'+s16top+'px;flex-shrink:0">'+gmc(rd.e8[0].a,rd.e8[0].as,rd.e8[0].h,rd.e8[0].hs,rd.e8[0].pick,checkBust(rd.e8[0].pick))+'</div>';
+
+    const conn1 = [0,1].map(()=>'<svg width="20" height="'+(slotH*2+gap)+'" style="overflow:visible;display:block;flex-shrink:0;margin-bottom:'+(slotH*2+gap*2)+'px"><line x1="0" y1="'+(slotH/2)+'" x2="10" y2="'+(slotH/2)+'" stroke="'+col+'" stroke-width="1.5" opacity=".5"/><line x1="0" y1="'+(slotH+gap+slotH/2)+'" x2="10" y2="'+(slotH+gap+slotH/2)+'" stroke="'+col+'" stroke-width="1.5" opacity=".5"/><line x1="10" y1="'+(slotH/2)+'" x2="10" y2="'+(slotH+gap+slotH/2)+'" stroke="'+col+'" stroke-width="1.5" opacity=".5"/><line x1="10" y1="'+((slotH+gap/2+slotH/2))+'" x2="20" y2="'+((slotH+gap/2+slotH/2))+'" stroke="'+col+'" stroke-width="1.5" opacity=".5"/></svg>').join('');
+
+    const r32totalH = slotH*2+r32gap;
+    const conn2 = '<svg width="20" height="'+r32totalH+'" style="overflow:visible;display:block;flex-shrink:0"><line x1="0" y1="'+(slotH/2)+'" x2="10" y2="'+(slotH/2)+'" stroke="'+col+'" stroke-width="1.5" opacity=".5"/><line x1="0" y1="'+(slotH+r32gap+slotH/2)+'" x2="10" y2="'+(slotH+r32gap+slotH/2)+'" stroke="'+col+'" stroke-width="1.5" opacity=".5"/><line x1="10" y1="'+(slotH/2)+'" x2="10" y2="'+(slotH+r32gap+slotH/2)+'" stroke="'+col+'" stroke-width="1.5" opacity=".5"/><line x1="10" y1="'+((slotH/2+slotH+r32gap+slotH/2)/2)+'" x2="20" y2="'+((slotH/2+slotH+r32gap+slotH/2)/2)+'" stroke="'+col+'" stroke-width="1.5" opacity=".5"/></svg>';
+    const conn3 = '<div style="padding-top:'+(s16top+slotH/2-1)+'px;flex-shrink:0"><svg width="20" height="2" style="overflow:visible;display:block"><line x1="0" y1="0" x2="20" y2="0" stroke="'+col+'" stroke-width="1.5" opacity=".5"/></svg></div>';
+
+    return '<div style="margin-bottom:20px">'
+      + '<div style="font-family:var(--mono);font-size:9px;color:'+col+';text-transform:uppercase;letter-spacing:.1em;padding:0 14px 6px">'+rd.name+' Region</div>'
+      + '<div class="brk-tree">'
+      + '<div style="display:flex;flex-direction:column;flex-shrink:0">'+r64html+'</div>'
+      + '<div style="display:flex;flex-direction:column;flex-shrink:0;padding-top:'+(slotH/2-1)+'px">'+conn1+'</div>'
+      + '<div style="display:flex;flex-direction:column;flex-shrink:0;padding-top:'+(slotH+gap/2)+'px">'+r32html+'</div>'
+      + '<div style="flex-shrink:0;padding-top:'+(slotH+gap/2)+'px">'+conn2+'</div>'
+      + s16html + conn3 + e8html
+      + '</div></div>';
+  }
+
+  // Final Four + Championship
+  const f4 = GMONEY_BRACKET.championship;
+  const champHtml = '<div style="padding:10px 14px">'
+    + '<div style="font-family:var(--mono);font-size:9px;color:var(--amber);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">🏆 Championship · Mon Apr 6 · Houston</div>'
+    + '<div style="display:flex;align-items:center;gap:8px">'
+    + '<div style="flex:1">'+gmc(f4[0],'1',f4[1],'1',GMONEY_BRACKET.champion,checkBust(GMONEY_BRACKET.champion))+'</div>'
+    + '<div style="text-align:center;padding:0 8px"><div style="font-family:var(--sans);font-size:22px;font-weight:800;color:var(--amber)">'+GMONEY_BRACKET.champion+'</div><div style="font-family:var(--mono);font-size:9px;color:var(--green)">WINS IT ALL</div></div>'
+    + '</div></div>';
+
+  document.getElementById('brkArea').innerHTML =
+    '<div style="padding-bottom:20px">'
+    + '<div style="background:linear-gradient(135deg,#7C5CFC14,transparent);border-bottom:1px solid #7C5CFC30;padding:12px 14px;margin-bottom:8px">'
+    + '<div style="font-family:var(--sans);font-size:11px;color:var(--text2);line-height:1.5">'+GMONEY_BRACKET.analysis+'</div>'
     + '</div>'
-
-    // Champion
-    + '<div style="background:var(--card2);border:1px solid var(--amber);border-radius:12px;padding:12px;margin-bottom:12px;text-align:center">'
-    + '<div style="font-family:var(--mono);font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">🏆 Champion</div>'
-    + '<div style="font-family:var(--sans);font-size:28px;font-weight:800;color:var(--amber)">' + GMONEY_BRACKET.champion + '</div>'
-    + '<div style="font-family:var(--mono);font-size:9px;color:var(--green);margin-top:4px">Michigan Wolverines · Backed at +350</div>'
-    + '</div>'
-
-    // Championship game
-    + '<div style="font-family:var(--mono);font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">🏆 Championship · Mon Apr 6</div>'
-    + pickCard(GMONEY_BRACKET.championship[0], '1', GMONEY_BRACKET.championship[1], '1', GMONEY_BRACKET.champion, 'Michigan\'s Lendeborg outduels Arizona — G-Money\'s pick wins it all', true)
-
-    // Final Four
-    + '<div style="font-family:var(--mono);font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin:10px 0 6px">Final Four · Sat Apr 4</div>'
-    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px">'
-    + ['MICH','DUKE','ARIZ','FLA'].map(t => '<div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px;text-align:center"><div style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--amber)">' + t + '</div></div>').join('')
-    + '</div>'
-
-    // All 4 regions
-    + regionSection('east')
-    + regionSection('west')
-    + regionSection('south')
-    + regionSection('midwest')
-
-    + '<div style="font-family:var(--mono);font-size:9px;color:var(--text3);text-align:center;padding:12px;border-top:1px solid var(--border)">G-Money\'s bracket locked in before tournament · For entertainment only 🎯</div>'
+    + champHtml
+    + regionBracket('east')
+    + regionBracket('west')
+    + regionBracket('south')
+    + regionBracket('midwest')
+    + '<div style="font-family:var(--mono);font-size:9px;color:var(--text3);text-align:center;padding:12px">G-Money\'s bracket locked before tournament · For entertainment only 🎯</div>'
     + '</div>';
-
-  document.getElementById('brkArea').innerHTML = html;
 }
-
 
 let _autoRefreshTimer = null;
 function schedulePostGameRefresh() {
@@ -4346,7 +4344,7 @@ function buildBMC(g) {
   // Always resolve against live scores first
   const live = resolveBracketGame(g);
   if (live.st === 'tbd') {
-    return `<div class="btbd-card"><div class="btbd-l">TBD</div><div class="btbd-t">${live.tm}</div></div>`;
+    return `<div class="btbd-card"><div class="btbd-l">TBD</div><div class="btbd-t" style="font-size:8px">${live.tm}</div></div>`;
   }
   const isL=live.st==='live', isF=live.st==='final';
   const aWin=isF&&live.aw, hWin=isF&&!live.aw&&isF;

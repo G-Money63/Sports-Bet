@@ -3892,77 +3892,100 @@ function makeTBDSlots(count, label) {
 }
 
 function buildFallbackBracket() {
-  // Build directly from STATIC_GAMES — our authoritative source
-  // Convert a static game object to bracket format with live score overlay
-  function fromStatic(g) {
-    if (!g) return null;
+  // Collect ALL static games organized by region and round
+  const byRegion = {
+    east:    {r64:[], r32:[], s16:[], e8:[]},
+    west:    {r64:[], r32:[], s16:[], e8:[]},
+    south:   {r64:[], r32:[], s16:[], e8:[]},
+    midwest: {r64:[], r32:[], s16:[], e8:[]},
+  };
+
+  // Round detection from game ID prefix or day key
+  function getRound(dayKey, g) {
+    const id = (g.id||'').toLowerCase();
+    if (id.startsWith('s16')) return 'r32'; // Second round (Sweet 16 feeders)
+    if (id.startsWith('e8'))  return 's16';
+    if (id.startsWith('f4'))  return 'e8';
+    // First Four games (tue/wed) feed into r64
+    const dk = dayKey.replace('ncaam-w1_','');
+    if (dk === 'tue' || dk === 'wed') return 'r64'; // First Four → count as r64
+    if (dk === 'thu' || dk === 'fri') return 'r64'; // First Round
+    if (dk === 'sat' || dk === 'sun') return 'r32'; // Second Round
+    if (dk === 'thu2'|| dk === 'fri2') return 's16';
+    if (dk === 'sat2'|| dk === 'sun2') return 'e8';
+    return 'r64';
+  }
+
+  // Convert static game to bracket format with live score overlay
+  function toBracket(g, dayKey) {
     const awayAbbr = (g.away?.abbr || '').toUpperCase();
     const homeAbbr = (g.home?.abbr || '').toUpperCase();
-    // Check liveScores for current state
-    const s = liveScores[awayAbbr+'-'+homeAbbr] || liveScores[homeAbbr+'-'+awayAbbr];
-    let st = 'pre', as = 0, hs = 0, aw = false, al = false, tm = g.timeET || g.timePT || '';
+    // Check liveScores for real-time state
+    const s = liveScores[awayAbbr+'-'+homeAbbr] ||
+              liveScores[homeAbbr+'-'+awayAbbr] ||
+              liveScores[awayAbbr+homeAbbr] ||
+              liveScores[homeAbbr+awayAbbr];
+    let st = 'pre', as = 0, hs = 0, aw = false, al = false;
+    let tm = g.timeET || g.timePT || '';
     if (s) {
-      const flipped = s.flipped;
-      as = flipped ? s.homeScore : s.awayScore;
-      hs = flipped ? s.awayScore : s.homeScore;
+      const flipped = !!(s.flipped || (s.home && s.home === awayAbbr));
+      as = flipped ? (s.homeScore||0) : (s.awayScore||0);
+      hs = flipped ? (s.awayScore||0) : (s.homeScore||0);
       st = s.status === 'live' ? 'live' : s.status === 'final' ? 'final' : 'pre';
       aw = st === 'final' && as > hs;
       al = st === 'live'  && as > hs;
-      tm = st === 'final' ? 'FINAL' : st === 'live' ? (s.period ? 'P'+s.period : 'LIVE') : tm;
+      tm = st === 'final' ? 'FINAL' : st === 'live' ? (s.period ? 'P'+s.period+' '+s.clock : 'LIVE') : tm;
     }
     return {
-      id: g.id || awayAbbr+homeAbbr,
-      a:  {s: g.away?.seed || '?', n: awayAbbr},
-      h:  {s: g.home?.seed || '?', n: homeAbbr},
+      id:  g.id || (awayAbbr+homeAbbr),
+      a:   {s: g.away?.seed || '?', n: awayAbbr},
+      h:   {s: g.home?.seed || '?', n: homeAbbr},
       st, as, hs, aw, al, tm
     };
   }
 
-  function getR64(eventKey) {
-    const data = STATIC_GAMES[eventKey];
-    if (!data?.games) return [];
-    return data.games.map(fromStatic).filter(Boolean);
-  }
-
-  BRACKET_DATA = {
-    east: {
-      r64: getR64('ncaam-w1_thu'),
-      r32: makeTBDSlots(2,'SAT 3/21'), s16: makeTBDSlots(1,'THU 3/26'), e8: makeTBDSlots(1,'SAT 3/28'),
-    },
-    west: {
-      r64: getR64('ncaam-w1_fri').slice(0,4),
-      r32: makeTBDSlots(2,'SUN 3/22'), s16: makeTBDSlots(1,'FRI 3/27'), e8: makeTBDSlots(1,'SUN 3/29'),
-    },
-    south: {
-      r64: getR64('ncaam-w1_fri').slice(4,8),
-      r32: makeTBDSlots(2,'SAT 3/21'), s16: makeTBDSlots(1,'THU 3/26'), e8: makeTBDSlots(1,'SAT 3/28'),
-    },
-    midwest: {
-      r64: getR64('ncaam-w1_thu').slice(4,8),
-      r32: makeTBDSlots(2,'SAT 3/21'), s16: makeTBDSlots(1,'FRI 3/27'), e8: makeTBDSlots(1,'SUN 3/29'),
-    },
-    finalfour: { f4: makeTBDSlots(2,'SAT 4/4 · Houston'), natty: makeTBDSlots(1,'MON 4/6 · Houston') },
-  };
-
-  // Better approach — map games to regions by region field in static data
-  const allRegions = {east:[], west:[], south:[], midwest:[]};
-  for (const key of Object.keys(STATIC_GAMES)) {
-    if (!key.startsWith('ncaam-w1_')) continue;
-    const data = STATIC_GAMES[key];
+  // Scan all STATIC_GAMES and sort by region
+  for (const [fullKey, data] of Object.entries(STATIC_GAMES)) {
+    if (!fullKey.startsWith('ncaam-w1_')) continue;
     if (!data?.games) continue;
+    const dayKey = fullKey.replace('ncaam-w1_','');
     for (const g of data.games) {
       const region = (g.region || '').toLowerCase();
-      if (allRegions[region]) allRegions[region].push(fromStatic(g));
+      if (!byRegion[region]) continue;
+      const round = getRound(fullKey, g);
+      if (byRegion[region][round]) {
+        byRegion[region][round].push(toBracket(g, dayKey));
+      }
     }
   }
 
-  // If we got region data use it, otherwise keep the slice-based approach
-  for (const [rk, games] of Object.entries(allRegions)) {
-    if (games.length >= 2) BRACKET_DATA[rk].r64 = games;
+  // Fill any empty rounds with TBD slots
+  const roundDates = {
+    r32: {east:'SAT 3/21', west:'SUN 3/22', south:'SAT 3/21', midwest:'SAT 3/21'},
+    s16: {east:'THU 3/26', west:'FRI 3/27', south:'THU 3/26', midwest:'FRI 3/27'},
+    e8:  {east:'SAT 3/28', west:'SUN 3/29', south:'SAT 3/28', midwest:'SUN 3/29'},
+  };
+  for (const [rk, region] of Object.entries(byRegion)) {
+    for (const round of ['r32','s16','e8']) {
+      if (!region[round].length) {
+        region[round] = makeTBDSlots(round==='r64'?4:round==='r32'?2:1, roundDates[round][rk]||'TBD');
+      }
+    }
+    // Limit r64 to 4 games (the actual bracket matchups, not all games)
+    if (region.r64.length > 4) region.r64 = region.r64.slice(0, 4);
   }
 
+  BRACKET_DATA = {
+    ...byRegion,
+    finalfour: {
+      f4:    makeTBDSlots(2,'SAT 4/4 · Houston'),
+      natty: makeTBDSlots(1,'MON 4/6 · Houston')
+    }
+  };
+
   bracketDataLoaded = true;
-  console.log('[Bracket] Built from STATIC_GAMES:', Object.entries(BRACKET_DATA).map(([k,v])=>k+':'+(v.r64?.length||0)).join(' '));
+  console.log('[Bracket] Built from STATIC_GAMES:',
+    Object.entries(byRegion).map(([k,v])=>k+' r64:'+v.r64.length+' r32:'+v.r32.length).join(' | '));
 }
 
 

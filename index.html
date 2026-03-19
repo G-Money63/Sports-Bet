@@ -4412,61 +4412,96 @@ function bracketTapGame(keyStr) {
 function drawBracket(rk) {
   if (rk === 'finalfour') { drawFinalFour(); return; }
   if (rk === 'gmoney')    { drawGMoneyBracket(); return; }
+
   const r = resolveR32Winners(rk);
-  const slotH=46, gap=4;
 
-  document.getElementById('brkRoundHdr').innerHTML = `
-    <div class="brk-rh-item" style="width:74px;flex-shrink:0">R64</div>
-    <div class="brk-rh-item" style="width:20px;flex-shrink:0"></div>
-    <div class="brk-rh-item" style="width:74px;flex-shrink:0">R32</div>
-    <div class="brk-rh-item" style="width:20px;flex-shrink:0"></div>
-    <div class="brk-rh-item" style="width:74px;flex-shrink:0">S16</div>
-    <div class="brk-rh-item" style="width:20px;flex-shrink:0"></div>
-    <div class="brk-rh-item" style="width:74px;flex-shrink:0">E8</div>
-  `;
+  // Slot card — shows team name, seed, score if available
+  function slot(g, isWinner) {
+    if (!g || g.st === 'tbd') {
+      return '<div style="width:80px;height:42px;background:var(--card2);border:1px dashed var(--border);border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0">'
+        + '<div style="font-family:var(--mono);font-size:8px;color:var(--text3)">TBD</div></div>';
+    }
+    const isF = g.st==='final', isL = g.st==='live';
+    const aWin = isF && g.aw, hWin = isF && !g.aw;
+    const aLead = isL && g.as > g.hs, hLead = isL && g.hs > g.as;
+    const winner = aWin ? g.a : hWin ? g.h : null;
+    const loser  = aWin ? g.h : hWin ? g.a : null;
+    const live   = isL  ? (aLead ? g.a : g.h) : null;
+    const trailing = isL ? (aLead ? g.h : g.a) : null;
 
-  const r64 = r.r64.map(g=>`<div style="margin-bottom:${gap}px;flex-shrink:0">${buildBMC(g)}</div>`).join('');
-  const r32gap = slotH + gap*2;
-  const r32 = r.r32.map((g,i)=>`<div style="margin-bottom:${i<r.r32.length-1?r32gap+'px':'0'};flex-shrink:0">${buildBMC(g)}</div>`).join('');
-  const totalH = slotH*4+gap*3;
-  const s16top = Math.round(totalH/2 - slotH/2);
-  const s16 = `<div style="padding-top:${s16top}px;flex-shrink:0">${buildBMC(r.s16[0])}</div>`;
-  const e8  = `<div style="padding-top:${s16top}px;flex-shrink:0">${buildBMC(r.e8[0])}</div>`;
+    function teamRow(team, score, isW, isL2, isLd, isTr) {
+      const bg  = isW ? 'var(--green-d)' : isL2 ? 'rgba(255,85,85,.08)' : 'transparent';
+      const col = isW ? 'var(--green)' : isL2 ? 'var(--text3)' : isLd ? 'var(--text)' : 'var(--text2)';
+      const dec = isL2 ? 'none' : 'none';
+      const scoreHtml = (isF||isL) ? '<span style="font-family:var(--mono);font-size:10px;font-weight:700;color:'+(isW||isLd?col:'var(--text3)')+'">'+score+'</span>' : '';
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:2px 6px;background:'+bg+';border-radius:3px">'
+        + '<div style="display:flex;align-items:center;gap:4px">'
+        + '<span style="font-family:var(--mono);font-size:8px;color:var(--text3)">'+team.s+'</span>'
+        + '<span style="font-family:var(--mono);font-size:10px;font-weight:600;color:'+col+'">'+team.n+(isW?' ✓':'')+'</span>'
+        + '</div>'
+        + scoreHtml
+        + '</div>';
+    }
 
-  // SVG connectors
-  const c1H = slotH+gap;
-  const conn1 = [0,1].map(()=>`
-    <svg width="20" height="${slotH*2+gap}" style="overflow:visible;display:block;flex-shrink:0;margin-bottom:${slotH*2+gap*2}px">
-      <line x1="0" y1="${slotH/2}" x2="10" y2="${slotH/2}" stroke="var(--border2)" stroke-width="1"/>
-      <line x1="0" y1="${slotH+gap+slotH/2}" x2="10" y2="${slotH+gap+slotH/2}" stroke="var(--border2)" stroke-width="1"/>
-      <line x1="10" y1="${slotH/2}" x2="10" y2="${slotH+gap+slotH/2}" stroke="var(--border2)" stroke-width="1"/>
-      <line x1="10" y1="${(slotH+gap/2+slotH/2)}" x2="20" y2="${(slotH+gap/2+slotH/2)}" stroke="var(--border2)" stroke-width="1"/>
-    </svg>`).join('');
+    const clickKey = findStaticGameKey(g.a.n, g.h.n);
+    const click = clickKey ? 'onclick="bracketTapGame(\''+clickKey+'\')" style="cursor:pointer"' : '';
+    const borderCol = isL ? 'var(--red)' : isF ? 'var(--border2)' : 'var(--border)';
+    const liveTag = isL ? '<div style="position:absolute;top:-5px;right:4px;background:var(--red);border-radius:3px;padding:1px 4px;font-family:var(--mono);font-size:7px;color:#fff">LIVE</div>' : '';
 
-  const r32totalH = slotH*2+r32gap;
-  const conn2 = `<svg width="20" height="${r32totalH}" style="overflow:visible;display:block;flex-shrink:0">
-    <line x1="0" y1="${slotH/2}" x2="10" y2="${slotH/2}" stroke="var(--border2)" stroke-width="1"/>
-    <line x1="0" y1="${slotH+r32gap+slotH/2}" x2="10" y2="${slotH+r32gap+slotH/2}" stroke="var(--border2)" stroke-width="1"/>
-    <line x1="10" y1="${slotH/2}" x2="10" y2="${slotH+r32gap+slotH/2}" stroke="var(--border2)" stroke-width="1"/>
-    <line x1="10" y1="${(slotH/2+slotH+r32gap+slotH/2)/2}" x2="20" y2="${(slotH/2+slotH+r32gap+slotH/2)/2}" stroke="var(--border2)" stroke-width="1"/>
-  </svg>`;
+    return '<div '+click+' style="width:80px;background:var(--card);border:1px solid '+borderCol+';border-radius:7px;overflow:visible;flex-shrink:0;position:relative">'
+      + liveTag
+      + teamRow(g.a, g.as, aWin, !aWin&&isF, aLead, hLead)
+      + '<div style="height:1px;background:var(--border);margin:0 4px"></div>'
+      + teamRow(g.h, g.hs, hWin, !hWin&&isF, hLead, aLead)
+      + (isF ? '<div style="text-align:center;font-family:var(--mono);font-size:7px;color:var(--text3);padding:1px">FINAL</div>' : '')
+      + '</div>';
+  }
 
-  const conn3 = `<div style="padding-top:${s16top+slotH/2-1}px;flex-shrink:0">
-    <svg width="20" height="2" style="overflow:visible;display:block">
-      <line x1="0" y1="0" x2="20" y2="0" stroke="var(--border2)" stroke-width="1"/>
-    </svg>
-  </div>`;
+  // Connector SVG between columns
+  function conn(count, itemH, gapH) {
+    const total = count * itemH + (count-1) * gapH;
+    const midOffset = itemH / 2;
+    let paths = '';
+    for (let i = 0; i < count; i += 2) {
+      const y1 = i * (itemH + gapH) + midOffset;
+      const y2 = (i+1) * (itemH + gapH) + midOffset;
+      const mid = (y1 + y2) / 2;
+      paths += '<line x1="0" y1="'+y1+'" x2="10" y2="'+y1+'" stroke="var(--border2)" stroke-width="1"/>'
+             + '<line x1="0" y1="'+y2+'" x2="10" y2="'+y2+'" stroke="var(--border2)" stroke-width="1"/>'
+             + '<line x1="10" y1="'+y1+'" x2="10" y2="'+y2+'" stroke="var(--border2)" stroke-width="1"/>'
+             + '<line x1="10" y1="'+mid+'" x2="20" y2="'+mid+'" stroke="var(--border2)" stroke-width="1"/>';
+    }
+    return '<svg width="20" height="'+total+'" style="flex-shrink:0;overflow:visible">'+paths+'</svg>';
+  }
 
-  document.getElementById('brkArea').innerHTML = `
-    <div class="brk-tree">
-      <div style="display:flex;flex-direction:column;flex-shrink:0">${r64}</div>
-      <div style="display:flex;flex-direction:column;flex-shrink:0;padding-top:${slotH/2-1}px">${conn1}</div>
-      <div style="display:flex;flex-direction:column;flex-shrink:0;padding-top:${slotH+gap/2}px">${r32}</div>
-      <div style="flex-shrink:0;padding-top:${slotH+gap/2}px">${conn2}</div>
-      ${s16}
-      ${conn3}
-      ${e8}
-    </div>`;
+  // Build columns
+  const slotH = 50, gapH = 6;
+
+  function col(games, label, topPad) {
+    const items = games.map(g => '<div style="margin-bottom:'+gapH+'px;flex-shrink:0">'+slot(g)+'</div>').join('');
+    return '<div style="display:flex;flex-direction:column;flex-shrink:0">'
+      + '<div style="font-family:var(--mono);font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;white-space:nowrap">'+label+'</div>'
+      + (topPad ? '<div style="height:'+topPad+'px"></div>' : '')
+      + items + '</div>';
+  }
+
+  const r64col  = col(r.r64, 'R64', 0);
+  const r32col  = col(r.r32, 'R32', (slotH+gapH)/2);
+  const s16col  = col(r.s16, 'S16', (slotH+gapH)*1.5 + gapH/2);
+  const e8col   = col(r.e8,  'E8',  (slotH+gapH)*3 - gapH/2);
+
+  const conn1 = '<div style="display:flex;flex-direction:column;flex-shrink:0;margin-top:20px">'
+    + conn(4, slotH, gapH) + '</div>';
+  const conn2 = '<div style="display:flex;flex-direction:column;flex-shrink:0;margin-top:'+(slotH+gapH+20)+'px">'
+    + conn(2, slotH, slotH+gapH*3) + '</div>';
+  const conn3 = '<div style="flex-shrink:0;margin-top:'+((slotH+gapH)*3.5+20)+'px">'
+    + '<svg width="20" height="2" style="overflow:visible"><line x1="0" y1="0" x2="20" y2="0" stroke="var(--border2)" stroke-width="1"/></svg></div>';
+
+  document.getElementById('brkRoundHdr').innerHTML =
+    '<div style="font-family:var(--mono);font-size:9px;color:var(--text3);padding:6px 14px">'+rk.toUpperCase()+' REGION</div>';
+
+  document.getElementById('brkArea').innerHTML =
+    '<div class="brk-tree">' + r64col + conn1 + r32col + conn2 + s16col + conn3 + e8col + '</div>';
 }
 
 // ═══════════════════════════════════════════

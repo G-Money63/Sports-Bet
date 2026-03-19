@@ -3949,20 +3949,17 @@ function drawBracket(rk) {
   const r = BRACKET_DATA[rk];
   if (!r) return;
 
-  // Resolve live scores into r64 before advancing
+  // r64 already has correct state from buildFallbackBracket (result + liveScores)
+  // Just re-check liveScores for any live/final updates since last build
   const r64 = r.r64.map(g => {
-    if (g.st === 'tbd') return g;
-    const live = getLiveState({away:{abbr:g.a.n}, home:{abbr:g.h.n}});
-    const result = liveScores[g.a.n+'-'+g.h.n] || liveScores[g.h.n+'-'+g.a.n];
-    if (result && result.status === 'final') {
-      const fl = result.flipped || result.home === g.a.n;
-      const as = fl ? result.homeScore : result.awayScore;
-      const hs = fl ? result.awayScore : result.homeScore;
-      return {...g, st:'final', as, hs, aw: as>hs, tm:'FINAL'};
-    }
-    if (live && live.status === 'live') {
-      return {...g, st:'live', as:live.awayScore, hs:live.homeScore, tm:'LIVE'};
-    }
+    if (g.st === 'tbd' || g.st === 'final') return g; // already settled
+    const s = liveScores[g.a.n+'-'+g.h.n] || liveScores[g.h.n+'-'+g.a.n];
+    if (!s) return g;
+    const fl = s.flipped || s.home === g.a.n;
+    const as = fl ? s.homeScore : s.awayScore;
+    const hs = fl ? s.awayScore : s.homeScore;
+    if (s.status === 'final') return {...g, st:'final', as, hs, aw:as>hs, tm:'FINAL'};
+    if (s.status === 'live')  return {...g, st:'live',  as, hs, aw:false, tm:(s.period?'P'+s.period+(s.clock?' '+s.clock:''):'LIVE')};
     return g;
   });
 
@@ -4130,6 +4127,51 @@ function drawFinalFour() {
     +(ff?.natty||[]).map(g=>ffCard(g)).join('')
     +'</div>';
 }
+
+const GMONEY_BRACKET = {
+  champion: 'MICH',
+  championship: ['MICH','ARIZ'],
+  analysis: "Michigan wins it all. Best frontcourt in America with Lendeborg. Arizona is the value play at +425 — easiest path of any 1-seed. Duke falls in Elite Eight to Michigan in a rematch for the ages.",
+  date: 'Mar 16, 2026',
+  regions: {
+    east: { name:'East',
+      r64:[{a:'DUKE',as:1,h:'SIE', hs:16,pick:'DUKE',note:'Boozer by 20+'   },
+           {a:'OSU', as:8,h:'TCU', hs:9, pick:'TCU', note:'TCU +1.5 value'   },
+           {a:'LOU', as:6,h:'USF', hs:11,pick:'USF', note:'11-seeds 8-4 ATS' },
+           {a:'MSU', as:3,h:'NDSU',hs:14,pick:'MSU', note:'Fears dominates'  }],
+      r32:[{a:'DUKE',as:1,h:'TCU', hs:9, pick:'DUKE',note:'Duke rolls easily' },
+           {a:'USF', as:11,h:'MSU',hs:3, pick:'MSU', note:'Size advantage wins'}],
+      s16:[{a:'DUKE',as:1,h:'MSU', hs:3, pick:'DUKE',note:'Boozer too good'   }],
+      e8: [{a:'DUKE',as:1,h:'CONN',hs:2, pick:'DUKE',note:'Duke to Final Four'}]},
+    west: { name:'West',
+      r64:[{a:'BYU', as:5,h:'TEX', hs:11,pick:'BYU', note:'Dybantsa 30+'     },
+           {a:'SMC', as:4,h:'TXAM',hs:13,pick:'SMC', note:'SMC efficiency'   },
+           {a:'GONZ',as:3,h:'KENN',hs:14,pick:'GONZ',note:'Gonzaga locks down'},
+           {a:'ARIZ',as:1,h:'LIU', hs:16,pick:'ARIZ',note:'Arizona rolls easy'}],
+      r32:[{a:'BYU', as:5,h:'SMC', hs:4, pick:'BYU', note:'Dybantsa too good' },
+           {a:'GONZ',as:3,h:'ARIZ',hs:1, pick:'ARIZ',note:'Arizona D wins'    }],
+      s16:[{a:'BYU', as:5,h:'ARIZ',hs:1, pick:'ARIZ',note:'Burries takes over'}],
+      e8: [{a:'ARIZ',as:1,h:'KAN', hs:2, pick:'ARIZ',note:'Arizona Final Four'}]},
+    south: { name:'South',
+      r64:[{a:'NEB', as:4,h:'TROY',hs:13,pick:'NEB', note:'NEB first ever win'},
+           {a:'ILL', as:6,h:'PENN',hs:11,pick:'ILL', note:'Wagler drops 30'  },
+           {a:'HOU', as:2,h:'IDHO',hs:15,pick:'HOU', note:'Houston pack D'   },
+           {a:'FLA', as:1,h:'LEH', hs:16,pick:'FLA', note:'Defending champs' }],
+      r32:[{a:'NEB', as:4,h:'ILL', hs:6, pick:'ILL', note:'ILL too talented'  },
+           {a:'HOU', as:2,h:'FLA', hs:1, pick:'FLA', note:'Florida experience'}],
+      s16:[{a:'ILL', as:6,h:'FLA', hs:1, pick:'FLA', note:'Florida defends'   }],
+      e8: [{a:'FLA', as:1,h:'TENN',hs:2, pick:'FLA', note:'Gators Final Four' }]},
+    midwest: { name:'Midwest',
+      r64:[{a:'MICH',as:1,h:'HOW', hs:16,pick:'MICH',note:'Lendeborg 25/12'  },
+           {a:'VAN', as:5,h:'MCNS',hs:12,pick:'VAN', note:'Vandy peaked'      },
+           {a:'ARK', as:4,h:'HAW', hs:13,pick:'ARK', note:'ARK SEC form'      },
+           {a:'UGA', as:8,h:'SLU', hs:9, pick:'UGA', note:'Lean Georgia'      }],
+      r32:[{a:'MICH',as:1,h:'VAN', hs:5, pick:'MICH',note:'MICH D smothers'  },
+           {a:'ARK', as:4,h:'UGA', hs:8, pick:'ARK', note:'ARK size wins'     }],
+      s16:[{a:'MICH',as:1,h:'ARK', hs:4, pick:'MICH',note:'Too big inside'    }],
+      e8: [{a:'MICH',as:1,h:'IOWA',hs:2, pick:'MICH',note:'MICH on a mission' }]},
+  }
+};
 
 function drawGMoneyBracket() {
   document.getElementById('brkRoundHdr').innerHTML = '';

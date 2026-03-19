@@ -808,8 +808,8 @@ body.light .gmoney-pick{color:#5A3ECC;}
 <!-- VERSION FOOTER -->
 <div class="ver-footer" id="verFooter">
   <div style="display:flex;align-items:center;gap:8px">
-    <button class="ver-badge" onclick="toggleDebugPanel()" title="Tap for diagnostics">v1.2</button>
-    <span class="ver-date">Mar 18, 2026</span>
+    <button class="ver-badge" onclick="toggleDebugPanel()" title="Tap for diagnostics">v1.3</button>
+    <span class="ver-date">Mar 19, 2026</span>
   </div>
   <span class="ver-date">G-Money Bets</span>
 </div>
@@ -818,8 +818,31 @@ body.light .gmoney-pick{color:#5A3ECC;}
 <div class="debug-overlay hidden" id="debugOverlay" onclick="if(event.target===this)toggleDebugPanel()">
   <div class="debug-sheet">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-      <div style="font-family:var(--mono);font-size:11px;font-weight:500;color:var(--text)">🔧 Diagnostics · v1.2</div>
+      <div style="font-family:var(--mono);font-size:11px;font-weight:500;color:var(--text)">🔧 Diagnostics · v1.3</div>
       <button onclick="toggleDebugPanel()" style="font-family:var(--mono);font-size:10px;color:var(--text3);background:none;border:none;cursor:pointer">✕ close</button>
+    </div>
+    <!-- Changelog -->
+    <div style="font-family:var(--mono);font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Changelog</div>
+    <div style="font-family:var(--mono);font-size:10px;color:var(--text2);line-height:1.8;margin-bottom:12px;padding:10px;background:var(--card2);border:1px solid var(--border);border-radius:8px">
+      <div style="color:var(--accent);margin-bottom:4px">v1.3 · Mar 19 2026</div>
+      <div>+ G-Money Picks tab (pick tracker, bankroll, real odds)</div>
+      <div>+ Dynamic bracket from STATIC_GAMES + ESPN overlay</div>
+      <div>+ G-Money Bracket tab with champion/F4/upset picks</div>
+      <div>+ Final Four tab in bracket</div>
+      <div>+ Auto-refresh bracket after games go final</div>
+      <div>+ Consensus button moved to header row</div>
+      <div>+ Text contrast improved throughout</div>
+      <div style="color:var(--text3);margin-top:6px">v1.2 · Mar 19 2026</div>
+      <div style="color:var(--text3)">+ Fixed header (position:fixed + JS offset)</div>
+      <div style="color:var(--text3)">+ G-Money Smack Talk on home page</div>
+      <div style="color:var(--text3)">+ NHL Playoffs added (live + home screen)</div>
+      <div style="color:var(--text3)">+ NBA live score feed (league= param)</div>
+      <div style="color:var(--text3)">+ SELECT label on day tabs</div>
+      <div style="color:var(--text3)">+ Sports grid sorted Active/Coming/More</div>
+      <div style="color:var(--text3);margin-top:6px">v1.1 · Mar 18 2026</div>
+      <div style="color:var(--text3)">+ Live scores, bracket, home panel</div>
+      <div style="color:var(--text3)">+ G-Money per-game picks</div>
+      <div style="color:var(--text3)">+ NCAA/NBA/NHL events</div>
     </div>
     <div id="debugContent" style="font-family:var(--mono);font-size:10px;color:var(--text2);line-height:1.7"></div>
     <button onclick="runDiagnostics()" style="margin-top:10px;width:100%;padding:8px;background:var(--card2);border:1px solid var(--border);border-radius:8px;font-family:var(--mono);font-size:10px;color:var(--accent);cursor:pointer">↻ Re-run diagnostics</button>

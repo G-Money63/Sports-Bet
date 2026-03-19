@@ -3196,6 +3196,21 @@ function renderPicksPanel() {
 }
 
 
+function showPicksPanel() {
+  activeMainView = 'picks';
+  document.getElementById('homePanel').style.display = 'none';
+  document.getElementById('bracketPanel').style.display = 'none';
+  document.getElementById('picksPanel').style.display = '';
+  document.getElementById('mainPanels').style.display = 'none';
+  document.getElementById('homeNavBtn').classList.remove('active');
+  document.getElementById('bracketNavBtn').classList.remove('active');
+  document.getElementById('picksNavBtn').classList.add('active');
+  document.querySelectorAll('.day-tab').forEach(t => t.classList.remove('active'));
+  seedHistoricalPicks();
+  resolvePicksFromScores();
+  renderPicksPanel();
+}
+
 function showHomePanel() {
   activeMainView = 'home';
   document.getElementById('homePanel').style.display = '';
@@ -3785,6 +3800,7 @@ let BRACKET_DATA = {
 
 let bracketDataLoaded = false;
 let bracketFetchPromise = null;
+let currentBracketRegion = 'east';
 
 async function fetchBracketData() {
   // Only fetch once at a time
@@ -3842,11 +3858,6 @@ async function _doFetchBracket() {
     bracketFetchPromise = null;
   }
 }
-    for (const r of results) {
-      if (r.status === 'fulfilled' && r.value?.events) {
-        allEvents.push(...r.value.events);
-      }
-    }
 
 function makeTBDSlots(count, label) {
   return Array.from({length:count}, (_,i) => ({

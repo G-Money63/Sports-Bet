@@ -2127,70 +2127,159 @@ function buildDynamicDayData(dayKey, dayInfo) {
 
 async function loadDay(dayKey) {
   const ev       = getActiveEvent();
-  const dayInfo  = getActiveWeek().days.find(d=>d.key===dayKey);
+  const dayInfo  = getActiveWeek()?.days?.find(d => d.key === dayKey);
   if (!dayInfo) return;
-  const cacheKey = ev.id+'_'+dayKey;
-  const panel    = document.getElementById('panel-'+dayKey);
+  const cacheKey = ev.id + '_' + dayKey;
+  const panel    = document.getElementById('panel-' + dayKey);
   if (!panel) return;
 
   document.getElementById('mainRefresh').classList.add('spin');
 
-  // ── Step 1: Load static data instantly ──────────────────────
+  // ── Step 1: Show static data instantly while live loads ─────
   const staticData = STATIC_GAMES[cacheKey];
   if (staticData && !cache[cacheKey + '_live']) {
     renderPanel(dayKey, staticData);
     cache[cacheKey] = staticData;
-  } else if (!staticData) {
+  } else if (cache[cacheKey]) {
+    renderPanel(dayKey, cache[cacheKey]);
+  } else {
     panel.innerHTML = buildLoadingUI(ev);
-    // Try to build dynamic data from ESPN scores for rounds without static data
-    const dynamicData = buildDynamicDayData(dayKey, dayInfo);
-    if (dynamicData && dynamicData.games && dynamicData.games.length) {
-      renderPanel(dayKey, dynamicData);
-      cache[cacheKey] = dynamicData;
-    }
   }
 
-  // ── Step 2: Try live update via proxy ────────────────────────
+  // ── Step 2: Fetch live schedule from ESPN via proxy ─────────
   const proxyReady = PROXY_URL && PROXY_URL !== 'YOUR_CLOUD_RUN_URL_HERE';
+  if (!proxyReady) {
+    document.getElementById('mainRefresh').classList.remove('spin');
+    return;
+  }
 
-  if (proxyReady || prefs.useOddsApi) {
-    try {
-      const [oddsApiData, kalshiData, aiData] = await Promise.allSettled([
-        prefs.useOddsApi && prefs.oddsApiKey ? fetchOddsApi(ev, dayInfo) : Promise.reject('disabled'),
-        Promise.reject('kalshi disabled - CORS blocked'),
-        proxyReady ? fetchAI(ev, dayInfo) : Promise.reject('proxy not configured'),
-      ]);
+  try {
+    // Convert dayKey to a date string for the ESPN schedule endpoint
+    const dateStr = dayKeyToDate(dayKey);
+    const schedUrl = `${PROXY_URL}/api/schedule?league=ncaamb&date=${dateStr}`;
+    const schedResp = await fetch(schedUrl);
+    const schedData = await schedResp.json();
 
-      updateSourceDot('oddsapi', oddsApiData.status === 'fulfilled' ? 'done' : 'fail');
-      updateSourceDot('kalshi',  kalshiData.status  === 'fulfilled' ? 'done' : 'fail');
-      updateSourceDot('ai',      aiData.status      === 'fulfilled' ? 'done' : 'fail');
+    if (schedData.games && schedData.games.length > 0) {
+      // Build game list from ESPN data
+      const espnGames = schedData.games.map(g => {
+        // Try to find matching static game for enrichment (odds, sharp angles, props)
+        const staticGame = findStaticGame(g.away.abbr, g.home.abbr);
+        const liveOddsEntry = getGameOdds({away:{abbr:g.away.abbr}, home:{abbr:g.home.abbr}});
 
-      const liveData = aiData.status === 'fulfilled' ? aiData.value : staticData;
-      if (liveData && liveData.games && liveData.games.length > 0) {
-        const merged = mergeData(
-          liveData,
-          oddsApiData.status === 'fulfilled' ? oddsApiData.value : null,
-          kalshiData.status  === 'fulfilled' ? kalshiData.value  : null,
-          dayInfo
-        );
-        cache[cacheKey] = merged;
-        cache[cacheKey + '_live'] = true;
-        renderPanel(dayKey, merged);
+        return {
+          id:       g.id || (g.away.abbr + '-' + g.home.abbr),
+          timeET:   g.date ? new Date(g.date).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'America/New_York'}) + ' ET' : 'TBD',
+          network:  g.network || staticGame?.network || '',
+          region:   staticGame?.region || g.roundNote || '',
+          away: {
+            abbr:   g.away.abbr,
+            name:   g.away.name || g.away.abbr,
+            seed:   g.away.seed || staticGame?.away?.seed || '',
+            record: g.away.record || staticGame?.away?.record || '',
+          },
+          home: {
+            abbr:   g.home.abbr,
+            name:   g.home.name || g.home.abbr,
+            seed:   g.home.seed || staticGame?.home?.seed || '',
+            record: g.home.record || staticGame?.home?.record || '',
+          },
+          // Odds: live first, then static fallback
+          moneyline: liveOddsEntry
+            ? { away: liveOddsEntry.awayML, home: liveOddsEntry.homeML }
+            : staticGame?.moneyline || null,
+          spread: liveOddsEntry
+            ? { line: liveOddsEntry.spread, favTeam: g.away.abbr, juice: '-110' }
+            : staticGame?.spread || null,
+          total: liveOddsEntry
+            ? { line: liveOddsEntry.total, overJuice: liveOddsEntry.overOdds || '-110', underJuice: liveOddsEntry.underOdds || '-110' }
+            : staticGame?.total || null,
+          books:       staticGame?.books       || [],
+          playerProps: staticGame?.playerProps || [],
+          sharpAngle:  staticGame?.sharpAngle  || '',
+          result:      staticGame?.result      || null,
+          // ESPN odds overlay if available
+          ...(g.odds ? {
+            moneyline: { away: g.odds.awayML, home: g.odds.homeML },
+            spread:    { line: parseFloat(g.odds.spread) || 0, favTeam: g.away.abbr, juice: '-110' },
+            total:     { line: g.odds.overUnder, overJuice: '-110', underJuice: '-110' },
+          } : {}),
+        };
+      });
+
+      const liveGameData = {
+        day:   dayInfo.long || dayInfo.label,
+        round: dayInfo.round || espnGames[0]?.region || dayInfo.label,
+        games: espnGames,
+      };
+
+      cache[cacheKey] = liveGameData;
+      cache[cacheKey + '_live'] = true;
+      renderPanel(dayKey, liveGameData);
+      console.log(`[LoadDay] ${dayKey}: ${espnGames.length} games from ESPN`);
+    } else if (!cache[cacheKey]) {
+      // No ESPN data and no cache — try dynamic from liveScores
+      const dynamicData = buildDynamicDayData(dayKey, dayInfo);
+      if (dynamicData?.games?.length) {
+        cache[cacheKey] = dynamicData;
+        renderPanel(dayKey, dynamicData);
+      } else {
+        panel.innerHTML = `<div class="empty-wrap"><h3>No Games Found</h3><p>Check back later — schedule updates automatically.</p><button class="kick-btn" onclick="refreshCurrentTab()">↻ Retry</button></div>`;
       }
-    } catch(e) {
-      console.log('Live update failed, showing static data:', e.message);
     }
-  } else if (!staticData) {
-    // No static data and no proxy — show helpful message
-    panel.innerHTML = `<div class="empty-wrap">
-      <h3>Setup Required</h3>
-      <p>Deploy the Cloud Run proxy to enable live odds.<br>See the README in the sports-bet-proxy folder.</p>
-      <button class="kick-btn" onclick="refreshCurrentTab()">↻ Retry</button>
-    </div>`;
+  } catch(e) {
+    console.warn('[LoadDay] ESPN fetch failed:', e.message);
+    // Fall back to AI enrichment if proxy failed
+    if (staticData) {
+      renderPanel(dayKey, staticData);
+    }
   }
 
   document.getElementById('mainRefresh').classList.remove('spin');
 }
+
+// Convert a day tab key to a YYYYMMDD date string
+function dayKeyToDate(dayKey) {
+  // Map known day keys to dates
+  const keyMap = {
+    'thu':  '20260319', 'fri':  '20260320',
+    'sat':  '20260321', 'sun':  '20260322',
+    'thu2': '20260326', 'fri2': '20260327',
+    'sat2': '20260328', 'sun2': '20260329',
+    'sat3': '20260404', 'mon3': '20260406',
+    // NBA/NHL use different formats - handled separately
+  };
+  if (keyMap[dayKey]) return keyMap[dayKey];
+  // Try to parse from dayInfo
+  const dayInfo = getActiveWeek()?.days?.find(d => d.key === dayKey);
+  if (dayInfo?.long) {
+    const d = new Date(dayInfo.long);
+    if (!isNaN(d)) return d.getFullYear().toString()
+      + String(d.getMonth()+1).padStart(2,'0')
+      + String(d.getDate()).padStart(2,'0');
+  }
+  // Default to today
+  const now = new Date();
+  return now.getFullYear().toString()
+    + String(now.getMonth()+1).padStart(2,'0')
+    + String(now.getDate()).padStart(2,'0');
+}
+
+// Find matching static game by team abbreviations
+function findStaticGame(awayAbbr, homeAbbr) {
+  const a = (awayAbbr||'').toUpperCase();
+  const h = (homeAbbr||'').toUpperCase();
+  for (const data of Object.values(STATIC_GAMES)) {
+    for (const g of data.games||[]) {
+      const ga = (g.away?.abbr||'').toUpperCase();
+      const gh = (g.home?.abbr||'').toUpperCase();
+      if ((ga===a&&gh===h)||(ga===h&&gh===a)) return g;
+    }
+  }
+  return null;
+}
+
+
 
 function buildLoadingUI(ev) {
   return `<div class="loading-wrap">

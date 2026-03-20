@@ -465,10 +465,10 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 .team-name{font-size:13.5px;font-weight:700;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .team-name.fav{color:var(--text)} .team-name.dog{color:var(--text2)}
 .divider-vs{height:1px;background:var(--border);margin-left:31px}
-.odds-block{display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0}
+.odds-block{display:flex;flex-direction:column;gap:3px;align-items:flex-end;flex-shrink:0}
 .odds-row-top{display:flex;flex-direction:column;gap:3px;align-items:flex-end}
-.odds-row-bot{display:flex;gap:4px;align-items:center;justify-content:flex-end;margin-top:1px}
-.ou-mini{font-family:var(--mono);font-size:9px;color:var(--accent);background:var(--card2);border:1px solid var(--border);border-radius:4px;padding:1px 5px;}
+.odds-row-bot{display:flex;flex-direction:column;gap:3px;align-items:flex-end;margin-top:0}
+.ou-mini{font-family:var(--mono);font-size:11.5px;font-weight:500;padding:3px 0;border-radius:5px;white-space:nowrap;width:92px;text-align:center;display:block;box-sizing:border-box;background:var(--card2);color:var(--accent);border:1px solid var(--border);}
 .ml-badge{font-family:var(--mono);font-size:11.5px;font-weight:500;padding:3px 0;border-radius:5px;line-height:1;white-space:nowrap;width:92px;text-align:center;display:block;box-sizing:border-box}
 .ml-badge.neg{background:var(--red-d);color:var(--red);border:1px solid #FF557730}
 .ml-badge.pos{background:var(--green-d);color:var(--green);border:1px solid #00E88230}
@@ -2464,15 +2464,11 @@ function buildRow(g) {
         <span class="score-badge ${isLive?(homeWinning?'leading':'trailing'):'final-'+(homeWinning?'w':'l')}">${g.home?.abbr??''} ${score.homeScore}</span>
        </div>`
     : `<div class="odds-block">
-        <div class="odds-row-top">
-          <span class="ml-badge ${mlCls(awayML)}">${g.away?.abbr??''} ${awayML||'—'}</span>
-          <span class="ml-badge ${mlCls(homeML)}">${g.home?.abbr??''} ${homeML||'—'}</span>
-        </div>
-        <div class="odds-row-bot">
-          <span class="spread-mini">${spreadBadge}</span>
-          ${total ? `<span class="ou-mini">O/U ${total}</span>` : ''}
-          ${hasVar ? '<span class="variance-badge">LINE GAP</span>' : ''}
-        </div>
+        <span class="ml-badge ${mlCls(awayML)}">${g.away?.abbr??''} ${awayML||'—'}</span>
+        <span class="ml-badge ${mlCls(homeML)}">${g.home?.abbr??''} ${homeML||'—'}</span>
+        <span class="spread-mini">${spreadBadge}</span>
+        ${total ? `<span class="ou-mini">O/U ${total}</span>` : ''}
+        ${hasVar ? '<span class="variance-badge">LINE GAP</span>' : ''}
        </div>`;
 
   return `

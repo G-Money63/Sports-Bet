@@ -2420,7 +2420,8 @@ function buildRow(g) {
   const hasVar    = g.varianceData?.high;
   const hasKalshi = g.kalshiMarkets?.length > 0;
 
-  // Real-time tip time from live schedule, fall back to static
+  // Build meta line: network · region
+  const metaLine = [g.network, g.region || ''].filter(Boolean).join(' · ');
   const schedEntry = getLiveScheduleEntry(g);
   const rawTime = schedEntry?.date
     ? new Date(schedEntry.date).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'America/New_York'}) + ' ET'
@@ -2919,6 +2920,19 @@ function getLiveScheduleEntry(g) {
   const away = (g.away?.abbr||'').toUpperCase();
   const home = (g.home?.abbr||'').toUpperCase();
   return liveSchedule[away+'-'+home] || liveSchedule[home+'-'+away] || null;
+}
+
+let _autoRefreshTimer = null;
+function schedulePostGameRefresh() {
+  if (_autoRefreshTimer) return; // already scheduled
+  console.log('[AutoRefresh] Game went final — refreshing in 3 min');
+  _autoRefreshTimer = setTimeout(() => {
+    _autoRefreshTimer = null;
+    buildFallbackBracket();
+    if (document.getElementById('bracketPanel')?.style.display !== 'none') {
+      drawBracket(currentBracketRegion);
+    }
+  }, 3 * 60 * 1000);
 }
 
 function startScorePolling() {

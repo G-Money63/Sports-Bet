@@ -466,6 +466,9 @@ body::after{content:'';position:fixed;inset:0;background-image:url("data:image/s
 .team-name.fav{color:var(--text)} .team-name.dog{color:var(--text2)}
 .divider-vs{height:1px;background:var(--border);margin-left:31px}
 .odds-block{display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0}
+.odds-row-top{display:flex;flex-direction:column;gap:3px;align-items:flex-end}
+.odds-row-bot{display:flex;gap:4px;align-items:center;justify-content:flex-end;margin-top:1px}
+.ou-mini{font-family:var(--mono);font-size:9px;color:var(--accent);background:var(--card2);border:1px solid var(--border);border-radius:4px;padding:1px 5px;}
 .ml-badge{font-family:var(--mono);font-size:11.5px;font-weight:500;padding:3px 0;border-radius:5px;line-height:1;white-space:nowrap;width:92px;text-align:center;display:block;box-sizing:border-box}
 .ml-badge.neg{background:var(--red-d);color:var(--red);border:1px solid #FF557730}
 .ml-badge.pos{background:var(--green-d);color:var(--green);border:1px solid #00E88230}
@@ -1669,7 +1672,7 @@ const STATIC_GAMES = {
        firstHalf:{moneyline:{away:'-900',home:'+600'},spread:{line:-11.5,favTeam:'Duke Blue Devils'},total:{line:70.5}},
        books:[{book:'DraftKings',awayML:'-5000',homeML:'+2200',spread:'-22.5',total:'142.5'},{book:'FanDuel',awayML:'-4500',homeML:'+2000',spread:'-22.5',total:'142.5'},{book:'BetMGM',awayML:'-5000',homeML:'+2500',spread:'-23.0',total:'143.0'},{book:'Caesars',awayML:'-5000',homeML:'+2200',spread:'-22.5',total:'142.0'},{book:'BetUS',awayML:'-4800',homeML:'+2300',spread:'-22.5',total:'143.0'}],
        playerProps:[{player:'Cameron Boozer',team:'Duke',market:'Points',line:19.5,overOdds:'-115',underOdds:'-105'},{player:'Cameron Boozer',team:'Duke',market:'Rebounds',line:9.5,overOdds:'+100',underOdds:'-120'},{player:'Tyrese Proctor',team:'Duke',market:'Points',line:14.5,overOdds:'-110',underOdds:'-110'}],
-       sharpAngle:'Duke -22.5 is inflated with public money. The UNDER 142.5 is the value play — Duke controls pace and Siena will struggle to score. Cameron Boozer OVER 19.5 points is a strong prop play.'},
+       sharpAngle:'Duke -22.5 is inflated with public money. The UNDER 142.5 is the value play — Duke controls pace and Siena will struggle to score. Cameron Boozer OVER 19.5 points is a strong prop play.',result:{winner:'DUKE',awayScore:71,homeScore:65,status:'final'}},
       {id:'g2',timeET:'12:15 PM ET',network:'CBS',region:'East',
        away:{name:'Ohio State Buckeyes',abbr:'OSU',seed:8,record:'21-12'},
        home:{name:'TCU Horned Frogs',abbr:'TCU',seed:9,record:'22-11'},
@@ -1679,7 +1682,7 @@ const STATIC_GAMES = {
        firstHalf:{moneyline:{away:'-115',home:'-105'},spread:{line:-1.0,favTeam:'Ohio State Buckeyes'},total:{line:68.5}},
        books:[{book:'DraftKings',awayML:'-120',homeML:'+100',spread:'-1.5',total:'139.5'},{book:'FanDuel',awayML:'-118',homeML:'-102',spread:'-1.5',total:'139.5'},{book:'BetMGM',awayML:'-125',homeML:'+105',spread:'-1.5',total:'140.0'},{book:'Caesars',awayML:'-120',homeML:'+100',spread:'-1.5',total:'139.0'},{book:'BetUS',awayML:'-115',homeML:'-105',spread:'-1.0',total:'139.5'}],
        playerProps:[{player:'Bruce Thornton',team:'Ohio State',market:'Points',line:16.5,overOdds:'-112',underOdds:'-108'},{player:'Micah Robinson',team:'TCU',market:'Points',line:14.5,overOdds:'-108',underOdds:'-112'}],
-       sharpAngle:'Classic 8-9 toss-up. TCU covers tight games at 58% — take TCU +1.5. Line varies 0.5 pts across books so shop for the best number.'},
+       sharpAngle:'Classic 8-9 toss-up. TCU covers tight games at 58% — take TCU +1.5. Line varies 0.5 pts across books so shop for the best number.',result:{winner:'TCU',awayScore:64,homeScore:66,status:'final'}},
       {id:'g3',timeET:'1:30 PM ET',network:'TBS',region:'East',
        away:{name:'Louisville Cardinals',abbr:'LOU',seed:6,record:'23-10'},
        home:{name:'South Florida Bulls',abbr:'USF',seed:11,record:'25-8'},
@@ -1689,7 +1692,7 @@ const STATIC_GAMES = {
        firstHalf:{moneyline:{away:'-140',home:'+118'},spread:{line:-2.0,favTeam:'Louisville Cardinals'},total:{line:69.5}},
        books:[{book:'DraftKings',awayML:'-175',homeML:'+148',spread:'-3.5',total:'141.5'},{book:'FanDuel',awayML:'-172',homeML:'+144',spread:'-3.5',total:'141.5'},{book:'BetMGM',awayML:'-180',homeML:'+155',spread:'-4.0',total:'142.0'},{book:'Caesars',awayML:'-175',homeML:'+150',spread:'-3.5',total:'141.0'},{book:'BetUS',awayML:'-170',homeML:'+145',spread:'-3.5',total:'141.5'}],
        playerProps:[{player:'Chucky Hepburn',team:'Louisville',market:'Points',line:15.5,overOdds:'-110',underOdds:'-110'},{player:'Selton Miguel',team:'South Florida',market:'Points',line:17.5,overOdds:'-108',underOdds:'-112'}],
-       sharpAngle:'11-seeds are 8-4 ATS last 3 years. USF won the American title and is battle-tested. Take South Florida +3.5 — they have pace and shooting to keep it close.'},
+       sharpAngle:'11-seeds are 8-4 ATS last 3 years. USF won the American title and is battle-tested. Take South Florida +3.5 — they have pace and shooting to keep it close.',result:{winner:'LOU',awayScore:83,homeScore:79,status:'final'}},
       {id:'g4',timeET:'4:05 PM ET',network:'TBS',region:'East',
        away:{name:'Michigan State Spartans',abbr:'MSU',seed:3,record:'25-7'},
        home:{name:'North Dakota State Bison',abbr:'NDSU',seed:14,record:'27-7'},
@@ -1699,7 +1702,7 @@ const STATIC_GAMES = {
        firstHalf:{moneyline:{away:'-450',home:'+340'},spread:{line:-7.5,favTeam:'Michigan State Spartans'},total:{line:66.5}},
        books:[{book:'DraftKings',awayML:'-900',homeML:'+580',spread:'-14.5',total:'136.5'},{book:'FanDuel',awayML:'-850',homeML:'+560',spread:'-14.5',total:'136.5'},{book:'BetMGM',awayML:'-900',homeML:'+600',spread:'-15.0',total:'137.0'},{book:'Caesars',awayML:'-900',homeML:'+580',spread:'-14.5',total:'136.0'},{book:'BetUS',awayML:'-880',homeML:'+570',spread:'-14.5',total:'137.0'}],
        playerProps:[{player:'Tre Holloman',team:'Michigan State',market:'Points',line:13.5,overOdds:'-112',underOdds:'-108'},{player:'Jaxon Kohler',team:'Michigan State',market:'Rebounds',line:7.5,overOdds:'-115',underOdds:'-105'}],
-       sharpAngle:'14-seeds cover at 52% since 2019. NDSU +14.5 has value in a slower-paced game. MSU will win but struggle to blow out a tough Summit League squad.'},
+       sharpAngle:'14-seeds cover at 52% since 2019. NDSU +14.5 has value in a slower-paced game. MSU will win but struggle to blow out a tough Summit League squad.',result:{winner:'MSU',awayScore:92,homeScore:67,status:'final'}},
       {id:'g5',timeET:'7:25 PM ET',network:'TNT',region:'Midwest',
        away:{name:'Michigan Wolverines',abbr:'MICH',seed:1,record:'31-3'},
        home:{name:'UMBC Retrievers',abbr:'UMBC',seed:16,record:'24-8'},
@@ -1719,7 +1722,7 @@ const STATIC_GAMES = {
        firstHalf:{moneyline:{away:'+110',home:'-130'},spread:{line:1.0,favTeam:'Saint Louis Billikens'},total:{line:67.5}},
        books:[{book:'DraftKings',awayML:'+105',homeML:'-125',spread:'+1.5',total:'138.5'},{book:'FanDuel',awayML:'+108',homeML:'-128',spread:'+1.5',total:'138.5'},{book:'BetMGM',awayML:'+110',homeML:'-130',spread:'+2.0',total:'139.0'},{book:'Caesars',awayML:'+105',homeML:'-125',spread:'+1.5',total:'138.0'},{book:'BetUS',awayML:'+110',homeML:'-130',spread:'+1.5',total:'138.5'}],
        playerProps:[{player:'RJ Melendez',team:'Georgia',market:'Points',line:14.5,overOdds:'-110',underOdds:'-110'},{player:"JaVonte Smart",team:'Saint Louis',market:'Points',line:16.5,overOdds:'-112',underOdds:'-108'}],
-       sharpAngle:'Saint Louis is 28-5 and A-10 Champion — one of the most underrated teams in the field. SLU -1.5 at home is worth a play. Elite ball security and turnover differential.'},
+       sharpAngle:'Saint Louis is 28-5 and A-10 Champion — one of the most underrated teams in the field. SLU -1.5 at home is worth a play. Elite ball security and turnover differential.',result:{winner:'SLU',awayScore:77,homeScore:102,status:'final'}},
       {id:'g7',timeET:'7:10 PM ET',network:'truTV',region:'Midwest',
        away:{name:'Texas Tech Red Raiders',abbr:'TTU',seed:5,record:'22-10'},
        home:{name:'Akron Zips',abbr:'AKR',seed:12,record:'29-5'},
@@ -1747,7 +1750,7 @@ const STATIC_GAMES = {
        firstHalf:{moneyline:{away:'-250',home:'+205'},spread:{line:-5.5,favTeam:'Nebraska Cornhuskers'},total:{line:71.5}},
        books:[{book:'DraftKings',awayML:'-500',homeML:'+390',spread:'-10.5',total:'143.5'},{book:'FanDuel',awayML:'-490',homeML:'+380',spread:'-10.5',total:'143.5'},{book:'BetMGM',awayML:'-500',homeML:'+400',spread:'-11.0',total:'144.0'},{book:'Caesars',awayML:'-500',homeML:'+390',spread:'-10.5',total:'143.0'}],
        playerProps:[{player:'Brice Williams',team:'Nebraska',market:'Points',line:18.5,overOdds:'-115',underOdds:'-105'},{player:'Dwayne Cofield Jr.',team:'Troy',market:'Points',line:15.5,overOdds:'-108',underOdds:'-112'}],
-       sharpAngle:'Nebraska seeks first NCAA Tournament win ever — motivation is real. Troy +10.5 has cover value — 13-seeds cover 48% of the time.'},
+       sharpAngle:'Nebraska seeks first NCAA Tournament win ever — motivation is real. Troy +10.5 has cover value — 13-seeds cover 48% of the time.',result:{winner:'NEB',awayScore:76,homeScore:47,status:'final'}},
       {id:'g10',timeET:'11:50 AM ET',network:'CBS',region:'Midwest',
        away:{name:'Wisconsin Badgers',abbr:'WIS',seed:7,record:'23-9'},
        home:{name:'High Point Panthers',abbr:'HP',seed:10,record:'26-7'},
@@ -1755,7 +1758,7 @@ const STATIC_GAMES = {
        firstHalf:{moneyline:{away:'-145',home:'+122'},spread:{line:-2.0,favTeam:'Wisconsin Badgers'},total:{line:67.5}},
        books:[{book:'DraftKings',awayML:'-185',homeML:'+155',spread:'-3.5',total:'138.5'},{book:'FanDuel',awayML:'-182',homeML:'+152',spread:'-3.5',total:'138.5'},{book:'BetMGM',awayML:'-190',homeML:'+160',spread:'-4.0',total:'139.0'},{book:'Caesars',awayML:'-185',homeML:'+155',spread:'-3.5',total:'138.0'}],
        playerProps:[{player:'John Blackwell',team:'Wisconsin',market:'Points',line:14.5,overOdds:'-110',underOdds:'-110'},{player:'Zymicah Culpepper',team:'High Point',market:'Points',line:18.5,overOdds:'-108',underOdds:'-112'}],
-       sharpAngle:'High Point is 26-7 and Big South champ — peaking at the right time. Wisconsin -3.5 is a tad high for a 7-10 matchup. HP +3.5 has cover value.'},
+       sharpAngle:'High Point is 26-7 and Big South champ — peaking at the right time. Wisconsin -3.5 is a tad high for a 7-10 matchup. HP +3.5 has cover value.',result:{winner:'HP',awayScore:82,homeScore:83,status:'final'}},
       {id:'g11',timeET:'1:15 PM ET',network:'CBS',region:'Midwest',
        away:{name:'Vanderbilt Commodores',abbr:'VAN',seed:5,record:'24-8'},
        home:{name:'McNeese Cowboys',abbr:'MCNS',seed:12,record:'27-6'},
@@ -1763,7 +1766,7 @@ const STATIC_GAMES = {
        firstHalf:{moneyline:{away:'-155',home:'+130'},spread:{line:-2.5,favTeam:'Vanderbilt Commodores'},total:{line:68.5}},
        books:[{book:'DraftKings',awayML:'-200',homeML:'+168',spread:'-4.5',total:'139.5'},{book:'FanDuel',awayML:'-195',homeML:'+162',spread:'-4.5',total:'139.5'},{book:'BetMGM',awayML:'-205',homeML:'+172',spread:'-5.0',total:'140.0'},{book:'Caesars',awayML:'-200',homeML:'+168',spread:'-4.5',total:'139.0'}],
        playerProps:[{player:'Jason Edwards',team:'Vanderbilt',market:'Points',line:17.5,overOdds:'-112',underOdds:'-108'},{player:'Harlan Beverly',team:'McNeese',market:'Points',line:16.5,overOdds:'-108',underOdds:'-112'}],
-       sharpAngle:'Vanderbilt beat Florida in the SEC Tourney — this team is peaking. McNeese is a dangerous 12-seed but Vandy has the talent edge. VAN -4.5 is the play.'},
+       sharpAngle:'Vanderbilt beat Florida in the SEC Tourney — this team is peaking. McNeese is a dangerous 12-seed but Vandy has the talent edge. VAN -4.5 is the play.',result:{winner:'VAN',awayScore:78,homeScore:68,status:'final'}},
       {id:'g12',timeET:'1:25 PM ET',network:'TBS',region:'Midwest',
        away:{name:'Arkansas Razorbacks',abbr:'ARK',seed:4,record:'26-8'},
        home:{name:"Hawaii Rainbow Warriors",abbr:'HAW',seed:13,record:'24-8'},
@@ -1779,7 +1782,7 @@ const STATIC_GAMES = {
        firstHalf:{moneyline:{away:'-700',home:'+500'},spread:{line:-9.0,favTeam:'North Carolina Tar Heels'},total:{line:73.0}},
        books:[{book:'DraftKings',awayML:'-1800',homeML:'+950',spread:'-17.0',total:'146.5'},{book:'FanDuel',awayML:'-1700',homeML:'+900',spread:'-17.0',total:'146.5'},{book:'BetMGM',awayML:'-1800',homeML:'+1000',spread:'-17.5',total:'147.0'},{book:'Caesars',awayML:'-1800',homeML:'+950',spread:'-17.0',total:'146.0'}],
        playerProps:[{player:'RJ Davis',team:'UNC',market:'Points',line:18.5,overOdds:'-115',underOdds:'-105'},{player:'Adrian Baldwin',team:'VCU',market:'Points',line:14.5,overOdds:'-108',underOdds:'-112'}],
-       sharpAngle:'UNC -17.0 is reasonable but the OVER 146.5 is the sharper play. UNC runs fast and VCU will push pace trying to keep up. OVER has strong value.'},
+       sharpAngle:'UNC -17.0 is reasonable but the OVER 146.5 is the sharper play. UNC runs fast and VCU will push pace trying to keep up. OVER has strong value.',result:{winner:'VCU',awayScore:78,homeScore:82,status:'final'},result:{winner:'ARK',awayScore:97,homeScore:78,status:'final'}},
       {id:'g14',timeET:'4:10 PM ET',network:'TBS',region:'Midwest',
        away:{name:'Michigan Wolverines',abbr:'MICH',seed:1,record:'31-3'},
        home:{name:'Howard Bison',abbr:'HOW',seed:16,record:'23-10'},
@@ -1787,7 +1790,7 @@ const STATIC_GAMES = {
        firstHalf:{moneyline:{away:'-800',home:'+550'},spread:{line:-10.5,favTeam:'Michigan Wolverines'},total:{line:71.5}},
        books:[{book:'DraftKings',awayML:'-4500',homeML:'+2000',spread:'-20.5',total:'144.5'},{book:'FanDuel',awayML:'-4200',homeML:'+1900',spread:'-20.5',total:'144.5'},{book:'BetMGM',awayML:'-5000',homeML:'+2200',spread:'-21.0',total:'145.0'},{book:'Caesars',awayML:'-4500',homeML:'+2000',spread:'-20.5',total:'144.0'}],
        playerProps:[{player:'Tre Donaldson',team:'Michigan',market:'Points',line:17.5,overOdds:'-115',underOdds:'-105'},{player:'Danny Wolf',team:'Michigan',market:'Rebounds',line:9.5,overOdds:'-110',underOdds:'-110'},{player:'Elliot Cadeau',team:'Michigan',market:'Assists',line:5.5,overOdds:'-108',underOdds:'-112'}],
-       sharpAngle:'Howard won the First Four and is riding momentum. Michigan lost key reserve LJ Cason to injury. HOW +20.5 has cover value — same profile as 2018 UMBC team.'},
+       sharpAngle:'Howard won the First Four and is riding momentum. Michigan lost key reserve LJ Cason to injury. HOW +20.5 has cover value — same profile as 2018 UMBC team.',result:{winner:'MICH',awayScore:101,homeScore:80,status:'final'}},
       {id:'g15',timeET:'4:25 PM ET',network:'TNT',region:'West',
        away:{name:'BYU Cougars',abbr:'BYU',seed:5,record:'24-9'},
        home:{name:'Texas Longhorns',abbr:'TEX',seed:11,record:'18-15'},
@@ -1811,7 +1814,7 @@ const STATIC_GAMES = {
        firstHalf:{moneyline:{away:'-165',home:'+138'},spread:{line:-2.5,favTeam:'Illinois Fighting Illini'},total:{line:66.5}},
        books:[{book:'DraftKings',awayML:'-220',homeML:'+182',spread:'-4.5',total:'136.5'},{book:'FanDuel',awayML:'-215',homeML:'+178',spread:'-4.5',total:'136.5'},{book:'BetMGM',awayML:'-225',homeML:'+185',spread:'-5.0',total:'137.0'},{book:'Caesars',awayML:'-220',homeML:'+182',spread:'-4.5',total:'136.0'}],
        playerProps:[{player:'Kasparas Jakucionis',team:'Illinois',market:'Points',line:15.5,overOdds:'-112',underOdds:'-108'},{player:'Nick Spinosa',team:'Penn',market:'Points',line:13.5,overOdds:'-108',underOdds:'-112'}],
-       sharpAngle:'Illinois has the athleticism and depth edge. Penn is a dangerous Ivy team but ILL controls the pace. ILL -4.5 is the solid play.'},
+       sharpAngle:'Illinois has the athleticism and depth edge. Penn is a dangerous Ivy team but ILL controls the pace. ILL -4.5 is the solid play.',result:{winner:'ILL',awayScore:105,homeScore:70,status:'final'}},
       {id:'g18',timeET:'6:45 PM ET',network:'TNT',region:'Midwest',
        away:{name:'Georgia Bulldogs',abbr:'UGA',seed:8,record:'22-10'},
        home:{name:'Saint Louis Billikens',abbr:'SLU',seed:9,record:'28-5'},
@@ -1819,7 +1822,7 @@ const STATIC_GAMES = {
        firstHalf:{moneyline:{away:'+110',home:'-130'},spread:{line:1.0,favTeam:'Saint Louis Billikens'},total:{line:67.5}},
        books:[{book:'DraftKings',awayML:'+105',homeML:'-125',spread:'+1.5',total:'138.5'},{book:'FanDuel',awayML:'+108',homeML:'-128',spread:'+1.5',total:'138.5'},{book:'BetMGM',awayML:'+110',homeML:'-130',spread:'+2.0',total:'139.0'},{book:'Caesars',awayML:'+105',homeML:'-125',spread:'+1.5',total:'138.0'}],
        playerProps:[{player:'RJ Melendez',team:'Georgia',market:'Points',line:14.5,overOdds:'-110',underOdds:'-110'},{player:"JaVonte Smart",team:'Saint Louis',market:'Points',line:16.5,overOdds:'-112',underOdds:'-108'}],
-       sharpAngle:'Saint Louis is 28-5 and A-10 Champion — one of the most underrated teams in the field. SLU -1.5 at home is a strong value play.'},
+       sharpAngle:'Saint Louis is 28-5 and A-10 Champion — one of the most underrated teams in the field. SLU -1.5 at home is a strong value play.',result:{winner:'SLU',awayScore:77,homeScore:102,status:'final'}},
       {id:'g19',timeET:'7:00 PM ET',network:'truTV',region:'West',
        away:{name:'Gonzaga Bulldogs',abbr:'GONZ',seed:3,record:'30-3'},
        home:{name:'Kennesaw State Owls',abbr:'KENN',seed:14,record:'21-13'},
@@ -1827,7 +1830,7 @@ const STATIC_GAMES = {
        firstHalf:{moneyline:{away:'-550',home:'+400'},spread:{line:-8.5,favTeam:'Gonzaga Bulldogs'},total:{line:77.5}},
        books:[{book:'DraftKings',awayML:'-1100',homeML:'+650',spread:'-16.5',total:'153.5'},{book:'FanDuel',awayML:'-1050',homeML:'+620',spread:'-16.5',total:'153.5'},{book:'BetMGM',awayML:'-1100',homeML:'+700',spread:'-17.0',total:'154.0'},{book:'Caesars',awayML:'-1100',homeML:'+650',spread:'-16.5',total:'153.0'}],
        playerProps:[{player:'Ryan Nembhard',team:'Gonzaga',market:'Points',line:17.5,overOdds:'-110',underOdds:'-110'},{player:'Graham Ike',team:'Gonzaga',market:'Rebounds',line:9.5,overOdds:'-108',underOdds:'-112'}],
-       sharpAngle:'Gonzaga runs one of the fastest paces in the country — OVER 153.5 is live. Ryan Nembhard OVER 17.5 points is a strong prop. Gonzaga covers easily.'},
+       sharpAngle:'Gonzaga runs one of the fastest paces in the country — OVER 153.5 is live. Ryan Nembhard OVER 17.5 points is a strong prop. Gonzaga covers easily.',result:{winner:'GONZ',awayScore:73,homeScore:64,status:'final'}},
       {id:'g20',timeET:'7:10 PM ET',network:'truTV',region:'South',
        away:{name:'Houston Cougars',abbr:'HOU',seed:2,record:'28-6'},
        home:{name:'Idaho Vandals',abbr:'IDHO',seed:15,record:'21-14'},
@@ -1841,86 +1844,116 @@ const STATIC_GAMES = {
   'ncaam-w1_fri': {
     day:'Friday, March 20, 2026', round:'First Round — Round of 64',
     games:[
-      {id:'f1',timeET:'2:45 PM ET',network:'CBS',region:'West',
+      {id:'f1',timeET:'1:35 PM ET',network:'TNT',region:'West',
        away:{name:'Arizona Wildcats',abbr:'ARIZ',seed:1,record:'32-2'},
-       home:{name:'LIU Sharks',abbr:'LIU',seed:16,record:'24-10'},
+       home:{name:'Long Island Sharks',abbr:'LIU',seed:16,record:'24-10'},
        moneyline:{away:'-4500',home:'+1900'},
        spread:{line:-21.5,favTeam:'Arizona Wildcats',juice:'-110'},
        total:{line:151.5,overJuice:'-110',underJuice:'-110'},
        firstHalf:{moneyline:{away:'-850',home:'+580'},spread:{line:-11.0,favTeam:'Arizona Wildcats'},total:{line:75.5}},
        books:[{book:'DraftKings',awayML:'-4500',homeML:'+1900',spread:'-21.5',total:'151.5'},{book:'FanDuel',awayML:'-4200',homeML:'+1800',spread:'-21.5',total:'151.5'},{book:'BetMGM',awayML:'-4800',homeML:'+2000',spread:'-22.0',total:'152.0'},{book:'Caesars',awayML:'-4500',homeML:'+1900',spread:'-21.5',total:'151.0'},{book:'BetUS',awayML:'-4400',homeML:'+1950',spread:'-21.5',total:'151.5'}],
-       playerProps:[{player:'Brayden Burries',team:'Arizona',market:'Points',line:18.5,overOdds:'-115',underOdds:'-105'},{player:'Koa Peat',team:'Arizona',market:'Points',line:16.5,overOdds:'-110',underOdds:'-110'},{player:'Koa Peat',team:'Arizona',market:'Rebounds',line:8.5,overOdds:'-108',underOdds:'-112'}],
-       sharpAngle:'Arizona runs fastest offense of any 1-seed — OVER 151.5 is justified. Freshman duo Burries & Peat are elite. Arizona -21.5 is the safe play but the OVER has more value.'},
-      {id:'f2',timeET:'5:15 PM ET',network:'CBS',region:'West',
-       away:{name:'Villanova Wildcats',abbr:'NOVA',seed:8,record:'24-8'},
-       home:{name:'Utah State Aggies',abbr:'USU',seed:9,record:'28-6'},
-       moneyline:{away:'-108',home:'-112'},
-       spread:{line:-1.0,favTeam:'Utah State Aggies',juice:'-110'},
-       total:{line:141.5,overJuice:'-110',underJuice:'-110'},
-       firstHalf:{moneyline:{away:'-105',home:'-115'},spread:{line:-0.5,favTeam:'Utah State Aggies'},total:{line:69.5}},
-       books:[{book:'DraftKings',awayML:'-108',homeML:'-112',spread:'-1.0',total:'141.5'},{book:'FanDuel',awayML:'-110',homeML:'-110',spread:'PK',total:'141.5'},{book:'BetMGM',awayML:'+105',homeML:'-125',spread:'-1.5',total:'142.0'},{book:'Caesars',awayML:'-108',homeML:'-112',spread:'-1.0',total:'141.0'},{book:'BetUS',awayML:'-110',homeML:'-110',spread:'PK',total:'141.5'}],
-       playerProps:[{player:'Eric Dixon',team:'Villanova',market:'Points',line:17.5,overOdds:'-115',underOdds:'-105'},{player:'Great Osobor',team:'Utah State',market:'Rebounds',line:9.5,overOdds:'-112',underOdds:'-108'}],
-       sharpAngle:'LINE GAP: spread varies from PK to -1.5 across books — shop carefully. Pick Utah State ML at -110 on FanDuel for best value. Coin flip game, both teams are well-coached.'},
-      {id:'f3',timeET:'7:45 PM ET',network:'TBS',region:'West',
-       away:{name:'Arkansas Razorbacks',abbr:'ARK',seed:4,record:'26-8'},
-       home:{name:"Hawaii Rainbow Warriors",abbr:'HAW',seed:13,record:'24-8'},
-       moneyline:{away:'-420',home:'+335'},
-       spread:{line:-8.5,favTeam:'Arkansas Razorbacks',juice:'-110'},
-       total:{line:148.5,overJuice:'-110',underJuice:'-110'},
-       firstHalf:{moneyline:{away:'-210',home:'+175'},spread:{line:-4.5,favTeam:'Arkansas Razorbacks'},total:{line:74.5}},
-       books:[{book:'DraftKings',awayML:'-420',homeML:'+335',spread:'-8.5',total:'148.5'},{book:'FanDuel',awayML:'-410',homeML:'+325',spread:'-8.5',total:'148.5'},{book:'BetMGM',awayML:'-425',homeML:'+340',spread:'-9.0',total:'149.0'},{book:'Caesars',awayML:'-420',homeML:'+335',spread:'-8.5',total:'148.0'},{book:'BetUS',awayML:'-415',homeML:'+330',spread:'-8.5',total:'148.5'}],
-       playerProps:[{player:'Adou Thiero',team:'Arkansas',market:'Points',line:16.5,overOdds:'-112',underOdds:'-108'},{player:'Johnn Nijssen',team:"Hawaii",market:'Points',line:14.5,overOdds:'-108',underOdds:'-112'}],
-       sharpAngle:"Arkansas is hot — won the SEC Tournament 3 games in 5 days. Hawaii won the Big West title and shoots well from 3. Arkansas -8.5 is reasonable but Hawaii +8.5 has cover value in a high-scoring game."},
-      {id:'f4',timeET:'10:15 PM ET',network:'TBS',region:'West',
-       away:{name:'Gonzaga Bulldogs',abbr:'GONZ',seed:3,record:'30-3'},
-       home:{name:'Kennesaw State Owls',abbr:'KENN',seed:14,record:'21-13'},
-       moneyline:{away:'-1100',home:'+650'},
-       spread:{line:-16.5,favTeam:'Gonzaga Bulldogs',juice:'-110'},
-       total:{line:153.5,overJuice:'-110',underJuice:'-110'},
-       firstHalf:{moneyline:{away:'-550',home:'+400'},spread:{line:-8.5,favTeam:'Gonzaga Bulldogs'},total:{line:77.5}},
-       books:[{book:'DraftKings',awayML:'-1100',homeML:'+650',spread:'-16.5',total:'153.5'},{book:'FanDuel',awayML:'-1050',homeML:'+620',spread:'-16.5',total:'153.5'},{book:'BetMGM',awayML:'-1100',homeML:'+700',spread:'-17.0',total:'154.0'},{book:'Caesars',awayML:'-1100',homeML:'+650',spread:'-16.5',total:'153.0'},{book:'BetUS',awayML:'-1080',homeML:'+640',spread:'-16.5',total:'153.5'}],
-       playerProps:[{player:'Ryan Nembhard',team:'Gonzaga',market:'Points',line:17.5,overOdds:'-110',underOdds:'-110'},{player:'Graham Ike',team:'Gonzaga',market:'Rebounds',line:9.5,overOdds:'-108',underOdds:'-112'}],
-       sharpAngle:'Gonzaga runs one of the fastest paces in the country — OVER 153.5 is live. Ryan Nembhard OVER 17.5 points is a strong prop. Gonzaga covers easily.'},
+       playerProps:[{player:'Brayden Burries',team:'Arizona',market:'Points',line:18.5,overOdds:'-115',underOdds:'-105'},{player:'Koa Peat',team:'Arizona',market:'Points',line:16.5,overOdds:'-110',underOdds:'-110'}],
+       sharpAngle:'Arizona is the class of the West. Burries and Peat are elite freshmen. ARIZ -21.5 and OVER 151.5 both have value — Arizona plays at the fastest tempo of any 1-seed.'},
+      {id:'f2',timeET:'1:50 PM ET',network:'TBS',region:'East',
+       away:{name:'Virginia Cavaliers',abbr:'UVA',seed:3,record:'27-6'},
+       home:{name:'Wright State Raiders',abbr:'WRST',seed:14,record:'25-9'},
+       moneyline:{away:'-900',home:'+590'},
+       spread:{line:-14.5,favTeam:'Virginia Cavaliers',juice:'-110'},
+       total:{line:132.5,overJuice:'-110',underJuice:'-110'},
+       firstHalf:{moneyline:{away:'-400',home:'+320'},spread:{line:-7.5,favTeam:'Virginia Cavaliers'},total:{line:65.5}},
+       books:[{book:'DraftKings',awayML:'-900',homeML:'+590',spread:'-14.5',total:'132.5'},{book:'FanDuel',awayML:'-880',homeML:'+570',spread:'-14.5',total:'132.5'},{book:'BetMGM',awayML:'-950',homeML:'+610',spread:'-15.0',total:'133.0'},{book:'Caesars',awayML:'-900',homeML:'+590',spread:'-14.5',total:'132.0'},{book:'BetUS',awayML:'-880',homeML:'+575',spread:'-14.5',total:'133.0'}],
+       playerProps:[{player:'TJ Power',team:'Virginia',market:'Points',line:16.5,overOdds:'-112',underOdds:'-108'}],
+       sharpAngle:'Virginia controls tempo and limits possessions. UNDER 132.5 is the play — Bennett defense will strangle Wright State. UVA -14.5 is steep but justified given the pace mismatch.'},
+      {id:'f3',timeET:'12:15 PM ET',network:'CBS',region:'South',
+       away:{name:'Santa Clara Broncos',abbr:'SCU',seed:10,record:'24-10'},
+       home:{name:'Kentucky Wildcats',abbr:'KEN',seed:7,record:'22-11'},
+       moneyline:{away:'+240',home:'-290'},
+       spread:{line:6.5,favTeam:'Kentucky Wildcats',juice:'-110'},
+       total:{line:144.5,overJuice:'-110',underJuice:'-110'},
+       firstHalf:{moneyline:{away:'+185',home:'-220'},spread:{line:3.5,favTeam:'Kentucky Wildcats'},total:{line:71.5}},
+       books:[{book:'DraftKings',awayML:'+240',homeML:'-290',spread:'+6.5',total:'144.5'},{book:'FanDuel',awayML:'+238',homeML:'-285',spread:'+6.5',total:'144.5'},{book:'BetMGM',awayML:'+245',homeML:'-300',spread:'+7.0',total:'145.0'},{book:'Caesars',awayML:'+240',homeML:'-290',spread:'+6.5',total:'144.0'},{book:'BetUS',awayML:'+245',homeML:'-295',spread:'+6.5',total:'144.5'}],
+       playerProps:[{player:'Koby Brea',team:'Kentucky',market:'Points',line:14.5,overOdds:'-110',underOdds:'-110'}],
+       sharpAngle:'Kentucky is inconsistent but talented. Santa Clara covers against big programs at a 54% rate. Take SCU +6.5 — Kentucky wins but struggles to cover double digits vs athletic mid-majors.'},
+      {id:'f4',timeET:'12:40 PM ET',network:'truTV',region:'Midwest',
+       away:{name:'Texas Tech Red Raiders',abbr:'TTU',seed:5,record:'24-9'},
+       home:{name:'Akron Zips',abbr:'AKR',seed:12,record:'27-8'},
+       moneyline:{away:'-320',home:'+265'},
+       spread:{line:-7.0,favTeam:'Texas Tech Red Raiders',juice:'-110'},
+       total:{line:138.5,overJuice:'-110',underJuice:'-110'},
+       firstHalf:{moneyline:{away:'-155',home:'+132'},spread:{line:-3.5,favTeam:'Texas Tech Red Raiders'},total:{line:68.5}},
+       books:[{book:'DraftKings',awayML:'-320',homeML:'+265',spread:'-7.0',total:'138.5'},{book:'FanDuel',awayML:'-315',homeML:'+260',spread:'-7.0',total:'138.5'},{book:'BetMGM',awayML:'-330',homeML:'+275',spread:'-7.5',total:'139.0'},{book:'Caesars',awayML:'-320',homeML:'+265',spread:'-7.0',total:'138.0'},{book:'BetUS',awayML:'-315',homeML:'+260',spread:'-7.0',total:'138.5'}],
+       playerProps:[{player:'Darrion Williams',team:'Texas Tech',market:'Points',line:15.5,overOdds:'-110',underOdds:'-110'}],
+       sharpAngle:'12-seeds are 13-7 ATS in the last 5 tournaments. Akron has the best defense in the MAC. Take AKR +7.0 — this is a classic upset spot and TTU is inconsistent on offense.'},
       {id:'f5',timeET:'9:25 PM ET',network:'TNT',region:'South',
-       away:{name:'Florida Gators',abbr:'FLA',seed:1,record:'26-7'},
+       away:{name:'Florida Gators',abbr:'FLA',seed:1,record:'28-5'},
        home:{name:'Lehigh Mountain Hawks',abbr:'LEH',seed:16,record:'19-16'},
        moneyline:{away:'-4000',home:'+1800'},
        spread:{line:-19.5,favTeam:'Florida Gators',juice:'-110'},
-       total:{line:145.5,overJuice:'-110',underJuice:'-110'},
-       firstHalf:{moneyline:{away:'-750',home:'+520'},spread:{line:-10.0,favTeam:'Florida Gators'},total:{line:72.5}},
-       books:[{book:'DraftKings',awayML:'-4000',homeML:'+1800',spread:'-19.5',total:'145.5'},{book:'FanDuel',awayML:'-3800',homeML:'+1700',spread:'-19.5',total:'145.5'},{book:'BetMGM',awayML:'-4200',homeML:'+1900',spread:'-20.0',total:'146.0'},{book:'Caesars',awayML:'-4000',homeML:'+1800',spread:'-19.5',total:'145.0'},{book:'BetUS',awayML:'-3900',homeML:'+1750',spread:'-19.5',total:'145.5'}],
-       playerProps:[{player:'Walter Clayton Jr.',team:'Florida',market:'Points',line:17.5,overOdds:'-115',underOdds:'-105'},{player:'Alex Condon',team:'Florida',market:'Rebounds',line:7.5,overOdds:'-110',underOdds:'-110'}],
-       sharpAngle:'Florida is the defending champ but lost to Vanderbilt in the SEC tourney. They are motivated to prove themselves. Florida -19.5 is the easy play — defending champs bounce back hard in R1.'},
-      {id:'f6',timeET:'12:00 PM ET',network:'TNT',region:'South',
-       away:{name:'Clemson Tigers',abbr:'CLEM',seed:8,record:'24-10'},
-       home:{name:'Iowa Hawkeyes',abbr:'IOWA',seed:9,record:'21-12'},
-       moneyline:{away:'-115',home:'-105'},
-       spread:{line:-1.5,favTeam:'Clemson Tigers',juice:'-110'},
-       total:{line:140.5,overJuice:'-110',underJuice:'-110'},
-       firstHalf:{moneyline:{away:'-110',home:'-110'},spread:{line:-1.0,favTeam:'Clemson Tigers'},total:{line:69.5}},
-       books:[{book:'DraftKings',awayML:'-115',homeML:'-105',spread:'-1.5',total:'140.5'},{book:'FanDuel',awayML:'-112',homeML:'-108',spread:'-1.5',total:'140.5'},{book:'BetMGM',awayML:'-120',homeML:'+100',spread:'-1.5',total:'141.0'},{book:'Caesars',awayML:'-115',homeML:'-105',spread:'-1.5',total:'140.0'},{book:'BetUS',awayML:'-110',homeML:'-110',spread:'PK',total:'140.5'}],
-       playerProps:[{player:'Chase Hunter',team:'Clemson',market:'Points',line:14.5,overOdds:'-110',underOdds:'-110'},{player:'Payton Sandfort',team:'Iowa',market:'Points',line:16.5,overOdds:'-112',underOdds:'-108'}],
-       sharpAngle:'Near coin flip — Iowa covers at 54% in R1 historically. Take Iowa +1.5 at best available number. Sandfort OVER 16.5 points is good value for Iowa.'},
-      {id:'f7',timeET:'2:30 PM ET',network:'truTV',region:'South',
-       away:{name:'Nebraska Cornhuskers',abbr:'NEB',seed:4,record:'26-6'},
-       home:{name:'Troy Trojans',abbr:'TROY',seed:13,record:'22-11'},
-       moneyline:{away:'-500',home:'+390'},
-       spread:{line:-10.5,favTeam:'Nebraska Cornhuskers',juice:'-110'},
        total:{line:143.5,overJuice:'-110',underJuice:'-110'},
-       firstHalf:{moneyline:{away:'-250',home:'+205'},spread:{line:-5.5,favTeam:'Nebraska Cornhuskers'},total:{line:71.5}},
-       books:[{book:'DraftKings',awayML:'-500',homeML:'+390',spread:'-10.5',total:'143.5'},{book:'FanDuel',awayML:'-490',homeML:'+380',spread:'-10.5',total:'143.5'},{book:'BetMGM',awayML:'-500',homeML:'+400',spread:'-11.0',total:'144.0'},{book:'Caesars',awayML:'-500',homeML:'+390',spread:'-10.5',total:'143.0'},{book:'BetUS',awayML:'-490',homeML:'+385',spread:'-10.5',total:'143.5'}],
-       playerProps:[{player:'Brice Williams',team:'Nebraska',market:'Points',line:18.5,overOdds:'-115',underOdds:'-105'},{player:'Dwayne Cofield Jr.',team:'Troy',market:'Points',line:15.5,overOdds:'-108',underOdds:'-112'}],
-       sharpAngle:'Nebraska is seeking its first NCAA Tournament win ever — that motivation is real. However 13-seeds cover 48% of the time. Nebraska -10.5 is a bit high — Troy +10.5 is live.'},
-      {id:'f8',timeET:'5:00 PM ET',network:'truTV',region:'South',
-       away:{name:'Houston Cougars',abbr:'HOU',seed:2,record:'28-6'},
-       home:{name:'Idaho Vandals',abbr:'IDHO',seed:15,record:'21-14'},
-       moneyline:{away:'-2200',home:'+1100'},
-       spread:{line:-17.5,favTeam:'Houston Cougars',juice:'-110'},
+       firstHalf:{moneyline:{away:'-800',home:'+560'},spread:{line:-10.0,favTeam:'Florida Gators'},total:{line:71.5}},
+       books:[{book:'DraftKings',awayML:'-4000',homeML:'+1800',spread:'-19.5',total:'143.5'},{book:'FanDuel',awayML:'-3800',homeML:'+1700',spread:'-19.5',total:'143.5'},{book:'BetMGM',awayML:'-4200',homeML:'+1900',spread:'-20.0',total:'144.0'},{book:'Caesars',awayML:'-4000',homeML:'+1800',spread:'-19.5',total:'143.0'},{book:'BetUS',awayML:'-3900',homeML:'+1750',spread:'-19.5',total:'143.5'}],
+       playerProps:[{player:'Walter Clayton Jr',team:'Florida',market:'Points',line:19.5,overOdds:'-112',underOdds:'-108'},{player:'Alijah Martin',team:'Florida',market:'Points',line:16.5,overOdds:'-110',underOdds:'-110'}],
+       sharpAngle:'Florida is the defending champion and motivated. Lehigh won First Four but faces elite SEC defense. FLA -19.5 is justified — Clayton and Martin will run up the score. Also take the OVER.'},
+      {id:'f6',timeET:'6:50 PM ET',network:'TNT',region:'South',
+       away:{name:'Clemson Tigers',abbr:'CLEM',seed:8,record:'23-10'},
+       home:{name:'Iowa Hawkeyes',abbr:'IOWA',seed:9,record:'22-11'},
+       moneyline:{away:'-110',home:'-110'},
+       spread:{line:-0.5,favTeam:'Iowa Hawkeyes',juice:'-110'},
+       total:{line:146.5,overJuice:'-110',underJuice:'-110'},
+       firstHalf:{moneyline:{away:'-108',home:'-112'},spread:{line:0.5,favTeam:'Clemson Tigers'},total:{line:72.5}},
+       books:[{book:'DraftKings',awayML:'-110',homeML:'-110',spread:'PK',total:'146.5'},{book:'FanDuel',awayML:'-112',homeML:'-108',spread:'-0.5',total:'146.5'},{book:'BetMGM',awayML:'+100',homeML:'-120',spread:'+0.5',total:'147.0'},{book:'Caesars',awayML:'-110',homeML:'-110',spread:'PK',total:'146.0'},{book:'BetUS',awayML:'-108',homeML:'-112',spread:'-0.5',total:'146.5'}],
+       playerProps:[{player:'Chase Hunter',team:'Clemson',market:'Points',line:14.5,overOdds:'-108',underOdds:'-112'}],
+       sharpAngle:'Perfect coin-flip 8-9 game. Iowa shoots elite 3s and Clemson plays elite defense — the UNDER 146.5 is the value play. Lean Iowa ML at -110 for the home-state advantage feel in St. Louis.'},
+      {id:'f7',timeET:'7:10 PM ET',network:'CBS',region:'West',
+       away:{name:"St. John's Red Storm",abbr:'STJ',seed:5,record:'25-8'},
+       home:{name:'Northern Iowa Panthers',abbr:'UNI',seed:12,record:'26-8'},
+       moneyline:{away:'-260',home:'+215'},
+       spread:{line:-6.0,favTeam:"St. John's Red Storm",juice:'-110'},
+       total:{line:141.5,overJuice:'-110',underJuice:'-110'},
+       firstHalf:{moneyline:{away:'-135',home:'+115'},spread:{line:-3.0,favTeam:"St. John's Red Storm"},total:{line:69.5}},
+       books:[{book:'DraftKings',awayML:'-260',homeML:'+215',spread:'-6.0',total:'141.5'},{book:'FanDuel',awayML:'-258',homeML:'+210',spread:'-6.0',total:'141.5'},{book:'BetMGM',awayML:'-270',homeML:'+225',spread:'-6.5',total:'142.0'},{book:'Caesars',awayML:'-260',homeML:'+215',spread:'-6.0',total:'141.0'},{book:'BetUS',awayML:'-255',homeML:'+210',spread:'-6.0',total:'141.5'}],
+       playerProps:[{player:'RJ Luis Jr',team:"St. John's",market:'Points',line:18.5,overOdds:'-112',underOdds:'-108'}],
+       sharpAngle:"12-seeds with winning records cover at a high rate. UNI is 26-8 and battle-tested in the MVC. Take UNI +6.0 — St. John's is talented but inconsistent on the road (neutral site)."},
+      {id:'f8',timeET:'2:50 PM ET',network:'CBS',region:'East',
+       away:{name:'Tennessee State Tigers',abbr:'TNST',seed:15,record:'22-13'},
+       home:{name:'Iowa State Cyclones',abbr:'ISU',seed:2,record:'26-7'},
+       moneyline:{away:'+1400',home:'-2000'},
+       spread:{line:-18.0,favTeam:'Iowa State Cyclones',juice:'-110'},
        total:{line:136.5,overJuice:'-110',underJuice:'-110'},
-       firstHalf:{moneyline:{away:'-650',home:'+460'},spread:{line:-9.0,favTeam:'Houston Cougars'},total:{line:66.5}},
-       books:[{book:'DraftKings',awayML:'-2200',homeML:'+1100',spread:'-17.5',total:'136.5'},{book:'FanDuel',awayML:'-2000',homeML:'+1050',spread:'-17.5',total:'136.5'},{book:'BetMGM',awayML:'-2200',homeML:'+1200',spread:'-18.0',total:'137.0'},{book:'Caesars',awayML:'-2200',homeML:'+1100',spread:'-17.5',total:'136.0'},{book:'BetUS',awayML:'-2100',homeML:'+1100',spread:'-17.5',total:'136.5'}],
-       playerProps:[{player:'Milos Uzan',team:'Houston',market:'Points',line:15.5,overOdds:'-112',underOdds:'-108'},{player:'JWan Roberts',team:'Houston',market:'Rebounds',line:8.5,overOdds:'-115',underOdds:'-105'}],
-       sharpAngle:"Houston is a defensive powerhouse — lowest total of the Friday slate at 136.5. UNDER is the play. Idaho is the Big Sky champ but can't score against elite defenses. Houston -17.5 and UNDER 136.5."}
+       firstHalf:{moneyline:{away:'+620',home:'-900'},spread:{line:-9.5,favTeam:'Iowa State Cyclones'},total:{line:67.5}},
+       books:[{book:'DraftKings',awayML:'+1400',homeML:'-2000',spread:'-18.0',total:'136.5'},{book:'FanDuel',awayML:'+1350',homeML:'-1900',spread:'-18.0',total:'136.5'},{book:'BetMGM',awayML:'+1500',homeML:'-2200',spread:'-18.5',total:'137.0'},{book:'Caesars',awayML:'+1400',homeML:'-2000',spread:'-18.0',total:'136.0'},{book:'BetUS',awayML:'+1380',homeML:'-1950',spread:'-18.0',total:'136.5'}],
+       playerProps:[{player:'Tre Jackson',team:'Iowa State',market:'Points',line:18.5,overOdds:'-110',underOdds:'-110'}],
+       sharpAngle:'Iowa State is an elite 2-seed with championship aspirations. Tennessee State is overmatched. ISU -18.0 and UNDER 136.5 are both solid plays — Cyclone defense will control the pace completely.'},
+      {id:'f9',timeET:'7:35 PM ET',network:'truTV',region:'Midwest',
+       away:{name:'Purdue Boilermakers',abbr:'PUR',seed:2,record:'27-6'},
+       home:{name:'Queens Royals',abbr:'QNS',seed:15,record:'21-14'},
+       moneyline:{away:'-2500',home:'+1400'},
+       spread:{line:-17.5,favTeam:'Purdue Boilermakers',juice:'-110'},
+       total:{line:140.5,overJuice:'-110',underJuice:'-110'},
+       firstHalf:{moneyline:{away:'-900',home:'+580'},spread:{line:-9.0,favTeam:'Purdue Boilermakers'},total:{line:69.5}},
+       books:[{book:'DraftKings',awayML:'-2500',homeML:'+1400',spread:'-17.5',total:'140.5'},{book:'FanDuel',awayML:'-2400',homeML:'+1350',spread:'-17.5',total:'140.5'},{book:'BetMGM',awayML:'-2600',homeML:'+1500',spread:'-18.0',total:'141.0'},{book:'Caesars',awayML:'-2500',homeML:'+1400',spread:'-17.5',total:'140.0'},{book:'BetUS',awayML:'-2400',homeML:'+1380',spread:'-17.5',total:'140.5'}],
+       playerProps:[{player:'Braden Smith',team:'Purdue',market:'Assists',line:6.5,overOdds:'-108',underOdds:'-112'},{player:'Trey Kaufman-Renn',team:'Purdue',market:'Points',line:17.5,overOdds:'-110',underOdds:'-110'}],
+       sharpAngle:'Purdue is a title contender with Kaufman-Renn and Smith. Queens is a first-time tourney team. PUR -17.5 and OVER 140.5 are both value plays — the Boilermakers will run the score up.'},
+      {id:'f10',timeET:'9:45 PM ET',network:'CBS',region:'West',
+       away:{name:'Kansas Jayhawks',abbr:'KAN',seed:4,record:'25-8'},
+       home:{name:'Cal Baptist Lancers',abbr:'CBU',seed:13,record:'28-6'},
+       moneyline:{away:'-650',home:'+490'},
+       spread:{line:-12.5,favTeam:'Kansas Jayhawks',juice:'-110'},
+       total:{line:142.5,overJuice:'-110',underJuice:'-110'},
+       firstHalf:{moneyline:{away:'-280',home:'+230'},spread:{line:-6.5,favTeam:'Kansas Jayhawks'},total:{line:70.5}},
+       books:[{book:'DraftKings',awayML:'-650',homeML:'+490',spread:'-12.5',total:'142.5'},{book:'FanDuel',awayML:'-630',homeML:'+475',spread:'-12.5',total:'142.5'},{book:'BetMGM',awayML:'-675',homeML:'+510',spread:'-13.0',total:'143.0'},{book:'Caesars',awayML:'-650',homeML:'+490',spread:'-12.5',total:'142.0'},{book:'BetUS',awayML:'-640',homeML:'+480',spread:'-12.5',total:'142.5'}],
+       playerProps:[{player:'Hunter Dickinson',team:'Kansas',market:'Points',line:17.5,overOdds:'-112',underOdds:'-108'},{player:'Hunter Dickinson',team:'Kansas',market:'Rebounds',line:8.5,overOdds:'-108',underOdds:'-112'}],
+       sharpAngle:'Kansas covers big spreads vs low-major programs at a high rate. CBU is a WAC champion but outgunned athletically. KAN -12.5 with Dickinson dominating inside is the play.'},
+      {id:'f11',timeET:'10:10 PM ET',network:'truTV',region:'South',
+       away:{name:'Miami (FL) Hurricanes',abbr:'MIA',seed:7,record:'21-12'},
+       home:{name:'Missouri Tigers',abbr:'MIZ',seed:10,record:'22-11'},
+       moneyline:{away:'-140',home:'+120'},
+       spread:{line:-2.5,favTeam:'Miami (FL) Hurricanes',juice:'-110'},
+       total:{line:147.5,overJuice:'-110',underJuice:'-110'},
+       firstHalf:{moneyline:{away:'-118',home:'-102'},spread:{line:-1.5,favTeam:'Miami (FL) Hurricanes'},total:{line:73.5}},
+       books:[{book:'DraftKings',awayML:'-140',homeML:'+120',spread:'-2.5',total:'147.5'},{book:'FanDuel',awayML:'-138',homeML:'+118',spread:'-2.5',total:'147.5'},{book:'BetMGM',awayML:'-145',homeML:'+125',spread:'-3.0',total:'148.0'},{book:'Caesars',awayML:'-140',homeML:'+120',spread:'-2.5',total:'147.0'},{book:'BetUS',awayML:'-138',homeML:'+118',spread:'-2.5',total:'147.5'}],
+       playerProps:[{player:'Matthew Cleveland',team:'Miami',market:'Points',line:16.5,overOdds:'-110',underOdds:'-110'}],
+       sharpAngle:'Missouri is playing their best basketball of the season. 10-seeds beat 7-seeds 40% of the time. Take MIZ +2.5 — the Tigers can score and Miami is not playing elite defense.'}
     ]
   },
   'ncaam-w1_sat': {
@@ -2384,23 +2417,28 @@ function renderPanel(dayKey, data) {
 }
 
 function buildRow(g) {
-  const pref    = getPrefLine(g);
-  const awayML  = pref.awayML;
-  const homeML  = pref.homeML;
-  const sp      = g.spread;
-  const spreadTxt = sp ? `${sp.favTeam} ${sp.line>0?'+':''}${sp.line}` : '—';
-  const hasVar  = g.varianceData?.high;
+  const hasVar    = g.varianceData?.high;
   const hasKalshi = g.kalshiMarkets?.length > 0;
-  // Support both timeET (new) and timePT (legacy cached data)
-  const rawTime = g.timeET || g.timePT || 'TBD';
+
+  // Real-time tip time from live schedule, fall back to static
+  const schedEntry = getLiveScheduleEntry(g);
+  const rawTime = schedEntry?.date
+    ? new Date(schedEntry.date).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'America/New_York'}) + ' ET'
+    : (g.timeET || g.timePT || 'TBD');
   const displayTime = convertToLocalTime(rawTime) + ' ' + getLocalTzAbbr();
 
-  // Build meta line: network · region
-  const metaLine = [g.network, g.region || ''].filter(Boolean).join(' · ');
-  // Build spread badge text using abbreviation
-  const spreadBadge = sp ? `${g.away?.abbr??g.spread?.favTeam??''} ${sp.line>0?'+':''}${sp.line}` : '—';
+  // Live odds from The Odds API, fall back to static
+  const liveOdds = getGameOdds(g);
+  const pref     = getPrefLine(g);
+  const awayML   = liveOdds?.awayML   ?? pref.awayML;
+  const homeML   = liveOdds?.homeML   ?? pref.homeML;
+  const sp       = g.spread;
+  const spreadLine = liveOdds?.spread ?? (sp?.line != null ? (sp.line > 0 ? '+' : '') + sp.line : null);
+  const total      = liveOdds?.total  ?? g.total?.line;
+  const overOdds   = liveOdds?.overOdds  ?? g.total?.overJuice  ?? '-110';
+  const underOdds  = liveOdds?.underOdds ?? g.total?.underJuice ?? '-110';
+  const spreadBadge = spreadLine ? `${g.away?.abbr??''} ${spreadLine}` : '—';
 
-  // Check for live score
   const score = getGameScore(g);
   const isLive  = score?.status === 'live';
   const isFinal = score?.status === 'final';
@@ -2425,10 +2463,15 @@ function buildRow(g) {
         <span class="score-badge ${isLive?(homeWinning?'leading':'trailing'):'final-'+(homeWinning?'w':'l')}">${g.home?.abbr??''} ${score.homeScore}</span>
        </div>`
     : `<div class="odds-block">
-        <span class="ml-badge ${mlCls(awayML)}">${g.away?.abbr??''} ${awayML}</span>
-        <span class="ml-badge ${mlCls(homeML)}">${g.home?.abbr??''} ${homeML}</span>
-        <span class="spread-mini">${spreadBadge}</span>
-        ${hasVar ? '<span class="variance-badge">LINE GAP</span>' : ''}
+        <div class="odds-row-top">
+          <span class="ml-badge ${mlCls(awayML)}">${g.away?.abbr??''} ${awayML||'—'}</span>
+          <span class="ml-badge ${mlCls(homeML)}">${g.home?.abbr??''} ${homeML||'—'}</span>
+        </div>
+        <div class="odds-row-bot">
+          <span class="spread-mini">${spreadBadge}</span>
+          ${total ? `<span class="ou-mini">O/U ${total}</span>` : ''}
+          ${hasVar ? '<span class="variance-badge">LINE GAP</span>' : ''}
+        </div>
        </div>`;
 
   return `
@@ -2764,6 +2807,12 @@ async function fetchLiveScores() {
         drawBracket(currentBracketRegion);
       }
     }
+    // Auto-resolve pending picks against latest scores
+    resolvePicksFromScores();
+    // Refresh picks panel if open
+    if (document.getElementById('picksPanel')?.style.display !== 'none') {
+      renderPicksPanel();
+    }
     // Check if any game just went final — schedule post-game bracket refresh
     const hasFinal = (data.games||[]).some(g => g.status === 'final');
     const hadLive  = (data.games||[]).some(g => g.status === 'live');
@@ -2777,10 +2826,112 @@ async function fetchLiveScores() {
   }
 }
 
+// Live schedule + odds cache
+let liveSchedule = {};  // espnId → {time, network, venue, odds}
+let liveOddsData = {};  // teamKey → {spread, total, awayML, homeML, books}
+let scheduleLoaded = false;
+
+async function fetchLiveSchedule() {
+  try {
+    const today = new Date();
+    const dateStr = today.getFullYear().toString()
+      + String(today.getMonth()+1).padStart(2,'0')
+      + String(today.getDate()).padStart(2,'0');
+    const r = await fetch(`${PROXY_URL}/api/schedule?league=ncaamb&date=${dateStr}`);
+    const data = await r.json();
+    if (!data.games) return;
+
+    // Index by team abbr pair for matching to static games
+    for (const g of data.games) {
+      const key = g.away.abbr + '-' + g.home.abbr;
+      liveSchedule[key] = g;
+      liveSchedule[g.home.abbr + '-' + g.away.abbr] = g;
+
+      // If ESPN returned odds, store them
+      if (g.odds) {
+        liveOddsData[key] = g.odds;
+        liveOddsData[g.home.abbr + '-' + g.away.abbr] = g.odds;
+      }
+    }
+    scheduleLoaded = true;
+    console.log(`[Schedule] Loaded ${data.games.length} games for ${dateStr}`);
+
+    // Re-render current panel if open with updated times/odds
+    const cacheKey = prefs.activeEvent + '_' + currentDayKey;
+    if (cache[cacheKey]) renderPanel(currentDayKey, cache[cacheKey]);
+  } catch(e) {
+    console.warn('[Schedule] Fetch failed:', e.message);
+  }
+}
+
+async function fetchLiveOdds() {
+  try {
+    const r = await fetch(`${PROXY_URL}/api/odds?sport=basketball_ncaab&markets=h2h,spreads,totals`);
+    const data = await r.json();
+    if (!data.games?.length) return;
+
+    for (const g of data.games) {
+      // Match by team name to our abbr system
+      const awayAbbr = findAbbrByName(g.away);
+      const homeAbbr = findAbbrByName(g.home);
+      if (!awayAbbr || !homeAbbr) continue;
+      const key = awayAbbr + '-' + homeAbbr;
+      liveOddsData[key] = g;
+      liveOddsData[homeAbbr + '-' + awayAbbr] = g;
+    }
+    console.log(`[Odds] Loaded ${data.games.length} games. Quota: ${data.quota?.remaining} remaining`);
+
+    // Re-render if panel is open
+    const cacheKey = prefs.activeEvent + '_' + currentDayKey;
+    if (cache[cacheKey]) renderPanel(currentDayKey, cache[cacheKey]);
+  } catch(e) {
+    console.warn('[Odds] Fetch failed:', e.message);
+  }
+}
+
+function findAbbrByName(fullName) {
+  // Look up ESPN full name in our static data abbr list
+  if (!fullName) return null;
+  const upper = fullName.toUpperCase();
+  for (const data of Object.values(STATIC_GAMES)) {
+    for (const g of data.games||[]) {
+      if (g.away?.name?.toUpperCase().includes(upper.slice(0,6)) || upper.includes((g.away?.name||'').toUpperCase().slice(0,6)))
+        return (g.away?.abbr||'').toUpperCase();
+      if (g.home?.name?.toUpperCase().includes(upper.slice(0,6)) || upper.includes((g.home?.name||'').toUpperCase().slice(0,6)))
+        return (g.home?.abbr||'').toUpperCase();
+    }
+  }
+  return null;
+}
+
+// Get live odds for a game (merges live odds over static)
+function getGameOdds(g) {
+  const away = (g.away?.abbr||'').toUpperCase();
+  const home = (g.home?.abbr||'').toUpperCase();
+  const live = liveOddsData[away+'-'+home] || liveOddsData[home+'-'+away];
+  if (live) return live;
+  // Fall back to static data
+  return null;
+}
+
+// Get live schedule entry for a game (for real-time tip times)
+function getLiveScheduleEntry(g) {
+  const away = (g.away?.abbr||'').toUpperCase();
+  const home = (g.home?.abbr||'').toUpperCase();
+  return liveSchedule[away+'-'+home] || liveSchedule[home+'-'+away] || null;
+}
+
 function startScorePolling() {
   fetchLiveScores();
+  fetchLiveSchedule();    // Fetch schedule on startup
+  fetchLiveOdds();        // Fetch odds on startup
   if (scoreInterval) clearInterval(scoreInterval);
-  scoreInterval = setInterval(fetchLiveScores, 60000); // every 60s
+  scoreInterval = setInterval(() => {
+    fetchLiveScores();
+    fetchLiveSchedule();  // Refresh every 60s — catches time changes
+  }, 60000);
+  // Odds refresh every 5 minutes (The Odds API quota-friendly)
+  setInterval(fetchLiveOdds, 300000);
 }
 
 function getGameScore(g) {
@@ -3022,12 +3173,22 @@ function refreshHomeStats() {
 
 // Storage keys
 const PICKS_KEY = 'gmoney_picks_2026';
-const PICKS_SEEDED_KEY = 'gmoney_picks_seeded_v1';
+const PICKS_SEEDED_KEY = 'gmoney_picks_seeded_v3';
 const BANKROLL_START = 1000;
 const BET_SIZE = 25;
 
 // G-Money's picks — First Round and beyond (First Four not included, play-in games don't count in bracket pools)
 const SEED_PICKS = [
+  // First Round Thu Mar 19 — completed games
+  {gameId:'g1',  game:'Duke vs Siena',         betOn:'Duke -22.5 ATS',    odds:-110, betType:'ATS', result:'win',  score:'DUKE 71 – SIE 65',  date:'3/19', round:'R64'},
+  {gameId:'g2',  game:'Ohio State vs TCU',      betOn:'TCU +1.5 ATS',      odds:-110, betType:'ATS', result:'win',  score:'TCU 66 – OSU 64',   date:'3/19', round:'R64'},
+  {gameId:'g3',  game:'Louisville vs USF',      betOn:'USF +3.5 ATS',      odds:-110, betType:'ATS', result:'loss', score:'LOU 83 – USF 79',   date:'3/19', round:'R64'},
+  {gameId:'g4',  game:'Michigan State vs NDSU', betOn:'MSU -14.5 ATS',     odds:-110, betType:'ATS', result:'win',  score:'MSU 92 – NDSU 67',  date:'3/19', round:'R64'},
+  {gameId:'g9',  game:'Nebraska vs Troy',       betOn:'NEB -8.5 ATS',      odds:-110, betType:'ATS', result:'win',  score:'NEB 76 – TROY 47',  date:'3/19', round:'R64'},
+  {gameId:'g10', game:'Wisconsin vs High Point', betOn:'WIS -5.5 ATS',     odds:-110, betType:'ATS', result:'loss', score:'HP 83 – WIS 82',    date:'3/19', round:'R64'},
+  {gameId:'g11', game:'Vanderbilt vs McNeese',  betOn:'VAN -4 ATS',        odds:-110, betType:'ATS', result:'win',  score:'VAN 78 – MCNS 68',  date:'3/19', round:'R64'},
+  {gameId:'g12', game:'Arkansas vs Hawaii',     betOn:'ARK -8.5 ATS',      odds:-110, betType:'ATS', result:'win',  score:'ARK 97 – HAW 78',   date:'3/19', round:'R64'},
+  {gameId:'g14', game:'Michigan vs Howard',     betOn:'MICH -20.5 ATS',    odds:-110, betType:'ATS', result:'win',  score:'MICH 101 – HOW 80', date:'3/19', round:'R64'},
 ];
 
 
@@ -3084,28 +3245,71 @@ function seedHistoricalPicks() {
 function resolvePicksFromScores() {
   const picks = loadPicks();
   let changed = false;
+
+  // Build gameId → static game lookup
+  const gameById = {};
+  for (const data of Object.values(STATIC_GAMES)) {
+    for (const g of data.games||[]) { if (g.id) gameById[g.id] = g; }
+  }
+
   for (const pick of picks) {
     if (pick.result !== 'pending') continue;
-    const key = Object.keys(liveScores).find(k =>
-      !liveScores[k]?.flipped &&
-      (k.includes(pick.game.split(' vs ')[0].split(' ').pop().toUpperCase()) ||
-       k.includes((pick.game.split(' vs ')[1] || '').split(' ').pop().toUpperCase()))
-    );
-    if (!key) continue;
-    const score = liveScores[key];
+
+    // Find static game by gameId
+    const g = gameById[pick.gameId];
+    if (!g) continue;
+
+    // Get score using fuzzy matching
+    const score = getGameScore(g);
     if (!score || score.status !== 'final') continue;
-    const awayWon = score.awayScore > score.homeScore;
-    const awayTeam = pick.game.split(' vs ')[0].split(' ').pop().toUpperCase();
-    const homeTeam = (pick.game.split(' vs ')[1] || '').split(' ').pop().toUpperCase();
-    const betText = (pick.betOn || '').toLowerCase();
-    let result = 'push';
-    if (betText.includes(awayTeam.toLowerCase()) && awayWon)  result = 'win';
-    else if (betText.includes(homeTeam.toLowerCase()) && !awayWon) result = 'win';
-    else if (betText.includes(awayTeam.toLowerCase()) && !awayWon) result = 'loss';
-    else if (betText.includes(homeTeam.toLowerCase()) && awayWon)  result = 'loss';
+
+    // Determine actual scores
+    const away = (g.away?.abbr||'').toUpperCase();
+    const home = (g.home?.abbr||'').toUpperCase();
+    const fl = score.flipped || score.home === away;
+    const awayScore = fl ? (score.homeScore||0) : (score.awayScore||0);
+    const homeScore = fl ? (score.awayScore||0) : (score.homeScore||0);
+    const awayWon = awayScore > homeScore;
+    const margin = Math.abs(awayScore - homeScore);
+
+    const betText = (pick.betOn||'').toLowerCase();
+
+    // Determine result based on bet type
+    let result = 'loss';
+    if (pick.betType === 'ML') {
+      // Moneyline — did our team win outright?
+      const betTeam = betText.split(' ml')[0].split(' ').pop().toUpperCase();
+      const betOnAway = away.includes(betTeam) || betTeam.includes(away.slice(0,3));
+      result = (betOnAway && awayWon) || (!betOnAway && !awayWon) ? 'win' : 'loss';
+    } else {
+      // ATS — extract spread from betOn text e.g. "DUKE -22.5 ATS"
+      const spreadMatch = betText.match(/([+-]?\d+\.?\d*)\s*ats/);
+      if (spreadMatch) {
+        const spread = parseFloat(spreadMatch[1]);
+        // Which team is the bet on?
+        const betTeam = betText.split(/[+-]/)[0].trim().split(' ').pop().toUpperCase();
+        const betOnAway = away.includes(betTeam) || betTeam.includes(away.slice(0,3));
+        // Apply spread: if bet on favorite (negative), they need to win by more than spread
+        // if bet on underdog (positive), they just need to cover
+        if (betOnAway) {
+          const adjustedMargin = awayWon ? margin + spread : -(margin) + spread;
+          result = adjustedMargin > 0 ? 'win' : adjustedMargin === 0 ? 'push' : 'loss';
+        } else {
+          const adjustedMargin = !awayWon ? margin + spread : -(margin) + spread;
+          result = adjustedMargin > 0 ? 'win' : adjustedMargin === 0 ? 'push' : 'loss';
+        }
+      } else {
+        // Fallback: straight win/loss on team mentioned
+        const betTeam = betText.split(' ')[0].toUpperCase();
+        const betOnAway = away.includes(betTeam) || betTeam.includes(away.slice(0,3));
+        result = (betOnAway && awayWon) || (!betOnAway && !awayWon) ? 'win' : 'loss';
+      }
+    }
+
     pick.result = result;
-    pick.score  = score.awayScore + '-' + score.homeScore;
+    pick.score  = awayScore + '-' + homeScore;
     changed = true;
+    console.log(`[Picks] Resolved ${pick.gameId}: ${pick.betOn} → ${result} (${awayScore}-${homeScore})`);
   }
   if (changed) savePicks(picks);
 }
@@ -3820,10 +4024,15 @@ let bracketFetchPromise = null;
 
 // R64 game IDs per region — explicit, no guessing
 const R64_MAP = {
-  east:    ['g1','g2','g3','g4'],
-  west:    ['g15','g16','g19','f1'],
-  south:   ['g9','g17','g20','f5'],
-  midwest: ['g14','g11','g12','g6'],
+  east:    ['g1','g2','g3','g4'],           // Thu: DUKE,OSU/TCU,LOU/USF,MSU — all done
+  west:    ['g15','g16','g19','f1'],         // Thu: BYU/TEX,SMC/TXAM,GONZ/KENN | Fri: ARIZ/LIU
+  south:   ['g9','g17','g20','f5'],          // Thu: NEB,ILL,HOU | Fri: FLA/LEH
+  midwest: ['g14','g11','g12','g6'],         // Thu: MICH,VAN,ARK,UGA/SLU — all done
+  // Friday-only regions (shown in FRI tab but bracket slots use above IDs)
+  fri_east:    ['f2','f8'],                  // UVA/WRST, ISU/TNST
+  fri_west:    ['f7','f10'],                 // STJ/UNI, KAN/CBU
+  fri_south:   ['f3','f6','f11'],            // SCU/KEN, CLEM/IOWA, MIA/MIZ
+  fri_midwest: ['f4','f9'],                  // TTU/AKR, PUR/QNS
 };
 
 function makeTBDSlots(count, label) {

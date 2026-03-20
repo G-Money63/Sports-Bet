@@ -2165,6 +2165,7 @@ async function loadDay(dayKey) {
       const espnGames = schedData.games.map(g => {
         // Try to find matching static game for enrichment (odds, sharp angles, props)
         const staticGame = findStaticGame(g.away.abbr, g.home.abbr);
+        if (!staticGame) console.log(`[LoadDay] No static match for ESPN: ${g.away.abbr} vs ${g.home.abbr}`);
         const liveOddsEntry = getGameOdds({away:{abbr:g.away.abbr}, home:{abbr:g.home.abbr}});
 
         return {
@@ -2269,11 +2270,19 @@ function dayKeyToDate(dayKey) {
 function findStaticGame(awayAbbr, homeAbbr) {
   const a = (awayAbbr||'').toUpperCase();
   const h = (homeAbbr||'').toUpperCase();
+  // Also try abbrMap normalized versions
+  const aNorm = ABBR_MAP[a] || a;
+  const hNorm = ABBR_MAP[h] || h;
+
   for (const data of Object.values(STATIC_GAMES)) {
     for (const g of data.games||[]) {
       const ga = (g.away?.abbr||'').toUpperCase();
       const gh = (g.home?.abbr||'').toUpperCase();
+      // Try direct match, then normalized match
       if ((ga===a&&gh===h)||(ga===h&&gh===a)) return g;
+      if ((ga===aNorm&&gh===hNorm)||(ga===hNorm&&gh===aNorm)) return g;
+      // Also try partial — ESPN sometimes uses 3-char vs our 4-char
+      if ((ga.slice(0,3)===a.slice(0,3)&&gh.slice(0,3)===h.slice(0,3))) return g;
     }
   }
   return null;

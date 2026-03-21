@@ -3590,11 +3590,15 @@ function logGMoneyPick(gameId, awayName, homeName, pickText, odds, gameObj) {
 
 function seedHistoricalPicks() {
   if (localStorage.getItem(PICKS_SEEDED_KEY)) return;
+  // Version bump — replace ALL seeded picks with fresh data
+  // Keep any user-added picks (gameId not in SEED_PICKS)
   const existing = loadPicks();
-  const existingIds = new Set(existing.map(p => p.gameId));
-  const toAdd = SEED_PICKS.filter(p => !existingIds.has(p.gameId));
-  savePicks([...toAdd, ...existing]);
+  const seededIds = new Set(SEED_PICKS.map(p => p.gameId));
+  const userPicks = existing.filter(p => !seededIds.has(p.gameId));
+  // Seed picks go first (chronological), user picks append after
+  savePicks([...SEED_PICKS, ...userPicks]);
   localStorage.setItem(PICKS_SEEDED_KEY, '1');
+  console.log(`[Picks] Seeded ${SEED_PICKS.length} picks (v4), kept ${userPicks.length} user picks`);
 }
 
 function resolvePicksFromScores() {

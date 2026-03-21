@@ -499,22 +499,22 @@ body.light .spread-mini{background:#1A5FA812;color:#1A5FA8;border-color:#1A5FA84
 .parlay-sheet.open{transform:translateY(0);}
 .parlay-sheet-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:12px auto 0;}
 .parlay-sheet-title{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--amber);letter-spacing:.12em;text-transform:uppercase;padding:14px 16px 8px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);}
-.parlay-leg{display:flex;align-items:center;gap:0;border-bottom:1px solid var(--border);min-height:58px;}
+.parlay-leg{display:flex;align-items:center;gap:0;border-bottom:1px solid var(--border);min-height:56px;}
 .parlay-leg-type{width:4px;align-self:stretch;flex-shrink:0;}
 .parlay-leg-type.ml{background:var(--green);}
 .parlay-leg-type.spread{background:var(--accent);}
 .parlay-leg-type.ou{background:var(--amber);}
-.parlay-leg-num{font-family:var(--mono);font-size:13px;font-weight:800;color:var(--amber);width:28px;flex-shrink:0;text-align:center;}
-.parlay-leg-body{flex:1;min-width:0;padding:8px 6px;}
-.parlay-leg-pick{font-size:14px;font-weight:800;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2;}
-.parlay-leg-matchup{font-family:var(--mono);font-size:9px;color:var(--text3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.parlay-leg-badge{display:inline-block;font-family:var(--mono);font-size:9px;font-weight:700;padding:1px 6px;border-radius:3px;margin-top:3px;letter-spacing:.04em;}
+.parlay-leg-num{font-family:var(--mono);font-size:13px;font-weight:800;color:var(--amber);width:26px;flex-shrink:0;text-align:center;}
+.parlay-leg-body{flex:1;min-width:0;padding:8px 4px;}
+.parlay-leg-pick{font-size:13px;font-weight:800;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;}
+.parlay-leg-matchup{font-family:var(--mono);font-size:9px;color:var(--text3);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.parlay-leg-badge{display:inline-block;font-family:var(--mono);font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;margin-top:2px;letter-spacing:.04em;}
 .parlay-leg-badge.ml{background:rgba(0,232,130,.12);color:var(--green);border:1px solid rgba(0,232,130,.25);}
 .parlay-leg-badge.spread{background:rgba(91,184,255,.12);color:var(--accent);border:1px solid rgba(91,184,255,.25);}
 .parlay-leg-badge.ou{background:rgba(186,117,23,.12);color:var(--amber);border:1px solid rgba(186,117,23,.25);}
-.parlay-leg-right{display:flex;flex-direction:column;align-items:flex-end;justify-content:center;padding:8px 12px 8px 6px;gap:6px;flex-shrink:0;}
-.parlay-leg-odds{font-family:var(--mono);font-size:14px;font-weight:800;color:var(--accent);}
-.parlay-leg-del{background:none;border:none;color:var(--text3);font-size:13px;cursor:pointer;padding:2px;line-height:1;}
+.parlay-leg-right{display:flex;flex-direction:column;align-items:flex-end;justify-content:center;padding:8px 12px 8px 4px;gap:4px;flex-shrink:0;}
+.parlay-leg-odds{font-family:var(--mono);font-size:13px;font-weight:800;color:var(--accent);}
+.parlay-leg-del{background:none;border:none;color:var(--text3);font-size:14px;cursor:pointer;padding:2px;line-height:1;}
 .gmp-leg{display:flex;align-items:center;gap:6px;padding:3px 0;}
 .gmp-leg-text{flex:1;min-width:0;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .parlay-payout{background:var(--card2);border:1px solid var(--border);border-radius:10px;margin:12px 16px;padding:14px;}
@@ -2772,6 +2772,9 @@ function renderPanel(dayKey, data) {
   panel.innerHTML = `<div class="round-label">${data.round} · ${data.day}</div>` + sorted.map(buildRow).join('');
 }
 
+// Global map for parlay leg data — avoids JSON.stringify in onclick attrs
+const _PLEG = {};
+
 function buildRow(g) {
   const hasVar    = g.varianceData?.high;
   const hasKalshi = g.kalshiMarkets?.length > 0;
@@ -2819,21 +2822,30 @@ function buildRow(g) {
         <span class="score-badge ${isLive?(awayWinning?'leading':'trailing'):'final-'+(awayWinning?'w':'l')}">${g.away?.abbr??''} ${score.awayScore}</span>
         <span class="score-badge ${isLive?(homeWinning?'leading':'trailing'):'final-'+(homeWinning?'w':'l')}">${g.home?.abbr??''} ${score.homeScore}</span>
        </div>`
-    : `<div class="odds-block">
-        <span class="ml-badge ${mlCls(awayML)} parlay-pill ${isParlaySelected(g.id,'ml-away')?'parlay-on':''}"
-          onclick="event.stopPropagation();toggleParlay(${JSON.stringify({id:g.id+'-ml-away',gameId:g.id,type:'ML',label:g.away?.abbr+' ML',odds:awayML,game:(g.away?.abbr??'')+'v'+(g.home?.abbr??''),away:g.away?.abbr,home:g.home?.abbr})})">
-          ${g.away?.abbr??''} ${awayML||'—'}</span>
-        <span class="ml-badge ${mlCls(homeML)} parlay-pill ${isParlaySelected(g.id,'ml-home')?'parlay-on':''}"
-          onclick="event.stopPropagation();toggleParlay(${JSON.stringify({id:g.id+'-ml-home',gameId:g.id,type:'ML',label:g.home?.abbr+' ML',odds:homeML,game:(g.away?.abbr??'')+'v'+(g.home?.abbr??''),away:g.away?.abbr,home:g.home?.abbr})})">
-          ${g.home?.abbr??''} ${homeML||'—'}</span>
-        <span class="spread-mini parlay-pill ${isParlaySelected(g.id,'spread')?'parlay-on':''}"
-          onclick="event.stopPropagation();toggleParlay(${JSON.stringify({id:g.id+'-spread',gameId:g.id,type:'Spread',label:spreadBadge,odds:'-110',game:(g.away?.abbr??'')+'v'+(g.home?.abbr??''),away:g.away?.abbr,home:g.home?.abbr})})">
+    : `<div class="odds-block">${(()=>{
+        const away = g.away?.abbr || '';
+        const home = g.home?.abbr || '';
+        const gKey = g.id;
+        // Store leg data in global map — safe for onclick
+        _PLEG[gKey+'-ml-away'] = {id:gKey+'-ml-away',gameId:gKey,type:'ML',label:away+' ML',odds:awayML,game:away+'v'+home,away,home};
+        _PLEG[gKey+'-ml-home'] = {id:gKey+'-ml-home',gameId:gKey,type:'ML',label:home+' ML',odds:homeML,game:away+'v'+home,away,home};
+        _PLEG[gKey+'-spread']  = {id:gKey+'-spread',gameId:gKey,type:'Spread',label:spreadBadge,odds:'-110',game:away+'v'+home,away,home};
+        _PLEG[gKey+'-ou']      = {id:gKey+'-ou',gameId:gKey,type:'O/U',label:'O/U '+(total||''),odds:'-110',game:away+'v'+home,away,home};
+        return `
+        <span class="ml-badge ${mlCls(awayML)} parlay-pill ${isParlaySelected(gKey,'ml-away')?'parlay-on':''}"
+          onclick="event.stopPropagation();toggleParlay(_PLEG['${gKey}-ml-away'])">
+          ${away} ${awayML||'—'}</span>
+        <span class="ml-badge ${mlCls(homeML)} parlay-pill ${isParlaySelected(gKey,'ml-home')?'parlay-on':''}"
+          onclick="event.stopPropagation();toggleParlay(_PLEG['${gKey}-ml-home'])">
+          ${home} ${homeML||'—'}</span>
+        <span class="spread-mini parlay-pill ${isParlaySelected(gKey,'spread')?'parlay-on':''}"
+          onclick="event.stopPropagation();toggleParlay(_PLEG['${gKey}-spread'])">
           ${spreadBadge}</span>
-        ${total ? `<span class="ou-mini parlay-pill ${isParlaySelected(g.id,'ou')?'parlay-on':''}"
-          onclick="event.stopPropagation();toggleParlay(${JSON.stringify({id:g.id+'-ou',gameId:g.id,type:'O/U',label:'O/U '+total,odds:'-110',game:(g.away?.abbr??'')+'v'+(g.home?.abbr??''),away:g.away?.abbr,home:g.home?.abbr})})">
+        ${total ? `<span class="ou-mini parlay-pill ${isParlaySelected(gKey,'ou')?'parlay-on':''}"
+          onclick="event.stopPropagation();toggleParlay(_PLEG['${gKey}-ou'])">
           O/U ${total}</span>` : ''}
-        ${hasVar ? '<span class="variance-badge">LINE GAP</span>' : ''}
-       </div>`;
+        ${hasVar ? '<span class="variance-badge">LINE GAP</span>' : ''}`;
+      })()}</div>`;
 
   return `
   <div class="game-row ${isLive?'is-live':isFinal?'is-final':''}" id="row-${g.id}">

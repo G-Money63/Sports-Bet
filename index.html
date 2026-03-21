@@ -496,20 +496,23 @@ body.light .spread-mini{background:#1A5FA812;color:#1A5FA8;border-color:#1A5FA84
 .parlay-sheet-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:12px auto 0;}
 .parlay-sheet-title{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--amber);letter-spacing:.12em;text-transform:uppercase;padding:14px 16px 8px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);}
 .parlay-leg{display:flex;align-items:stretch;gap:0;border-bottom:1px solid var(--border);}
-.parlay-leg-type{width:6px;flex-shrink:0;border-radius:0;}
+.parlay-leg-type{width:4px;flex-shrink:0;}
 .parlay-leg-type.ml{background:var(--green);}
 .parlay-leg-type.spread{background:var(--accent);}
 .parlay-leg-type.ou{background:var(--amber);}
-.parlay-leg-body{flex:1;min-width:0;padding:10px 12px;}
-.parlay-leg-matchup{font-family:var(--mono);font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.parlay-leg-num{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--text3);width:24px;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+.parlay-leg-body{flex:1;min-width:0;padding:10px 8px;}
+.parlay-leg-matchup{font-family:var(--mono);font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .parlay-leg-pick{font-size:14px;font-weight:800;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .parlay-leg-badge{display:inline-block;font-family:var(--mono);font-size:9px;font-weight:700;padding:1px 6px;border-radius:3px;margin-top:3px;letter-spacing:.04em;}
 .parlay-leg-badge.ml{background:rgba(0,232,130,.12);color:var(--green);border:1px solid rgba(0,232,130,.25);}
 .parlay-leg-badge.spread{background:rgba(91,184,255,.12);color:var(--accent);border:1px solid rgba(91,184,255,.25);}
 .parlay-leg-badge.ou{background:rgba(186,117,23,.12);color:var(--amber);border:1px solid rgba(186,117,23,.25);}
-.parlay-leg-right{display:flex;flex-direction:column;align-items:flex-end;justify-content:center;padding:10px 12px 10px 8px;gap:4px;flex-shrink:0;}
+.parlay-leg-right{display:flex;flex-direction:column;align-items:flex-end;justify-content:center;padding:10px 12px 10px 8px;gap:6px;flex-shrink:0;}
 .parlay-leg-odds{font-family:var(--mono);font-size:14px;font-weight:800;color:var(--accent);}
-.parlay-leg-del{background:none;border:none;color:var(--text3);font-size:14px;cursor:pointer;padding:2px;line-height:1;}
+.parlay-leg-del{background:none;border:none;color:var(--text3);font-size:13px;cursor:pointer;padding:2px;line-height:1;}
+.gmp-leg{display:flex;align-items:center;gap:6px;padding:3px 0;}
+.gmp-leg-text{flex:1;min-width:0;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .parlay-payout{background:var(--card2);border:1px solid var(--border);border-radius:10px;margin:12px 16px;padding:14px;}
 .parlay-payout-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
 .parlay-payout-label{font-family:var(--mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;}
@@ -5065,37 +5068,55 @@ function buildGMoneyParlay() {
   const picks = [];
   for (const g of data.games) {
     if (picks.length >= 4) break;
-    const sa = g.sharpAngle || '';
-    const awayML = g.moneyline?.away;
-    const homeML = g.moneyline?.home;
-    const spread = g.spread;
-    const total  = g.total;
+    // Skip games already final
+    const score = getGameScore(g);
+    if (score?.status === 'final') continue;
 
-    // Parse G-Money pick direction from sharp angle text
-    const awayAbbr = g.away?.abbr || '';
-    const homeAbbr = g.home?.abbr || '';
-    const saLower  = sa.toLowerCase();
+    const awayAbbr = (g.away?.abbr||'').toUpperCase();
+    const homeAbbr = (g.home?.abbr||'').toUpperCase();
+    if (!awayAbbr || !homeAbbr) continue;
+
+    const awayML  = g.moneyline?.away;
+    const homeML  = g.moneyline?.home;
+    const spread  = g.spread;
+    const total   = g.total;
+    const sa      = (g.sharpAngle||'').toLowerCase();
 
     let pick = null;
 
-    // Look for ML picks (underdog value — positive odds)
-    if (awayML && String(awayML).startsWith('+') && parseInt(awayML) < 350 && saLower.includes(awayAbbr.toLowerCase())) {
-      pick = { id: g.id+'-ml-away', gameId:g.id, type:'ML', label:awayAbbr+' ML', odds:awayML, game:awayAbbr+'v'+homeAbbr, away:awayAbbr, home:homeAbbr };
-    } else if (homeML && String(homeML).startsWith('+') && parseInt(homeML) < 350 && saLower.includes(homeAbbr.toLowerCase())) {
-      pick = { id: g.id+'-ml-home', gameId:g.id, type:'ML', label:homeAbbr+' ML', odds:homeML, game:awayAbbr+'v'+homeAbbr, away:awayAbbr, home:homeAbbr };
-    }
-    // Look for spread picks
-    else if (spread && saLower.includes(awayAbbr.toLowerCase()) && awayML && parseInt(String(awayML)) < -110) {
-      const line = (spread.line>0?'+':'')+spread.line;
-      pick = { id:g.id+'-spread', gameId:g.id, type:'Spread', label:awayAbbr+' '+line, odds:'-110', game:awayAbbr+'v'+homeAbbr, away:awayAbbr, home:homeAbbr };
-    } else if (spread && saLower.includes(homeAbbr.toLowerCase()) && homeML && parseInt(String(homeML)) < -110) {
-      const line = spread.line > 0 ? '+'+spread.line : String(-spread.line);
-      pick = { id:g.id+'-spread', gameId:g.id, type:'Spread', label:homeAbbr+' '+line, odds:'-110', game:awayAbbr+'v'+homeAbbr, away:awayAbbr, home:homeAbbr };
-    }
-    // Look for OVER/UNDER
-    else if (total && (saLower.includes('over') || saLower.includes('under'))) {
-      const isOver = saLower.includes('over');
-      pick = { id:g.id+'-ou', gameId:g.id, type:'O/U', label:(isOver?'OVER ':'UNDER ')+total.line, odds:'-110', game:awayAbbr+'v'+homeAbbr, away:awayAbbr, home:homeAbbr };
+    // Check sharp angle text for explicit recommendation
+    const mentionsAway  = sa.includes(awayAbbr.toLowerCase().slice(0,3));
+    const mentionsHome  = sa.includes(homeAbbr.toLowerCase().slice(0,3));
+    const mentionsOver  = sa.includes('over');
+    const mentionsUnder = sa.includes('under');
+
+    if (mentionsOver && total) {
+      pick = { id:g.id+'-ou-over', gameId:g.id, type:'O/U', label:'OVER '+total.line, odds: total.overJuice||'-110', game:awayAbbr+'v'+homeAbbr, away:awayAbbr, home:homeAbbr };
+    } else if (mentionsUnder && total) {
+      pick = { id:g.id+'-ou-under', gameId:g.id, type:'O/U', label:'UNDER '+total.line, odds: total.underJuice||'-110', game:awayAbbr+'v'+homeAbbr, away:awayAbbr, home:homeAbbr };
+    } else if (mentionsAway && spread) {
+      const line = spread.favTeam?.includes(awayAbbr) || spread.favTeam?.toUpperCase().includes(awayAbbr.slice(0,3))
+        ? (spread.line>0?'+':'')+spread.line
+        : '+'+(Math.abs(spread.line));
+      pick = { id:g.id+'-spread-a', gameId:g.id, type:'Spread', label:awayAbbr+' '+line, odds:'-110', game:awayAbbr+'v'+homeAbbr, away:awayAbbr, home:homeAbbr };
+    } else if (mentionsHome && spread) {
+      const line = spread.favTeam?.toUpperCase().includes(homeAbbr.slice(0,3))
+        ? (spread.line>0?'+':'')+spread.line
+        : '+'+(Math.abs(spread.line));
+      pick = { id:g.id+'-spread-h', gameId:g.id, type:'Spread', label:homeAbbr+' '+line, odds:'-110', game:awayAbbr+'v'+homeAbbr, away:awayAbbr, home:homeAbbr };
+    } else if (awayML && homeML) {
+      // Default: take the favorite ML if under -150, else take underdog spread
+      const awayNum = parseInt(String(awayML).replace('+',''));
+      const homeNum = parseInt(String(homeML).replace('+',''));
+      if (awayNum < -150 && awayNum > -400) {
+        pick = { id:g.id+'-ml-away', gameId:g.id, type:'ML', label:awayAbbr+' ML', odds:awayML, game:awayAbbr+'v'+homeAbbr, away:awayAbbr, home:homeAbbr };
+      } else if (homeNum < -150 && homeNum > -400) {
+        pick = { id:g.id+'-ml-home', gameId:g.id, type:'ML', label:homeAbbr+' ML', odds:homeML, game:awayAbbr+'v'+homeAbbr, away:awayAbbr, home:homeAbbr };
+      } else if (spread) {
+        const fav = spread.favTeam?.toUpperCase().includes(awayAbbr.slice(0,3)) ? awayAbbr : homeAbbr;
+        const line = (spread.line>0?'+':'')+spread.line;
+        pick = { id:g.id+'-spread-f', gameId:g.id, type:'Spread', label:fav+' '+line, odds:'-110', game:awayAbbr+'v'+homeAbbr, away:awayAbbr, home:homeAbbr };
+      }
     }
 
     if (pick) picks.push(pick);
@@ -5119,9 +5140,12 @@ function renderParlaySheet() {
     const gmpPayout = (stake * gmpOdds.decimal).toFixed(2);
     html += `<div class="gmoney-parlay">
       <div class="gmp-header">⚡ G-MONEY AUTO-PARLAY · TODAY'S BEST PLAYS</div>
-      <div class="gmp-legs">${gmp.map((l,i) =>
-        `<div class="gmp-leg"><span class="gmp-num">${i+1}</span><span>${l.game} — ${l.label}<span class="gmp-odds-badge">${l.odds}</span></span></div>`
-      ).join('')}</div>
+      <div class="gmp-legs">${gmp.map((l,i) => {
+        const away = (l.away||'').toUpperCase();
+        const home = (l.home||'').toUpperCase();
+        const matchup = (away && home) ? away+' vs '+home : (l.game||'');
+        return `<div class="gmp-leg"><span class="gmp-num">${i+1}</span><span class="gmp-leg-text">${matchup} — <strong>${l.label}</strong></span><span class="gmp-odds-badge">${l.odds}</span></div>`;
+      }).join('')}</div>
       <div class="gmp-footer">
         <span style="color:var(--text3)">${gmp.length}-leg parlay</span>
         <span style="color:var(--amber);font-weight:700">${gmpOdds.american}</span>
@@ -5144,16 +5168,24 @@ function renderParlaySheet() {
       <span style="font-size:11px;opacity:.6">ML · Spread · O/U — mix and match</span>
     </div>`;
   } else {
-    html += legs.map(l => {
-      const typeCls = l.type === 'ML' ? 'ml' : l.type === 'Spread' ? 'spread' : 'ou';
-      const typeLabel = l.type === 'ML' ? 'Moneyline' : l.type === 'Spread' ? 'Spread' : 'Over/Under';
-      const gameDisplay = l.game ? l.game.replace('v', ' vs ') : '';
-      const oddsStr = String(l.odds).startsWith('+') || Number(l.odds) > 0 ? '+'+Number(l.odds) : String(l.odds);
+    html += legs.map((l, i) => {
+      // Normalize type — handle any legacy values
+      const t = (l.type||'').toUpperCase();
+      const typeCls   = t === 'ML' ? 'ml' : t === 'SPREAD' ? 'spread' : 'ou';
+      const typeLabel = t === 'ML' ? 'Moneyline' : t === 'SPREAD' ? 'Spread' : 'Over/Under';
+      // Build matchup from away/home fields (never from game string)
+      const away = (l.away || l.game?.split('v')[0] || '').toUpperCase();
+      const home = (l.home || l.game?.split('v').slice(-1)[0] || '').toUpperCase();
+      const matchup = (away && home) ? away + ' vs ' + home : (away || home || '');
+      // Odds display
+      const oddsNum = parseInt(String(l.odds||'-110').replace('+',''));
+      const oddsStr = oddsNum > 0 ? '+' + oddsNum : String(l.odds||'-110');
       return `<div class="parlay-leg">
         <div class="parlay-leg-type ${typeCls}"></div>
+        <div class="parlay-leg-num">${i + 1}</div>
         <div class="parlay-leg-body">
-          <div class="parlay-leg-matchup">${gameDisplay}</div>
-          <div class="parlay-leg-pick">${l.label}</div>
+          <div class="parlay-leg-matchup">${matchup}</div>
+          <div class="parlay-leg-pick">${l.label || ''}</div>
           <span class="parlay-leg-badge ${typeCls}">${typeLabel}</span>
         </div>
         <div class="parlay-leg-right">
@@ -5250,13 +5282,23 @@ function deleteParlay(id) {
 
 function loadGMoneyParlay() {
   const gmp = buildGMoneyParlay();
-  if (!gmp) return;
+  if (!gmp || !gmp.length) {
+    // Still open the sheet so user can build manually
+    document.getElementById('parlaySheet').classList.add('open');
+    renderParlaySheet();
+    showToast('⚠️ Add games to cache first — tap a game tab then try again', 'var(--amber)');
+    return;
+  }
   saveParlayLegs(gmp);
   updateParlayFab();
-  const cacheKey = (getActiveEvent()?.id||'') + '_' + currentDayKey;
-  if (cache[cacheKey]) renderPanel(currentDayKey, cache[cacheKey]);
+  // Open sheet and render
+  document.getElementById('parlaySheet').classList.add('open');
   renderParlaySheet();
-  showToast('⚡ G-Money parlay loaded!','var(--amber)');
+  setTimeout(() => {
+    const sheet = document.getElementById('parlaySheet');
+    if (sheet) sheet.scrollTo({ top: 300, behavior: 'smooth' });
+  }, 150);
+  showToast('⚡ ' + gmp.length + '-leg G-Money parlay loaded!', 'var(--amber)');
 }
 
 document.addEventListener('DOMContentLoaded', () => {

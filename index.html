@@ -489,9 +489,18 @@ body.light .spread-mini{background:#1A5FA812;color:#1A5FA8;border-color:#1A5FA84
 .variance-badge{font-family:var(--mono);font-size:9px;padding:2px 6px;border-radius:3px;background:#FFB02018;color:var(--amber);border:1px solid #FFB02033;letter-spacing:.06em}
 
 /* ── Parlay Builder ── */
-.parlay-pill{cursor:pointer;transition:transform .1s,box-shadow .15s;user-select:none;}
+.parlay-pill{cursor:pointer;transition:transform .1s,box-shadow .15s,opacity .15s,border-color .15s;user-select:none;}
 .parlay-pill:active{transform:scale(.95);}
+/* Default selected state */
 .parlay-pill.parlay-on{box-shadow:0 0 0 2px var(--amber);position:relative;}
+/* Parlay mode — show dashed amber border on all available pills */
+.parlay-mode-active .parlay-pill{outline:2px dashed var(--amber);outline-offset:2px;}
+/* Parlay mode — game already has a pick — dim other pills in that game */
+.parlay-mode-active .game-row.parlay-picked .parlay-pill:not(.parlay-on){outline:none;opacity:0.35;pointer-events:none;}
+/* Parlay mode — picked pill shows solid with checkmark glow */
+.parlay-mode-active .parlay-pill.parlay-on{outline:2px solid var(--amber);outline-offset:2px;box-shadow:0 0 0 4px rgba(186,117,23,.2);}
+/* Game row picked state */
+.game-row.parlay-picked{border-color:var(--amber)!important;}
 .parlay-fab{position:fixed;bottom:88px;right:16px;z-index:900;background:var(--amber);color:#000;border:none;border-radius:50px;padding:10px 16px;font-family:var(--mono);font-size:12px;font-weight:800;cursor:pointer;box-shadow:0 4px 20px rgba(186,117,23,.5);display:none;align-items:center;gap:6px;transition:transform .15s;}
 .parlay-fab:active{transform:scale(.95);}
 .parlay-fab .pf-count{background:#000;color:var(--amber);border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;}
@@ -869,6 +878,12 @@ body.light .gmoney-pick{color:#5A3ECC;}
     <button id="parlayModeBtn" onclick="toggleParlayMode()" style="flex-shrink:0;font-family:var(--mono);font-size:10px;font-weight:700;padding:4px 9px;border-radius:16px;border:1.5px solid var(--border2);background:var(--card2);color:var(--text3);cursor:pointer;white-space:nowrap;transition:all .2s;">🎰</button>
   </div>
 </header>
+
+<!-- Parlay Done sticky button — shown when parlay mode active with 2+ legs -->
+
+<button id="parlayDoneBtn" onclick="finishParlay()" style="display:none;position:fixed;bottom:80px;left:16px;right:16px;z-index:930;background:var(--amber);color:#000;border:none;border-radius:12px;padding:14px;font-family:var(--mono);font-size:12px;font-weight:800;letter-spacing:.08em;cursor:pointer;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(186,117,23,.5);">
+  ✓ DONE — VIEW SLIP
+</button>
 
 <!-- O/U Direction Picker Modal -->
 
@@ -2790,14 +2805,34 @@ function renderPanel(dayKey, data) {
       <div class="round-label" style="padding:0">${data.round} · ${data.day}</div>
     </div>
     <div id="parlayModeBar" style="background:var(--amber);color:#000;font-family:var(--mono);font-size:10px;font-weight:800;letter-spacing:.1em;padding:6px 12px;margin-bottom:4px;border-radius:6px;display:${_parlayMode ? 'flex' : 'none'};align-items:center;justify-content:space-between;">
-      <span>🎰 PARLAY MODE — TAP ANY ODDS PILL TO ADD</span>
+      <span>🎰 PARLAY MODE — TAP ANY HIGHLIGHTED PILL</span>
       <span id="parlayModeCount">${loadParlayLegs().length} legs</span>
     </div>
   ` + sorted.map(buildRow).join('');
+  // Apply parlay mode visual states after render
+  if (typeof applyParlayModeUI === 'function') applyParlayModeUI();
 }
 
 // Global map for parlay leg data — avoids JSON.stringify in onclick attrs
 const _PLEG = {};
+
+// Called by ML and Spread pills
+function _parlayTap(el) {
+  const key = el.getAttribute('data-pleg');
+  if (!key || !_PLEG[key]) return;
+  toggleParlay(_PLEG[key]);
+}
+
+// Called by O/U pill
+function _ouTap(el) {
+  const gKey     = el.getAttribute('data-ou-game');
+  const away     = el.getAttribute('data-ou-away');
+  const home     = el.getAttribute('data-ou-home');
+  const total    = el.getAttribute('data-ou-total');
+  const overOdds = el.getAttribute('data-ou-over');
+  const underOdds= el.getAttribute('data-ou-under');
+  tapOUParlay(gKey, away, home, total, overOdds, underOdds);
+}
 
 function buildRow(g) {
   const hasVar    = g.varianceData?.high;
@@ -2847,27 +2882,21 @@ function buildRow(g) {
         <span class="score-badge ${isLive?(homeWinning?'leading':'trailing'):'final-'+(homeWinning?'w':'l')}">${g.home?.abbr??''} ${score.homeScore}</span>
        </div>`
     : `<div class="odds-block">${(()=>{
-        const away = g.away?.abbr || '';
-        const home = g.home?.abbr || '';
-        const gKey = g.id;
-        // Store leg data in global map — safe for onclick
-        _PLEG[gKey+'-ml-away'] = {id:gKey+'-ml-away',gameId:gKey,type:'ML',label:away+' ML',odds:awayML,game:away+'v'+home,away,home};
-        _PLEG[gKey+'-ml-home'] = {id:gKey+'-ml-home',gameId:gKey,type:'ML',label:home+' ML',odds:homeML,game:away+'v'+home,away,home};
-        _PLEG[gKey+'-spread']  = {id:gKey+'-spread',gameId:gKey,type:'Spread',label:spreadBadge,odds:'-110',game:away+'v'+home,away,home};
-        _PLEG[gKey+'-ou']      = {id:gKey+'-ou',gameId:gKey,type:'O/U',label:'O/U '+(total||''),odds:'-110',game:away+'v'+home,away,home};
+        const away = (g.away?.abbr || '').toUpperCase();
+        const home = (g.home?.abbr || '').toUpperCase();
+        const gKey = String(g.id || '');
+        _PLEG[gKey+'-ml-away'] = {id:gKey+'-ml-away',gameId:gKey,type:'ML',    label:away+' ML',         odds:String(awayML||'-110'), game:away+'v'+home,away,home};
+        _PLEG[gKey+'-ml-home'] = {id:gKey+'-ml-home',gameId:gKey,type:'ML',    label:home+' ML',         odds:String(homeML||'-110'), game:away+'v'+home,away,home};
+        _PLEG[gKey+'-spread']  = {id:gKey+'-spread', gameId:gKey,type:'Spread',label:String(spreadBadge||''),odds:'-110',             game:away+'v'+home,away,home};
+        const sel_ma = (typeof isParlaySelected==='function') && isParlaySelected(gKey,'ml-away') ? ' parlay-on' : '';
+        const sel_mh = (typeof isParlaySelected==='function') && isParlaySelected(gKey,'ml-home') ? ' parlay-on' : '';
+        const sel_sp = (typeof isParlaySelected==='function') && isParlaySelected(gKey,'spread')  ? ' parlay-on' : '';
+        const sel_ou = (typeof isParlaySelected==='function') && isParlaySelected(gKey,'ou')       ? ' parlay-on' : '';
         return `
-        <span class="ml-badge ${mlCls(awayML)} parlay-pill ${isParlaySelected(gKey,'ml-away')?'parlay-on':''}"
-          onclick="event.stopPropagation();toggleParlay(_PLEG['${gKey}-ml-away'])">
-          ${away} ${awayML||'—'}</span>
-        <span class="ml-badge ${mlCls(homeML)} parlay-pill ${isParlaySelected(gKey,'ml-home')?'parlay-on':''}"
-          onclick="event.stopPropagation();toggleParlay(_PLEG['${gKey}-ml-home'])">
-          ${home} ${homeML||'—'}</span>
-        <span class="spread-mini parlay-pill ${isParlaySelected(gKey,'spread')?'parlay-on':''}"
-          onclick="event.stopPropagation();toggleParlay(_PLEG['${gKey}-spread'])">
-          ${spreadBadge}</span>
-        ${total ? `<span class="ou-mini parlay-pill ${isParlaySelected(gKey,'ou')?'parlay-on':''}"
-          onclick="event.stopPropagation();tapOUParlay('${gKey}','${away}','${home}',${total},'${overOdds}','${underOdds}')">
-          O/U ${total}</span>` : ''}
+        <span class="ml-badge ${mlCls(awayML)} parlay-pill${sel_ma}" data-pleg="${gKey}-ml-away" onclick="event.stopPropagation();_parlayTap(this)">${away} ${awayML||'—'}</span>
+        <span class="ml-badge ${mlCls(homeML)} parlay-pill${sel_mh}" data-pleg="${gKey}-ml-home" onclick="event.stopPropagation();_parlayTap(this)">${home} ${homeML||'—'}</span>
+        <span class="spread-mini parlay-pill${sel_sp}" data-pleg="${gKey}-spread" onclick="event.stopPropagation();_parlayTap(this)">${spreadBadge}</span>
+        ${total ? `<span class="ou-mini parlay-pill${sel_ou}" data-ou-game="${gKey}" data-ou-away="${away}" data-ou-home="${home}" data-ou-total="${total}" data-ou-over="${overOdds}" data-ou-under="${underOdds}" onclick="event.stopPropagation();_ouTap(this)">O/U ${total}</span>` : ''}
         ${hasVar ? '<span class="variance-badge">LINE GAP</span>' : ''}`;
       })()}</div>`;
 
@@ -5027,14 +5056,39 @@ function updateParlayModeBtn() {
   }
 }
 
+function applyParlayModeUI() {
+  // Add/remove parlay-mode-active class on all panels
+  document.querySelectorAll('.panel').forEach(p => {
+    p.classList.toggle('parlay-mode-active', _parlayMode);
+  });
+  // Mark game rows that already have a pick
+  const legs = loadParlayLegs();
+  const pickedGameIds = new Set(legs.map(l => l.gameId));
+  document.querySelectorAll('.game-row').forEach(row => {
+    const gid = row.id.replace('row-', '');
+    row.classList.toggle('parlay-picked', pickedGameIds.has(gid));
+  });
+  // Show/hide done button
+  const doneBtn = document.getElementById('parlayDoneBtn');
+  if (doneBtn) {
+    doneBtn.style.display = (_parlayMode && legs.length >= 2) ? 'flex' : 'none';
+    doneBtn.textContent   = '✓ DONE — VIEW ' + legs.length + '-LEG SLIP';
+  }
+  // Update mode bar
+  const bar = document.getElementById('parlayModeBar');
+  if (bar) {
+    bar.style.display = _parlayMode ? 'flex' : 'none';
+    const cnt = bar.querySelector('#parlayModeCount');
+    if (cnt) cnt.textContent = legs.length + (legs.length === 1 ? ' leg' : ' legs');
+  }
+}
+
 function toggleParlayMode() {
   _parlayMode = !_parlayMode;
   updateParlayModeBtn();
-  // Update mode bar in current panel
-  const bar = document.getElementById('parlayModeBar');
-  if (bar) bar.style.display = _parlayMode ? 'flex' : 'none';
+  applyParlayModeUI();
   if (_parlayMode) {
-    showToast('🎰 Tap any odds pill to add a leg', 'var(--amber)');
+    showToast('🎰 Tap any highlighted odds pill to add a leg', 'var(--amber)');
   } else {
     const legs = loadParlayLegs();
     if (legs.length > 0) openParlaySheet();
@@ -5091,35 +5145,32 @@ function addParlayLeg(leg) {
     legs = legs.filter(l => l.gameId !== leg.gameId);
     if (legs.length >= 12) { showToast('Max 12 legs', 'var(--amber)'); return; }
     legs.push(leg);
-    showToast('✓ ' + leg.label + ' added · ' + legs.length + ' leg' + (legs.length > 1 ? 's' : ''), 'var(--amber)');
+    const n = legs.length;
+    showToast('✓ ' + leg.label + ' added · ' + n + ' leg' + (n > 1 ? 's' : ''), 'var(--amber)');
   }
   saveParlayLegs(legs);
   updateParlayFab();
   updateParlayModeBtn();
-  updateParlayModeCount();
+  applyParlayModeUI();
   const cacheKey = (getActiveEvent()?.id||'') + '_' + currentDayKey;
   if (cache[cacheKey]) renderPanel(currentDayKey, cache[cacheKey]);
 }
 
-// Gate toggleParlay behind parlay mode — auto-activates on first tap
+// Gate toggleParlay — auto-activates parlay mode on first tap
 function toggleParlay(leg) {
   if (!_parlayMode) {
     _parlayMode = true;
     updateParlayModeBtn();
-    const bar = document.getElementById('parlayModeBar');
-    if (bar) bar.style.display = 'flex';
-    showToast('🎰 Parlay mode ON', 'var(--amber)');
+    showToast('🎰 Tap highlighted pills to build your parlay', 'var(--amber)');
   }
   addParlayLeg(leg);
 }
 
-// Called when O/U pill is tapped — shows direction picker
+// Called when O/U pill tapped
 function tapOUParlay(gameId, awayAbbr, homeAbbr, total, overOdds, underOdds) {
   if (!_parlayMode) {
     _parlayMode = true;
     updateParlayModeBtn();
-    const bar = document.getElementById('parlayModeBar');
-    if (bar) bar.style.display = 'flex';
   }
   showOUPicker(gameId, awayAbbr, homeAbbr, total, overOdds, underOdds);
 }
@@ -5171,7 +5222,21 @@ function calcParlayOdds(legs) {
   };
 }
 
+function finishParlay() {
+  // Exit parlay mode and open the slip
+  _parlayMode = false;
+  updateParlayModeBtn();
+  applyParlayModeUI();
+  openParlaySheet();
+}
+
 function openParlaySheet() {
+  // Exit parlay mode when viewing slip
+  if (_parlayMode) {
+    _parlayMode = false;
+    updateParlayModeBtn();
+    applyParlayModeUI();
+  }
   document.getElementById('parlaySheet').classList.add('open');
   document.getElementById('parlayOverlay').style.display = 'block';
   renderParlaySheet();

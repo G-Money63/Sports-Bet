@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -6,6 +7,7 @@
 <title>G-Money Bets</title>
 
 <!-- PWA / Home Screen -->
+
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="G-Money Bets">
@@ -14,6 +16,7 @@
 <meta name="description" content="G-Money Bets — Live odds, spreads and AI picks across NCAA, NBA, NHL and more">
 
 <!-- Home screen icon (canvas-generated, no external image needed) -->
+
 <script>
 (function(){
   try {
@@ -31,6 +34,7 @@
   } catch(e){}
 })();
 </script>
+
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap');
 
@@ -495,20 +499,20 @@ body.light .spread-mini{background:#1A5FA812;color:#1A5FA8;border-color:#1A5FA84
 .parlay-sheet.open{transform:translateY(0);}
 .parlay-sheet-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:12px auto 0;}
 .parlay-sheet-title{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--amber);letter-spacing:.12em;text-transform:uppercase;padding:14px 16px 8px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);}
-.parlay-leg{display:flex;align-items:stretch;gap:0;border-bottom:1px solid var(--border);}
-.parlay-leg-type{width:4px;flex-shrink:0;}
+.parlay-leg{display:flex;align-items:center;gap:0;border-bottom:1px solid var(--border);min-height:58px;}
+.parlay-leg-type{width:4px;align-self:stretch;flex-shrink:0;}
 .parlay-leg-type.ml{background:var(--green);}
 .parlay-leg-type.spread{background:var(--accent);}
 .parlay-leg-type.ou{background:var(--amber);}
-.parlay-leg-num{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--text3);width:24px;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
-.parlay-leg-body{flex:1;min-width:0;padding:10px 8px;}
-.parlay-leg-matchup{font-family:var(--mono);font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.parlay-leg-pick{font-size:14px;font-weight:800;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.parlay-leg-num{font-family:var(--mono);font-size:13px;font-weight:800;color:var(--amber);width:28px;flex-shrink:0;text-align:center;}
+.parlay-leg-body{flex:1;min-width:0;padding:8px 6px;}
+.parlay-leg-pick{font-size:14px;font-weight:800;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2;}
+.parlay-leg-matchup{font-family:var(--mono);font-size:9px;color:var(--text3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .parlay-leg-badge{display:inline-block;font-family:var(--mono);font-size:9px;font-weight:700;padding:1px 6px;border-radius:3px;margin-top:3px;letter-spacing:.04em;}
 .parlay-leg-badge.ml{background:rgba(0,232,130,.12);color:var(--green);border:1px solid rgba(0,232,130,.25);}
 .parlay-leg-badge.spread{background:rgba(91,184,255,.12);color:var(--accent);border:1px solid rgba(91,184,255,.25);}
 .parlay-leg-badge.ou{background:rgba(186,117,23,.12);color:var(--amber);border:1px solid rgba(186,117,23,.25);}
-.parlay-leg-right{display:flex;flex-direction:column;align-items:flex-end;justify-content:center;padding:10px 12px 10px 8px;gap:6px;flex-shrink:0;}
+.parlay-leg-right{display:flex;flex-direction:column;align-items:flex-end;justify-content:center;padding:8px 12px 8px 6px;gap:6px;flex-shrink:0;}
 .parlay-leg-odds{font-family:var(--mono);font-size:14px;font-weight:800;color:var(--accent);}
 .parlay-leg-del{background:none;border:none;color:var(--text3);font-size:13px;cursor:pointer;padding:2px;line-height:1;}
 .gmp-leg{display:flex;align-items:center;gap:6px;padding:3px 0;}
@@ -731,88 +735,95 @@ body.light .gmoney-pick{color:#5A3ECC;}
 
 @media(max-width:400px){.game-row-inner{grid-template-columns:48px 1fr auto;gap:7px}}
 </style>
+
 </head>
 <body>
 
 <!-- ── SETTINGS MODAL ── -->
+
 <div class="modal-bg hidden" id="settingsModal">
   <div class="modal-sheet">
     <div class="sheet-handle"></div>
     <div class="sheet-title">Settings</div>
     <div class="sheet-sub">Configure data sources and preferences</div>
 
-    <!-- DATA SOURCES -->
-    <div class="settings-sect">
-      <div class="settings-sect-title">Data Sources</div>
-      <div class="source-grid">
-        <div class="source-tile active" id="src-tile-ai">
-          <div class="sport-icon">🤖</div>
-          <div class="source-tile-name">AI Search</div>
-          <div class="source-tile-desc">Always active · fallback</div>
-        </div>
-        <div class="source-tile" id="src-tile-oddsapi" onclick="toggleSourceTile('oddsapi')">
-          <div class="sport-icon">📊</div>
-          <div class="source-tile-name">The Odds API</div>
-          <div class="source-tile-desc">40+ books · live lines</div>
-        </div>
-        <div class="source-tile" id="src-tile-kalshi" onclick="toggleSourceTile('kalshi')">
-          <div class="sport-icon">🔮</div>
-          <div class="source-tile-name">Kalshi</div>
-          <div class="source-tile-desc">Event contracts · prob %</div>
-        </div>
-        <div class="source-tile" id="src-tile-compare">
-          <div class="sport-icon">⚖️</div>
-          <div class="source-tile-name">Line Compare</div>
-          <div class="source-tile-desc">Auto on w/ Odds API</div>
-        </div>
-      </div>
+```
+<!-- DATA SOURCES -->
+<div class="settings-sect">
+  <div class="settings-sect-title">Data Sources</div>
+  <div class="source-grid">
+    <div class="source-tile active" id="src-tile-ai">
+      <div class="sport-icon">🤖</div>
+      <div class="source-tile-name">AI Search</div>
+      <div class="source-tile-desc">Always active · fallback</div>
     </div>
-
-    <!-- ODDS API KEY -->
-    <div class="settings-sect" id="oddsApiSection" style="display:none">
-      <div class="settings-sect-title">The Odds API Key</div>
-      <div class="api-row">
-        <div class="api-label">Free key at the-odds-api.com (500 req/mo free)</div>
-        <div class="api-input-row">
-          <input class="api-input" id="oddsApiKeyInput" type="password" placeholder="Paste your API key here" />
-          <button class="api-save-btn" onclick="saveOddsApiKey()">Save</button>
-        </div>
-        <div class="api-status" id="oddsApiStatus"></div>
-      </div>
+    <div class="source-tile" id="src-tile-oddsapi" onclick="toggleSourceTile('oddsapi')">
+      <div class="sport-icon">📊</div>
+      <div class="source-tile-name">The Odds API</div>
+      <div class="source-tile-desc">40+ books · live lines</div>
     </div>
-
-    <!-- PREFERRED BOOK -->
-    <div class="settings-sect">
-      <div class="settings-sect-title">Preferred Sportsbook (shown in quick view)</div>
-      <select class="book-select" id="prefBookSelect" onchange="savePrefBook()">
-        <option value="consensus">Consensus (best available)</option>
-        <option value="DraftKings">DraftKings</option>
-        <option value="FanDuel">FanDuel</option>
-        <option value="BetMGM">BetMGM</option>
-        <option value="Caesars">Caesars</option>
-        <option value="PointsBet">PointsBet</option>
-        <option value="BetUS">BetUS</option>
-        <option value="bet365">bet365</option>
-      </select>
+    <div class="source-tile" id="src-tile-kalshi" onclick="toggleSourceTile('kalshi')">
+      <div class="sport-icon">🔮</div>
+      <div class="source-tile-name">Kalshi</div>
+      <div class="source-tile-desc">Event contracts · prob %</div>
     </div>
-
-    <!-- SPORT SELECT -->
-    <div class="settings-sect">
-      <div class="settings-sect-title">Active Event</div>
-      <div id="sportGrid"></div>
+    <div class="source-tile" id="src-tile-compare">
+      <div class="sport-icon">⚖️</div>
+      <div class="source-tile-name">Line Compare</div>
+      <div class="source-tile-desc">Auto on w/ Odds API</div>
     </div>
+  </div>
+</div>
 
-    <button class="kick-btn" style="width:100%;justify-content:center;margin-top:0" onclick="closeSettings()">Done</button>
+<!-- ODDS API KEY -->
+<div class="settings-sect" id="oddsApiSection" style="display:none">
+  <div class="settings-sect-title">The Odds API Key</div>
+  <div class="api-row">
+    <div class="api-label">Free key at the-odds-api.com (500 req/mo free)</div>
+    <div class="api-input-row">
+      <input class="api-input" id="oddsApiKeyInput" type="password" placeholder="Paste your API key here" />
+      <button class="api-save-btn" onclick="saveOddsApiKey()">Save</button>
+    </div>
+    <div class="api-status" id="oddsApiStatus"></div>
+  </div>
+</div>
+
+<!-- PREFERRED BOOK -->
+<div class="settings-sect">
+  <div class="settings-sect-title">Preferred Sportsbook (shown in quick view)</div>
+  <select class="book-select" id="prefBookSelect" onchange="savePrefBook()">
+    <option value="consensus">Consensus (best available)</option>
+    <option value="DraftKings">DraftKings</option>
+    <option value="FanDuel">FanDuel</option>
+    <option value="BetMGM">BetMGM</option>
+    <option value="Caesars">Caesars</option>
+    <option value="PointsBet">PointsBet</option>
+    <option value="BetUS">BetUS</option>
+    <option value="bet365">bet365</option>
+  </select>
+</div>
+
+<!-- SPORT SELECT -->
+<div class="settings-sect">
+  <div class="settings-sect-title">Active Event</div>
+  <div id="sportGrid"></div>
+</div>
+
+<button class="kick-btn" style="width:100%;justify-content:center;margin-top:0" onclick="closeSettings()">Done</button>
+```
+
   </div>
 </div>
 
 <!-- Install nudge (shown in browser, hidden when already installed) -->
+
 <div class="install-nudge" id="installNudge" style="display:none">
   <span>📲 <strong>Add to Home Screen</strong> — tap Share → "Add to Home Screen" for quick access</span>
   <button class="nudge-close" onclick="dismissNudge()">✕</button>
 </div>
 
 <!-- ── HEADER ── -->
+
 <header class="header">
   <div class="header-top">
     <div class="logo-area">
@@ -844,6 +855,7 @@ body.light .gmoney-pick{color:#5A3ECC;}
   </div>
 
   <!-- HOME + BRACKET + PICKS quick nav -->
+
   <div style="display:flex;align-items:center;gap:5px;margin-bottom:8px">
     <button id="homeNavBtn" class="home-nav-btn active" onclick="showHomePanel()">🏠 Home</button>
     <button id="bracketNavBtn" class="home-nav-btn" onclick="showBracketPanel()">🏆 Bracket</button>
@@ -860,20 +872,25 @@ body.light .gmoney-pick{color:#5A3ECC;}
 </header>
 
 <!-- HOME PANEL -->
+
 <div id="homePanel" class="main"></div>
 
 <!-- BRACKET PANEL -->
+
 <div id="bracketPanel" class="main" style="display:none"></div>
 
 <!-- PICKS PANEL -->
+
 <div id="picksPanel" class="main" style="display:none"></div>
 
 <!-- ── Parlay FAB ── -->
+
 <button class="parlay-fab" id="parlayFab" onclick="openParlaySheet()">
   🎰 PARLAY <span class="pf-count" id="parlayCount">0</span>
 </button>
 
 <!-- ── Parlay Sheet ── -->
+
 <div class="parlay-sheet" id="parlaySheet">
   <div class="parlay-sheet-handle"></div>
   <div class="parlay-sheet-title">
@@ -885,6 +902,7 @@ body.light .gmoney-pick{color:#5A3ECC;}
 <div id="parlayOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:940;" onclick="closeParlaySheet()"></div>
 
 <!-- GAME PANELS -->
+
 <div class="main" id="mainPanels" style="display:none"></div>
 <!-- VERSION FOOTER -->
 <div class="ver-footer" id="verFooter">
@@ -896,6 +914,7 @@ body.light .gmoney-pick{color:#5A3ECC;}
 </div>
 
 <!-- DEBUG PANEL -->
+
 <div class="debug-overlay hidden" id="debugOverlay" onclick="if(event.target===this)toggleDebugPanel()">
   <div class="debug-sheet">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
@@ -5169,23 +5188,24 @@ function renderParlaySheet() {
     </div>`;
   } else {
     html += legs.map((l, i) => {
-      // Normalize type — handle any legacy values
+      // Normalize type
       const t = (l.type||'').toUpperCase();
       const typeCls   = t === 'ML' ? 'ml' : t === 'SPREAD' ? 'spread' : 'ou';
       const typeLabel = t === 'ML' ? 'Moneyline' : t === 'SPREAD' ? 'Spread' : 'Over/Under';
-      // Build matchup from away/home fields (never from game string)
-      const away = (l.away || l.game?.split('v')[0] || '').toUpperCase();
-      const home = (l.home || l.game?.split('v').slice(-1)[0] || '').toUpperCase();
-      const matchup = (away && home) ? away + ' vs ' + home : (away || home || '');
+      // Build matchup — use away/home fields, fall back to parsing label
+      const away = l.away ? String(l.away).toUpperCase() : '';
+      const home = l.home ? String(l.home).toUpperCase() : '';
+      const matchup = (away && home) ? away + ' vs ' + home : '';
       // Odds display
-      const oddsNum = parseInt(String(l.odds||'-110').replace('+',''));
-      const oddsStr = oddsNum > 0 ? '+' + oddsNum : String(l.odds||'-110');
+      const oddsRaw = String(l.odds||'-110');
+      const oddsNum = parseInt(oddsRaw.replace('+',''));
+      const oddsStr = oddsNum > 0 ? '+' + oddsNum : oddsRaw;
       return `<div class="parlay-leg">
         <div class="parlay-leg-type ${typeCls}"></div>
         <div class="parlay-leg-num">${i + 1}</div>
         <div class="parlay-leg-body">
-          <div class="parlay-leg-matchup">${matchup}</div>
           <div class="parlay-leg-pick">${l.label || ''}</div>
+          ${matchup ? `<div class="parlay-leg-matchup">${matchup}</div>` : ''}
           <span class="parlay-leg-badge ${typeCls}">${typeLabel}</span>
         </div>
         <div class="parlay-leg-right">
@@ -5311,5 +5331,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 });
 </script>
+
 </body>
 </html>

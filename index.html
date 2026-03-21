@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +6,6 @@
 <title>G-Money Bets</title>
 
 <!-- PWA / Home Screen -->
-
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="G-Money Bets">
@@ -16,7 +14,6 @@
 <meta name="description" content="G-Money Bets — Live odds, spreads and AI picks across NCAA, NBA, NHL and more">
 
 <!-- Home screen icon (canvas-generated, no external image needed) -->
-
 <script>
 (function(){
   try {
@@ -34,7 +31,6 @@
   } catch(e){}
 })();
 </script>
-
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap');
 
@@ -721,95 +717,88 @@ body.light .gmoney-pick{color:#5A3ECC;}
 
 @media(max-width:400px){.game-row-inner{grid-template-columns:48px 1fr auto;gap:7px}}
 </style>
-
 </head>
 <body>
 
 <!-- ── SETTINGS MODAL ── -->
-
 <div class="modal-bg hidden" id="settingsModal">
   <div class="modal-sheet">
     <div class="sheet-handle"></div>
     <div class="sheet-title">Settings</div>
     <div class="sheet-sub">Configure data sources and preferences</div>
 
-```
-<!-- DATA SOURCES -->
-<div class="settings-sect">
-  <div class="settings-sect-title">Data Sources</div>
-  <div class="source-grid">
-    <div class="source-tile active" id="src-tile-ai">
-      <div class="sport-icon">🤖</div>
-      <div class="source-tile-name">AI Search</div>
-      <div class="source-tile-desc">Always active · fallback</div>
+    <!-- DATA SOURCES -->
+    <div class="settings-sect">
+      <div class="settings-sect-title">Data Sources</div>
+      <div class="source-grid">
+        <div class="source-tile active" id="src-tile-ai">
+          <div class="sport-icon">🤖</div>
+          <div class="source-tile-name">AI Search</div>
+          <div class="source-tile-desc">Always active · fallback</div>
+        </div>
+        <div class="source-tile" id="src-tile-oddsapi" onclick="toggleSourceTile('oddsapi')">
+          <div class="sport-icon">📊</div>
+          <div class="source-tile-name">The Odds API</div>
+          <div class="source-tile-desc">40+ books · live lines</div>
+        </div>
+        <div class="source-tile" id="src-tile-kalshi" onclick="toggleSourceTile('kalshi')">
+          <div class="sport-icon">🔮</div>
+          <div class="source-tile-name">Kalshi</div>
+          <div class="source-tile-desc">Event contracts · prob %</div>
+        </div>
+        <div class="source-tile" id="src-tile-compare">
+          <div class="sport-icon">⚖️</div>
+          <div class="source-tile-name">Line Compare</div>
+          <div class="source-tile-desc">Auto on w/ Odds API</div>
+        </div>
+      </div>
     </div>
-    <div class="source-tile" id="src-tile-oddsapi" onclick="toggleSourceTile('oddsapi')">
-      <div class="sport-icon">📊</div>
-      <div class="source-tile-name">The Odds API</div>
-      <div class="source-tile-desc">40+ books · live lines</div>
+
+    <!-- ODDS API KEY -->
+    <div class="settings-sect" id="oddsApiSection" style="display:none">
+      <div class="settings-sect-title">The Odds API Key</div>
+      <div class="api-row">
+        <div class="api-label">Free key at the-odds-api.com (500 req/mo free)</div>
+        <div class="api-input-row">
+          <input class="api-input" id="oddsApiKeyInput" type="password" placeholder="Paste your API key here" />
+          <button class="api-save-btn" onclick="saveOddsApiKey()">Save</button>
+        </div>
+        <div class="api-status" id="oddsApiStatus"></div>
+      </div>
     </div>
-    <div class="source-tile" id="src-tile-kalshi" onclick="toggleSourceTile('kalshi')">
-      <div class="sport-icon">🔮</div>
-      <div class="source-tile-name">Kalshi</div>
-      <div class="source-tile-desc">Event contracts · prob %</div>
+
+    <!-- PREFERRED BOOK -->
+    <div class="settings-sect">
+      <div class="settings-sect-title">Preferred Sportsbook (shown in quick view)</div>
+      <select class="book-select" id="prefBookSelect" onchange="savePrefBook()">
+        <option value="consensus">Consensus (best available)</option>
+        <option value="DraftKings">DraftKings</option>
+        <option value="FanDuel">FanDuel</option>
+        <option value="BetMGM">BetMGM</option>
+        <option value="Caesars">Caesars</option>
+        <option value="PointsBet">PointsBet</option>
+        <option value="BetUS">BetUS</option>
+        <option value="bet365">bet365</option>
+      </select>
     </div>
-    <div class="source-tile" id="src-tile-compare">
-      <div class="sport-icon">⚖️</div>
-      <div class="source-tile-name">Line Compare</div>
-      <div class="source-tile-desc">Auto on w/ Odds API</div>
+
+    <!-- SPORT SELECT -->
+    <div class="settings-sect">
+      <div class="settings-sect-title">Active Event</div>
+      <div id="sportGrid"></div>
     </div>
-  </div>
-</div>
 
-<!-- ODDS API KEY -->
-<div class="settings-sect" id="oddsApiSection" style="display:none">
-  <div class="settings-sect-title">The Odds API Key</div>
-  <div class="api-row">
-    <div class="api-label">Free key at the-odds-api.com (500 req/mo free)</div>
-    <div class="api-input-row">
-      <input class="api-input" id="oddsApiKeyInput" type="password" placeholder="Paste your API key here" />
-      <button class="api-save-btn" onclick="saveOddsApiKey()">Save</button>
-    </div>
-    <div class="api-status" id="oddsApiStatus"></div>
-  </div>
-</div>
-
-<!-- PREFERRED BOOK -->
-<div class="settings-sect">
-  <div class="settings-sect-title">Preferred Sportsbook (shown in quick view)</div>
-  <select class="book-select" id="prefBookSelect" onchange="savePrefBook()">
-    <option value="consensus">Consensus (best available)</option>
-    <option value="DraftKings">DraftKings</option>
-    <option value="FanDuel">FanDuel</option>
-    <option value="BetMGM">BetMGM</option>
-    <option value="Caesars">Caesars</option>
-    <option value="PointsBet">PointsBet</option>
-    <option value="BetUS">BetUS</option>
-    <option value="bet365">bet365</option>
-  </select>
-</div>
-
-<!-- SPORT SELECT -->
-<div class="settings-sect">
-  <div class="settings-sect-title">Active Event</div>
-  <div id="sportGrid"></div>
-</div>
-
-<button class="kick-btn" style="width:100%;justify-content:center;margin-top:0" onclick="closeSettings()">Done</button>
-```
-
+    <button class="kick-btn" style="width:100%;justify-content:center;margin-top:0" onclick="closeSettings()">Done</button>
   </div>
 </div>
 
 <!-- Install nudge (shown in browser, hidden when already installed) -->
-
 <div class="install-nudge" id="installNudge" style="display:none">
   <span>📲 <strong>Add to Home Screen</strong> — tap Share → "Add to Home Screen" for quick access</span>
   <button class="nudge-close" onclick="dismissNudge()">✕</button>
 </div>
 
 <!-- ── HEADER ── -->
-
 <header class="header">
   <div class="header-top">
     <div class="logo-area">
@@ -841,7 +830,6 @@ body.light .gmoney-pick{color:#5A3ECC;}
   </div>
 
   <!-- HOME + BRACKET + PICKS quick nav -->
-
   <div style="display:flex;align-items:center;gap:5px;margin-bottom:8px">
     <button id="homeNavBtn" class="home-nav-btn active" onclick="showHomePanel()">🏠 Home</button>
     <button id="bracketNavBtn" class="home-nav-btn" onclick="showBracketPanel()">🏆 Bracket</button>
@@ -858,25 +846,20 @@ body.light .gmoney-pick{color:#5A3ECC;}
 </header>
 
 <!-- HOME PANEL -->
-
 <div id="homePanel" class="main"></div>
 
 <!-- BRACKET PANEL -->
-
 <div id="bracketPanel" class="main" style="display:none"></div>
 
 <!-- PICKS PANEL -->
-
 <div id="picksPanel" class="main" style="display:none"></div>
 
 <!-- ── Parlay FAB ── -->
-
 <button class="parlay-fab" id="parlayFab" onclick="openParlaySheet()">
   🎰 PARLAY <span class="pf-count" id="parlayCount">0</span>
 </button>
 
 <!-- ── Parlay Sheet ── -->
-
 <div class="parlay-sheet" id="parlaySheet">
   <div class="parlay-sheet-handle"></div>
   <div class="parlay-sheet-title">
@@ -888,7 +871,6 @@ body.light .gmoney-pick{color:#5A3ECC;}
 <div id="parlayOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:940;" onclick="closeParlaySheet()"></div>
 
 <!-- GAME PANELS -->
-
 <div class="main" id="mainPanels" style="display:none"></div>
 <!-- VERSION FOOTER -->
 <div class="ver-footer" id="verFooter">
@@ -900,7 +882,6 @@ body.light .gmoney-pick{color:#5A3ECC;}
 </div>
 
 <!-- DEBUG PANEL -->
-
 <div class="debug-overlay hidden" id="debugOverlay" onclick="if(event.target===this)toggleDebugPanel()">
   <div class="debug-sheet">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
@@ -2083,41 +2064,139 @@ const STATIC_GAMES = {
   'ncaam-w1_sat': {
     day:'Saturday, March 21, 2026', round:'Second Round — Round of 32',
     games:[
-      {id:'s1',timeET:'12:10 PM ET',network:'CBS',region:'East',
-       away:{name:'Duke Blue Devils',abbr:'DUKE',seed:1,record:'32-2'},
-       home:{name:'Ohio State / TCU winner',abbr:'OSU/TCU',seed:9,record:'TBD'},
-       moneyline:{away:'-600',home:'+450'},
-       spread:{line:-11.5,favTeam:'Duke Blue Devils',juice:'-110'},
-       total:{line:141.5,overJuice:'-110',underJuice:'-110'},
-       firstHalf:{moneyline:{away:'-280',home:'+230'},spread:{line:-6.0,favTeam:'Duke Blue Devils'},total:{line:69.5}},
-       books:[{book:'DraftKings',awayML:'-600',homeML:'+450',spread:'-11.5',total:'141.5'},{book:'FanDuel',awayML:'-580',homeML:'+430',spread:'-11.5',total:'141.5'},{book:'BetMGM',awayML:'-600',homeML:'+470',spread:'-12.0',total:'142.0'},{book:'Caesars',awayML:'-600',homeML:'+450',spread:'-11.5',total:'141.0'},{book:'BetUS',awayML:'-580',homeML:'+440',spread:'-11.5',total:'141.5'}],
-       playerProps:[{player:'Cameron Boozer',team:'Duke',market:'Points',line:21.5,overOdds:'-112',underOdds:'-108'},{player:'Cameron Boozer',team:'Duke',market:'Rebounds',line:10.5,overOdds:'+100',underOdds:'-120'}],
-       sharpAngle:'Second round opponent TBD — check back Saturday morning for updated matchup and sharp angle once Thursday results are in.'},
-      {id:'s2',timeET:'2:40 PM ET',network:'CBS',region:'Midwest',
-       away:{name:'Michigan Wolverines',abbr:'MICH',seed:1,record:'31-3'},
-       home:{name:'Georgia / Saint Louis winner',abbr:'UGA/SLU',seed:9,record:'TBD'},
-       moneyline:{away:'-450',home:'+360'},
-       spread:{line:-9.5,favTeam:'Michigan Wolverines',juice:'-110'},
-       total:{line:143.5,overJuice:'-110',underJuice:'-110'},
-       firstHalf:{moneyline:{away:'-220',home:'+185'},spread:{line:-5.0,favTeam:'Michigan Wolverines'},total:{line:71.5}},
-       books:[{book:'DraftKings',awayML:'-450',homeML:'+360',spread:'-9.5',total:'143.5'},{book:'FanDuel',awayML:'-440',homeML:'+350',spread:'-9.5',total:'143.5'},{book:'BetMGM',awayML:'-450',homeML:'+370',spread:'-10.0',total:'144.0'},{book:'Caesars',awayML:'-450',homeML:'+360',spread:'-9.5',total:'143.0'},{book:'BetUS',awayML:'-440',homeML:'+355',spread:'-9.5',total:'143.5'}],
-       playerProps:[{player:'Tre Donaldson',team:'Michigan',market:'Points',line:18.5,overOdds:'-112',underOdds:'-108'},{player:'Danny Wolf',team:'Michigan',market:'Rebounds',line:10.5,overOdds:'-110',underOdds:'-110'}],
-       sharpAngle:'Second round opponent TBD — refresh Saturday morning for live matchup. Michigan is the title favorite and should advance comfortably.'}
+      {id:'s1',timeET:'12:10 PM ET',network:'TBS',region:'Midwest',
+       away:{name:'Saint Louis Billikens',abbr:'SLU',seed:9,record:'28-6'},
+       home:{name:'Michigan Wolverines',abbr:'MICH',seed:1,record:'32-3'},
+       moneyline:{away:'+550',home:'-800'},
+       spread:{line:-12.5,favTeam:'Michigan Wolverines',juice:'-110'},
+       total:{line:161.5,overJuice:'-110',underJuice:'-110'},
+       books:[{book:'DraftKings',awayML:'+550',homeML:'-800',spread:'-12.5',total:'161.5'},{book:'FanDuel',awayML:'+530',homeML:'-780',spread:'-12.5',total:'161.5'},{book:'BetMGM',awayML:'+575',homeML:'-825',spread:'-12.5',total:'161.5'},{book:'Caesars',awayML:'+550',homeML:'-800',spread:'-13.0',total:'162.0'}],
+       sharpAngle:'Both teams scored 100+ in R1. Michigan is the class of the Midwest but SLU is on a 21-0 first-half run form. OVER 161.5 is the best bet — this pace favors both teams scoring in the 80s.'},
+      {id:'s2',timeET:'12:40 PM ET',network:'CBS',region:'East',
+       away:{name:'Louisville Cardinals',abbr:'LOU',seed:6,record:'23-11'},
+       home:{name:'Michigan State Spartans',abbr:'MSU',seed:3,record:'25-8'},
+       moneyline:{away:'+170',home:'-205'},
+       spread:{line:-4.5,favTeam:'Michigan State Spartans',juice:'-110'},
+       total:{line:150.5,overJuice:'-110',underJuice:'-110'},
+       books:[{book:'DraftKings',awayML:'+170',homeML:'-205',spread:'-4.5',total:'150.5'},{book:'FanDuel',awayML:'+168',homeML:'-200',spread:'-4.5',total:'150.5'},{book:'BetMGM',awayML:'+175',homeML:'-210',spread:'-4.5',total:'150.5'},{book:'Caesars',awayML:'+170',homeML:'-205',spread:'-5.0',total:'151.0'}],
+       sharpAngle:'Louisville without Mikel Brown Jr is a different team. MSU is healthy and rolling after blowing out NDSU. Take MSU -4.5 — the Spartans are the better team and Brown Jr absence is huge.'},
+      {id:'s3',timeET:'2:45 PM ET',network:'TNT',region:'East',
+       away:{name:'TCU Horned Frogs',abbr:'TCU',seed:9,record:'23-11'},
+       home:{name:'Duke Blue Devils',abbr:'DUKE',seed:1,record:'33-2'},
+       moneyline:{away:'+525',home:'-750'},
+       spread:{line:-10.5,favTeam:'Duke Blue Devils',juice:'-110'},
+       total:{line:140.5,overJuice:'-110',underJuice:'-110'},
+       books:[{book:'DraftKings',awayML:'+525',homeML:'-750',spread:'-10.5',total:'140.5'},{book:'FanDuel',awayML:'+510',homeML:'-730',spread:'-10.5',total:'140.5'},{book:'BetMGM',awayML:'+540',homeML:'-775',spread:'-10.5',total:'140.5'},{book:'Caesars',awayML:'+525',homeML:'-750',spread:'-11.0',total:'141.0'}],
+       sharpAngle:'Duke barely escaped Siena trailing at halftime. TCU covered +1.5 vs OSU. Take TCU +10.5 — Duke without Ngongba and Foster is vulnerable inside. TCU covers the big spread in a close game.'},
+      {id:'s4',timeET:'6:10 PM ET',network:'TBS',region:'South',
+       away:{name:'Texas A&M Aggies',abbr:'TAM',seed:10,record:'21-11'},
+       home:{name:'Houston Cougars',abbr:'HOU',seed:2,record:'28-6'},
+       moneyline:{away:'+400',home:'-535'},
+       spread:{line:-10.5,favTeam:'Houston Cougars',juice:'-110'},
+       total:{line:142.5,overJuice:'-110',underJuice:'-110'},
+       books:[{book:'DraftKings',awayML:'+400',homeML:'-535',spread:'-10.5',total:'142.5'},{book:'FanDuel',awayML:'+395',homeML:'-520',spread:'-10.5',total:'142.5'},{book:'BetMGM',awayML:'+410',homeML:'-550',spread:'-10.5',total:'142.5'},{book:'Caesars',awayML:'+400',homeML:'-535',spread:'-11.0',total:'143.0'}],
+       sharpAngle:'Houston is a Final Four contender with elite defense and depth. TAM is an upset-minded Cinderella but Bucky Ball is not enough here. Take HOU -10.5 and the UNDER — Cougars control tempo.'},
+      {id:'s5',timeET:'7:10 PM ET',network:'CBS',region:'West',
+       away:{name:'Texas Longhorns',abbr:'TEX',seed:11,record:'18-14'},
+       home:{name:'Gonzaga Bulldogs',abbr:'GONZ',seed:3,record:'30-3'},
+       moneyline:{away:'+205',home:'-250'},
+       spread:{line:-6.5,favTeam:'Gonzaga Bulldogs',juice:'-110'},
+       total:{line:147.5,overJuice:'-110',underJuice:'-110'},
+       books:[{book:'DraftKings',awayML:'+205',homeML:'-250',spread:'-6.5',total:'147.5'},{book:'FanDuel',awayML:'+200',homeML:'-245',spread:'-6.5',total:'147.5'},{book:'BetMGM',awayML:'+210',homeML:'-260',spread:'-6.5',total:'147.5'},{book:'Caesars',awayML:'+205',homeML:'-250',spread:'-7.0',total:'148.0'}],
+       sharpAngle:'Texas beat BYU but Gonzaga is a different challenge. Gonzaga top-10 defense by KenPom suffocates Texas offense. Take GONZ -6.5 — but Texas keeps it closer than people think. OVER has value.'},
+      {id:'s6',timeET:'8:45 PM ET',network:'TNT',region:'Midwest',
+       away:{name:'Vanderbilt Commodores',abbr:'VAN',seed:5,record:'23-9'},
+       home:{name:'Nebraska Cornhuskers',abbr:'NEB',seed:4,record:'25-9'},
+       moneyline:{away:'-162',home:'+136'},
+       spread:{line:-1.5,favTeam:'Vanderbilt Commodores',juice:'-110'},
+       total:{line:147.5,overJuice:'-110',underJuice:'-110'},
+       books:[{book:'DraftKings',awayML:'-162',homeML:'+136',spread:'-1.5',total:'147.5'},{book:'FanDuel',awayML:'-160',homeML:'+134',spread:'-1.5',total:'147.5'},{book:'BetMGM',awayML:'-165',homeML:'+140',spread:'-2.5',total:'147.5'},{book:'Caesars',awayML:'-162',homeML:'+136',spread:'-2.0',total:'148.0'}],
+       sharpAngle:'VAN is underseeded and motivated. Nebraska got their first NCAA win but can they back it up? Take VAN -1.5 — Commodores are the better team seeding be damned. Tanner is elite in March.'},
+      {id:'s7',timeET:'7:50 PM ET',network:'truTV',region:'East',
+       away:{name:'VCU Rams',abbr:'VCU',seed:11,record:'26-8'},
+       home:{name:'Illinois Fighting Illini',abbr:'ILL',seed:3,record:'24-8'},
+       moneyline:{away:'+425',home:'-575'},
+       spread:{line:-11.5,favTeam:'Illinois Fighting Illini',juice:'-110'},
+       total:{line:151.5,overJuice:'-110',underJuice:'-110'},
+       books:[{book:'DraftKings',awayML:'+425',homeML:'-575',spread:'-11.5',total:'151.5'},{book:'FanDuel',awayML:'+415',homeML:'-560',spread:'-11.5',total:'151.5'},{book:'BetMGM',awayML:'+440',homeML:'-600',spread:'-11.5',total:'151.5'},{book:'Caesars',awayML:'+425',homeML:'-575',spread:'-12.0',total:'152.0'}],
+       sharpAngle:'VCU just came back from 19 down in OT. Illinois blew out Penn by 35. Take ILL -11.5 — Mirkovic and 5 double-digit scorers are too much for VCU. Underwood is 4-0 ATS as double-digit fav in NCAA.'},
+      {id:'s8',timeET:'9:45 PM ET',network:'truTV',region:'Midwest',
+       away:{name:'High Point Panthers',abbr:'HPU',seed:12,record:'27-8'},
+       home:{name:'Arkansas Razorbacks',abbr:'ARK',seed:4,record:'25-9'},
+       moneyline:{away:'+425',home:'-575'},
+       spread:{line:-11.5,favTeam:'Arkansas Razorbacks',juice:'-110'},
+       total:{line:168.5,overJuice:'-110',underJuice:'-110'},
+       books:[{book:'DraftKings',awayML:'+425',homeML:'-575',spread:'-11.5',total:'168.5'},{book:'FanDuel',awayML:'+415',homeML:'-560',spread:'-11.5',total:'168.5'},{book:'BetMGM',awayML:'+440',homeML:'-600',spread:'-11.5',total:'168.5'},{book:'Caesars',awayML:'+425',homeML:'-575',spread:'-12.0',total:'169.0'}],
+       sharpAngle:'HPU beat Wisconsin and is for real. But Arkansas freshman Darius Acuff is the best player in this game. Take HPU +11.5 — 12-seeds are 10-2 ATS following upset wins. And the OVER 168.5 is a lock — HPU averages 90 points.'}
     ]
   },
   'ncaam-w1_sun': {
     day:'Sunday, March 22, 2026', round:'Second Round — Round of 32',
     games:[
-      {id:'u1',timeET:'12:10 PM ET',network:'CBS',region:'West',
-       away:{name:'Arizona Wildcats',abbr:'ARIZ',seed:1,record:'32-2'},
-       home:{name:'Villanova / Utah State winner',abbr:'NOVA/USU',seed:9,record:'TBD'},
-       moneyline:{away:'-500',home:'+390'},
-       spread:{line:-10.5,favTeam:'Arizona Wildcats',juice:'-110'},
-       total:{line:150.5,overJuice:'-110',underJuice:'-110'},
-       firstHalf:{moneyline:{away:'-240',home:'+200'},spread:{line:-5.5,favTeam:'Arizona Wildcats'},total:{line:74.5}},
-       books:[{book:'DraftKings',awayML:'-500',homeML:'+390',spread:'-10.5',total:'150.5'},{book:'FanDuel',awayML:'-490',homeML:'+380',spread:'-10.5',total:'150.5'},{book:'BetMGM',awayML:'-500',homeML:'+400',spread:'-11.0',total:'151.0'},{book:'Caesars',awayML:'-500',homeML:'+390',spread:'-10.5',total:'150.0'},{book:'BetUS',awayML:'-490',homeML:'+385',spread:'-10.5',total:'150.5'}],
-       playerProps:[{player:'Brayden Burries',team:'Arizona',market:'Points',line:20.5,overOdds:'-115',underOdds:'-105'},{player:'Koa Peat',team:'Arizona',market:'Points',line:18.5,overOdds:'-110',underOdds:'-110'}],
-       sharpAngle:'Second round opponent TBD — refresh Sunday morning for live updated matchup and odds once Friday results are in.'}
+      {id:'u1',timeET:'12:10 PM ET',network:'CBS',region:'South',
+       away:{name:'Santa Clara Broncos',abbr:'SCU',seed:10,record:'24-11'},
+       home:{name:'Iowa State Cyclones',abbr:'ISU',seed:2,record:'27-7'},
+       moneyline:{away:'+218',home:'-270'},
+       spread:{line:-5.5,favTeam:'Iowa State Cyclones',juice:'-110'},
+       total:{line:145.5,overJuice:'-110',underJuice:'-110'},
+       books:[{book:'DraftKings',awayML:'+218',homeML:'-270',spread:'-5.5',total:'145.5'},{book:'FanDuel',awayML:'+215',homeML:'-265',spread:'-5.5',total:'145.5'},{book:'BetMGM',awayML:'+225',homeML:'-280',spread:'-5.5',total:'145.5'},{book:'Caesars',awayML:'+218',homeML:'-270',spread:'-6.0',total:'146.0'}],
+       sharpAngle:'SCU is a 3-point shooting team that upsets good teams. Iowa State is a Final Four contender. Take ISU -5.5 — Cyclones are too deep and athletic. But keep an eye on SCU +6 — they covered all year.'},
+      {id:'u2',timeET:'2:50 PM ET',network:'CBS',region:'South',
+       away:{name:'Kentucky Wildcats',abbr:'UK',seed:7,record:'21-13'},
+       home:{name:'Iowa State Cyclones',abbr:'ISU',seed:2,record:'27-7'},
+       moneyline:{away:'+180',home:'-218'},
+       spread:{line:-4.5,favTeam:'Iowa State Cyclones',juice:'-110'},
+       total:{line:145.5,overJuice:'-110',underJuice:'-110'},
+       books:[{book:'DraftKings',awayML:'+180',homeML:'-218',spread:'+4.5',total:'145.5'},{book:'FanDuel',awayML:'+178',homeML:'-215',spread:'+4.5',total:'145.5'},{book:'BetMGM',awayML:'+185',homeML:'-225',spread:'+5.0',total:'146.0'},{book:'Caesars',awayML:'+180',homeML:'-218',spread:'+4.5',total:'145.0'}],
+       sharpAngle:'Wait — SCU beat Iowa State. This game is Kentucky vs the SCU winner. TBD matchup — check live schedule for updated odds.'},
+      {id:'u3',timeET:'5:15 PM ET',network:'CBS',region:'West',
+       away:{name:"St. John's Red Storm",abbr:'SJU',seed:5,record:'28-6'},
+       home:{name:'Kansas Jayhawks',abbr:'KU',seed:4,record:'23-10'},
+       moneyline:{away:'-162',home:'+136'},
+       spread:{line:-3.5,favTeam:"St. John's Red Storm",juice:'-110'},
+       total:{line:144.5,overJuice:'-110',underJuice:'-110'},
+       books:[{book:'DraftKings',awayML:'-162',homeML:'+136',spread:'-3.5',total:'144.5'},{book:'FanDuel',awayML:'-160',homeML:'+134',spread:'-3.5',total:'144.5'},{book:'BetMGM',awayML:'-165',homeML:'+140',spread:'-3.5',total:'144.5'},{book:'Caesars',awayML:'-162',homeML:'+136',spread:'-4.0',total:'145.0'}],
+       sharpAngle:"St. John's RJ Luis Jr is one of the best players in the East. Kansas Dickinson is a beast inside. Take SJU -3.5 — Big East grind-it-out style beats Big 12 finesse. SJU won 18 straight heading into March."},
+      {id:'u4',timeET:'6:10 PM ET',network:'TNT',region:'South',
+       away:{name:'Tennessee Volunteers',abbr:'TENN',seed:6,record:'22-11'},
+       home:{name:'Virginia Cavaliers',abbr:'UVA',seed:3,record:'29-5'},
+       moneyline:{away:'-118',home:'-102'},
+       spread:{line:-1.5,favTeam:'Tennessee Volunteers',juice:'-110'},
+       total:{line:137.5,overJuice:'-110',underJuice:'-110'},
+       books:[{book:'DraftKings',awayML:'-118',homeML:'-102',spread:'-1.5',total:'137.5'},{book:'FanDuel',awayML:'-115',homeML:'-105',spread:'-1.5',total:'137.5'},{book:'BetMGM',awayML:'-120',homeML:'+100',spread:'-2.0',total:'137.5'},{book:'Caesars',awayML:'-118',homeML:'-102',spread:'-1.5',total:'138.0'}],
+       sharpAngle:'Essentially a pick-em. Virginia slow-it-down vs Tennessee transition offense. UNDER 137.5 is the play — Bennett does not allow fast tempo. Take UVA -1 or +1.5 value — home-state advantage feel in Philly.'},
+      {id:'u5',timeET:'7:10 PM ET',network:'TBS',region:'South',
+       away:{name:'Iowa Hawkeyes',abbr:'IOWA',seed:9,record:'21-12'},
+       home:{name:'Florida Gators',abbr:'FLA',seed:1,record:'26-7'},
+       moneyline:{away:'+440',home:'-600'},
+       spread:{line:-10.5,favTeam:'Florida Gators',juice:'-110'},
+       total:{line:144.5,overJuice:'-110',underJuice:'-110'},
+       books:[{book:'DraftKings',awayML:'+440',homeML:'-600',spread:'-10.5',total:'144.5'},{book:'FanDuel',awayML:'+430',homeML:'-580',spread:'-10.5',total:'144.5'},{book:'BetMGM',awayML:'+450',homeML:'-625',spread:'-10.5',total:'144.5'},{book:'Caesars',awayML:'+440',homeML:'-600',spread:'-11.0',total:'145.0'}],
+       sharpAngle:'Florida is the defending champion and rolled PV. Iowa shoots 3s but Florida guards are elite. Take FLA -10.5 — Clayton and Martin take over. 1-seeds beat 9-seeds by double digits 70% of the time.'},
+      {id:'u6',timeET:'7:50 PM ET',network:'TNT',region:'West',
+       away:{name:'Utah State Aggies',abbr:'USU',seed:9,record:'28-6'},
+       home:{name:'Arizona Wildcats',abbr:'ARIZ',seed:1,record:'32-2'},
+       moneyline:{away:'+550',home:'-800'},
+       spread:{line:-11.5,favTeam:'Arizona Wildcats',juice:'-110'},
+       total:{line:155.5,overJuice:'-110',underJuice:'-110'},
+       books:[{book:'DraftKings',awayML:'+550',homeML:'-800',spread:'-11.5',total:'155.5'},{book:'FanDuel',awayML:'+530',homeML:'-780',spread:'-11.5',total:'155.5'},{book:'BetMGM',awayML:'+575',homeML:'-825',spread:'-12.0',total:'156.0'},{book:'Caesars',awayML:'+550',homeML:'-800',spread:'-11.5',total:'155.0'}],
+       sharpAngle:'Arizona demolished LIU and is the West favorite. Utah State is 28-6 but Mountain West teams wilt vs elite competition. Take ARIZ -11.5 — Burries and Peat are unstoppable. OVER 155.5 has value.'},
+      {id:'u7',timeET:'8:45 PM ET',network:'TBS',region:'East',
+       away:{name:'UCLA Bruins',abbr:'UCLA',seed:7,record:'23-11'},
+       home:{name:'Connecticut Huskies',abbr:'CONN',seed:2,record:'29-5'},
+       moneyline:{away:'+154',home:'-185'},
+       spread:{line:-4.5,favTeam:'Connecticut Huskies',juice:'-110'},
+       total:{line:136.5,overJuice:'-110',underJuice:'-110'},
+       books:[{book:'DraftKings',awayML:'+154',homeML:'-185',spread:'-4.5',total:'136.5'},{book:'FanDuel',awayML:'+150',homeML:'-180',spread:'-4.5',total:'136.5'},{book:'BetMGM',awayML:'+158',homeML:'-190',spread:'-4.5',total:'136.5'},{book:'Caesars',awayML:'+154',homeML:'-185',spread:'-5.0',total:'137.0'}],
+       sharpAngle:'UCLA failed to cover vs UCF. UConn is battle-tested and Hurley knows March. Take CONN -4.5 — two-time champion mentality takes over. UNDER 136.5 — both teams play elite defense.'},
+      {id:'u8',timeET:'9:45 PM ET',network:'truTV',region:'South',
+       away:{name:'Texas Tech Red Raiders',abbr:'TTU',seed:5,record:'22-10'},
+       home:{name:'Alabama Crimson Tide',abbr:'ALA',seed:4,record:'23-9'},
+       moneyline:{away:'-108',home:'-112'},
+       spread:{line:-1.5,favTeam:'Alabama Crimson Tide',juice:'-110'},
+       total:{line:164.5,overJuice:'-110',underJuice:'-110'},
+       books:[{book:'DraftKings',awayML:'-108',homeML:'-112',spread:'-1.5',total:'164.5'},{book:'FanDuel',awayML:'-105',homeML:'-115',spread:'-1.5',total:'164.5'},{book:'BetMGM',awayML:'-110',homeML:'-110',spread:'-2.0',total:'165.0'},{book:'Caesars',awayML:'-108',homeML:'-112',spread:'-1.5',total:'164.0'}],
+       sharpAngle:'Total of 164.5 is insane — both teams can score. Alabama without Holloway is still potent. TTU without Toppin is limited. Take the OVER 164.5 — this is a track meet. Coin flip on the side — lean ALA -1.5 home state.'}
     ]
   },
   'ncaam-w1_thu2': {
@@ -5166,6 +5245,5 @@ document.addEventListener('DOMContentLoaded', () => {
 
 });
 </script>
-
 </body>
 </html>

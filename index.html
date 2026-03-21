@@ -495,12 +495,21 @@ body.light .spread-mini{background:#1A5FA812;color:#1A5FA8;border-color:#1A5FA84
 .parlay-sheet.open{transform:translateY(0);}
 .parlay-sheet-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:12px auto 0;}
 .parlay-sheet-title{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--amber);letter-spacing:.12em;text-transform:uppercase;padding:14px 16px 8px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);}
-.parlay-leg{display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:1px solid var(--border);}
-.parlay-leg-info{flex:1;min-width:0;}
-.parlay-leg-game{font-size:10px;color:var(--text3);font-family:var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.parlay-leg-pick{font-size:13px;font-weight:700;color:var(--text);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.parlay-leg-odds{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--accent);flex-shrink:0;min-width:44px;text-align:right;}
-.parlay-leg-del{background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer;padding:4px;flex-shrink:0;line-height:1;}
+.parlay-leg{display:flex;align-items:stretch;gap:0;border-bottom:1px solid var(--border);}
+.parlay-leg-type{width:6px;flex-shrink:0;border-radius:0;}
+.parlay-leg-type.ml{background:var(--green);}
+.parlay-leg-type.spread{background:var(--accent);}
+.parlay-leg-type.ou{background:var(--amber);}
+.parlay-leg-body{flex:1;min-width:0;padding:10px 12px;}
+.parlay-leg-matchup{font-family:var(--mono);font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.parlay-leg-pick{font-size:14px;font-weight:800;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.parlay-leg-badge{display:inline-block;font-family:var(--mono);font-size:9px;font-weight:700;padding:1px 6px;border-radius:3px;margin-top:3px;letter-spacing:.04em;}
+.parlay-leg-badge.ml{background:rgba(0,232,130,.12);color:var(--green);border:1px solid rgba(0,232,130,.25);}
+.parlay-leg-badge.spread{background:rgba(91,184,255,.12);color:var(--accent);border:1px solid rgba(91,184,255,.25);}
+.parlay-leg-badge.ou{background:rgba(186,117,23,.12);color:var(--amber);border:1px solid rgba(186,117,23,.25);}
+.parlay-leg-right{display:flex;flex-direction:column;align-items:flex-end;justify-content:center;padding:10px 12px 10px 8px;gap:4px;flex-shrink:0;}
+.parlay-leg-odds{font-family:var(--mono);font-size:14px;font-weight:800;color:var(--accent);}
+.parlay-leg-del{background:none;border:none;color:var(--text3);font-size:14px;cursor:pointer;padding:2px;line-height:1;}
 .parlay-payout{background:var(--card2);border:1px solid var(--border);border-radius:10px;margin:12px 16px;padding:14px;}
 .parlay-payout-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
 .parlay-payout-label{font-family:var(--mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;}
@@ -3590,15 +3599,12 @@ function logGMoneyPick(gameId, awayName, homeName, pickText, odds, gameObj) {
 
 function seedHistoricalPicks() {
   if (localStorage.getItem(PICKS_SEEDED_KEY)) return;
-  // Version bump — replace ALL seeded picks with fresh data
-  // Keep any user-added picks (gameId not in SEED_PICKS)
-  const existing = loadPicks();
-  const seededIds = new Set(SEED_PICKS.map(p => p.gameId));
-  const userPicks = existing.filter(p => !seededIds.has(p.gameId));
-  // Seed picks go first (chronological), user picks append after
-  savePicks([...SEED_PICKS, ...userPicks]);
+  // v4 upgrade: hard reset picks entirely to fix stale localStorage data
+  // Keep nothing from old versions — start fresh with correct pick history
+  localStorage.removeItem(PICKS_KEY);
+  savePicks([...SEED_PICKS]);
   localStorage.setItem(PICKS_SEEDED_KEY, '1');
-  console.log(`[Picks] Seeded ${SEED_PICKS.length} picks (v4), kept ${userPicks.length} user picks`);
+  console.log(`[Picks] v4 reset — seeded ${SEED_PICKS.length} picks fresh`);
 }
 
 function resolvePicksFromScores() {
@@ -5138,15 +5144,24 @@ function renderParlaySheet() {
       <span style="font-size:11px;opacity:.6">ML · Spread · O/U — mix and match</span>
     </div>`;
   } else {
-    html += legs.map(l => `
-      <div class="parlay-leg">
-        <div class="parlay-leg-info">
-          <div class="parlay-leg-game">${l.game} · ${l.type}</div>
+    html += legs.map(l => {
+      const typeCls = l.type === 'ML' ? 'ml' : l.type === 'Spread' ? 'spread' : 'ou';
+      const typeLabel = l.type === 'ML' ? 'Moneyline' : l.type === 'Spread' ? 'Spread' : 'Over/Under';
+      const gameDisplay = l.game ? l.game.replace('v', ' vs ') : '';
+      const oddsStr = String(l.odds).startsWith('+') || Number(l.odds) > 0 ? '+'+Number(l.odds) : String(l.odds);
+      return `<div class="parlay-leg">
+        <div class="parlay-leg-type ${typeCls}"></div>
+        <div class="parlay-leg-body">
+          <div class="parlay-leg-matchup">${gameDisplay}</div>
           <div class="parlay-leg-pick">${l.label}</div>
+          <span class="parlay-leg-badge ${typeCls}">${typeLabel}</span>
         </div>
-        <div class="parlay-leg-odds">${l.odds}</div>
-        <button class="parlay-leg-del" onclick="removeParlalyLeg('${l.id}')">✕</button>
-      </div>`).join('');
+        <div class="parlay-leg-right">
+          <div class="parlay-leg-odds">${oddsStr}</div>
+          <button class="parlay-leg-del" onclick="removeParlalyLeg('${l.id}')">✕</button>
+        </div>
+      </div>`;
+    }).join('');
 
     html += `<div class="parlay-payout">
       <div class="parlay-payout-row">

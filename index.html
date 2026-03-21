@@ -2338,18 +2338,18 @@ async function loadDay(dayKey) {
 
   document.getElementById('mainRefresh').classList.add('spin');
 
-  // ── Step 1: Show static data instantly while live loads ─────
+  // ── Step 1: Always show static data immediately ──────────────
   const staticData = STATIC_GAMES[cacheKey];
-  if (staticData && !cache[cacheKey + '_live']) {
-    renderPanel(dayKey, staticData);
-    cache[cacheKey] = staticData;
+  if (staticData) {
+    if (!cache[cacheKey]) cache[cacheKey] = staticData;
+    renderPanel(dayKey, cache[cacheKey]);
   } else if (cache[cacheKey]) {
     renderPanel(dayKey, cache[cacheKey]);
   } else {
     panel.innerHTML = buildLoadingUI(ev);
   }
 
-  // ── Step 2: Fetch live schedule from ESPN via proxy ─────────
+  // ── Step 2: Overlay live ESPN tip times on top of static ─────
   const proxyReady = PROXY_URL && PROXY_URL !== 'YOUR_CLOUD_RUN_URL_HERE';
   if (!proxyReady) {
     document.getElementById('mainRefresh').classList.remove('spin');
@@ -2357,113 +2357,104 @@ async function loadDay(dayKey) {
   }
 
   try {
-    // Convert dayKey to a date string for the ESPN schedule endpoint
-    const dateStr = dayKeyToDate(dayKey);
+    const dateStr  = dayKeyToDate(dayKey);
     const schedUrl = `${PROXY_URL}/api/schedule?league=ncaamb&date=${dateStr}`;
     const schedResp = await fetch(schedUrl);
     const schedData = await schedResp.json();
 
     if (schedData.games && schedData.games.length > 0) {
-      // Get static games for this day keyed by position for odds enrichment
-      const cacheKeyStatic = ev.id + '_' + dayKey;
-      const staticDayGames = STATIC_GAMES[cacheKeyStatic]?.games || [];
-
-      // Build a lookup of static games by abbr pair
-      const staticByAbbr = {};
-      for (const sg of staticDayGames) {
-        const a = (sg.away?.abbr||'').toUpperCase();
-        const h = (sg.home?.abbr||'').toUpperCase();
-        staticByAbbr[a+'-'+h] = sg;
-        staticByAbbr[h+'-'+a] = sg;
+      // Build ESPN lookup by abbr pair for time/status overlay
+      const espnByAbbr = {};
+      for (const eg of schedData.games) {
+        const ea = eg.away.abbr.toUpperCase();
+        const eh = eg.home.abbr.toUpperCase();
+        espnByAbbr[ea+'-'+eh] = eg;
+        espnByAbbr[eh+'-'+ea] = eg;
+        // Also index by normalized abbr
+        const na = normAbbr(ea), nh = normAbbr(eh);
+        espnByAbbr[na+'-'+nh] = eg;
+        espnByAbbr[nh+'-'+na] = eg;
       }
 
-      // Build game list from ESPN data
-      const espnGames = schedData.games.map(g => {
-        const ea = g.away.abbr.toUpperCase();
-        const eh = g.home.abbr.toUpperCase();
+      // If we have static data, overlay ESPN tip times on it
+      if (staticData?.games?.length) {
+        const enriched = staticData.games.map(sg => {
+          const sa = (sg.away?.abbr||'').toUpperCase();
+          const sh = (sg.home?.abbr||'').toUpperCase();
+          const eg = espnByAbbr[sa+'-'+sh] || espnByAbbr[sh+'-'+sa];
+          if (!eg) return sg; // no ESPN match — keep static as-is
 
-        // Match static game: try direct abbr match first, then fuzzy
-        let staticGame = staticByAbbr[ea+'-'+eh] || staticByAbbr[eh+'-'+ea];
-        if (!staticGame) {
-          // Try partial 3-char match
-          staticGame = staticDayGames.find(sg => {
-            const sa = (sg.away?.abbr||'').toUpperCase();
-            const sh = (sg.home?.abbr||'').toUpperCase();
-            return (sa.slice(0,3)===ea.slice(0,3) && sh.slice(0,3)===eh.slice(0,3)) ||
-                   (sa.slice(0,3)===eh.slice(0,3) && sh.slice(0,3)===ea.slice(0,3));
-          });
-        }
-        if (!staticGame) {
-          // Try full static data as last resort
-          staticGame = findStaticGame(ea, eh);
-        }
+          // Update tip time from ESPN, keep all static odds
+          return {
+            ...sg,
+            timeET: eg.date
+              ? new Date(eg.date).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'America/New_York'}) + ' ET'
+              : sg.timeET,
+            network: eg.network || sg.network,
+            away: { ...sg.away, record: eg.away.record || sg.away.record },
+            home: { ...sg.home, record: eg.home.record || sg.home.record },
+            // Overlay ESPN odds only if better than static
+            ...(eg.odds ? {
+              moneyline: { away: eg.odds.awayML || sg.moneyline?.away, home: eg.odds.homeML || sg.moneyline?.home },
+              spread:    { ...sg.spread, line: eg.odds.spread ? parseFloat(eg.odds.spread) : sg.spread?.line },
+              total:     { ...sg.total, line: eg.odds.overUnder || sg.total?.line },
+            } : {}),
+          };
+        });
 
-        const liveOddsEntry = getGameOdds({away:{abbr:ea}, home:{abbr:eh}});
+        const enrichedData = { ...staticData, games: enriched };
+        cache[cacheKey] = enrichedData;
+        cache[cacheKey + '_live'] = true;
+        renderPanel(dayKey, enrichedData);
+        console.log(`[LoadDay] ${dayKey}: ${enriched.length} games (static+ESPN overlay)`);
 
-        return {
-          id:       g.id || (ea + '-' + eh),
-          timeET:   g.date ? new Date(g.date).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'America/New_York'}) + ' ET' : 'TBD',
-          network:  g.network || staticGame?.network || '',
-          region:   staticGame?.region || g.roundNote || '',
-          away: {
-            abbr:   staticGame?.away?.abbr || ea,
-            name:   g.away.name || staticGame?.away?.name || ea,
-            seed:   g.away.seed || staticGame?.away?.seed || '',
-            record: g.away.record || staticGame?.away?.record || '',
-          },
-          home: {
-            abbr:   staticGame?.home?.abbr || eh,
-            name:   g.home.name || staticGame?.home?.name || eh,
-            seed:   g.home.seed || staticGame?.home?.seed || '',
-            record: g.home.record || staticGame?.home?.record || '',
-          },
-          moneyline:   liveOddsEntry ? { away: liveOddsEntry.awayML, home: liveOddsEntry.homeML } : staticGame?.moneyline || null,
-          spread:      liveOddsEntry ? { line: liveOddsEntry.spread, favTeam: ea, juice: '-110' } : staticGame?.spread || null,
-          total:       liveOddsEntry ? { line: liveOddsEntry.total, overJuice: liveOddsEntry.overOdds||'-110', underJuice: liveOddsEntry.underOdds||'-110' } : staticGame?.total || null,
-          books:       staticGame?.books       || [],
-          playerProps: staticGame?.playerProps || [],
-          sharpAngle:  staticGame?.sharpAngle  || '',
-          result:      staticGame?.result      || null,
-        };
-        // Overlay ESPN odds if available
-        if (g.odds) {
-          game.moneyline = { away: g.odds.awayML, home: g.odds.homeML };
-          game.spread    = { line: parseFloat(g.odds.spread)||0, favTeam: ea, juice: '-110' };
-          game.total     = { line: g.odds.overUnder, overJuice: '-110', underJuice: '-110' };
-        }
-        return game;
-      });
-
-      const liveGameData = {
-        day:   dayInfo.long || dayInfo.label,
-        round: dayInfo.round || espnGames[0]?.region || dayInfo.label,
-        games: espnGames,
-      };
-
-      cache[cacheKey] = liveGameData;
-      cache[cacheKey + '_live'] = true;
-      renderPanel(dayKey, liveGameData);
-      console.log(`[LoadDay] ${dayKey}: ${espnGames.length} games from ESPN`);
-    } else if (!cache[cacheKey]) {
-      // No ESPN data and no cache — try dynamic from liveScores
-      const dynamicData = buildDynamicDayData(dayKey, dayInfo);
-      if (dynamicData?.games?.length) {
-        cache[cacheKey] = dynamicData;
-        renderPanel(dayKey, dynamicData);
       } else {
-        panel.innerHTML = `<div class="empty-wrap"><h3>No Games Found</h3><p>Check back later — schedule updates automatically.</p><button class="kick-btn" onclick="refreshCurrentTab()">↻ Retry</button></div>`;
+        // No static data — build purely from ESPN (no odds, just schedule)
+        const espnGames = schedData.games.map(g => {
+          const ea = normAbbr(g.away.abbr.toUpperCase());
+          const eh = normAbbr(g.home.abbr.toUpperCase());
+          const liveOdds = getGameOdds({away:{abbr:ea}, home:{abbr:eh}});
+          return {
+            id:       g.id || (ea+'-'+eh),
+            timeET:   g.date ? new Date(g.date).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'America/New_York'}) + ' ET' : 'TBD',
+            network:  g.network || '',
+            region:   g.roundNote || '',
+            away: { abbr:ea, name:g.away.name||ea, seed:g.away.seed||'', record:g.away.record||'' },
+            home: { abbr:eh, name:g.home.name||eh, seed:g.home.seed||'', record:g.home.record||'' },
+            moneyline: liveOdds ? {away:liveOdds.awayML,home:liveOdds.homeML} : null,
+            spread:    liveOdds ? {line:liveOdds.spread,favTeam:ea,juice:'-110'} : null,
+            total:     liveOdds ? {line:liveOdds.total,overJuice:'-110',underJuice:'-110'} : null,
+            books:[], playerProps:[], sharpAngle:'', result:null,
+          };
+        });
+        const liveData = { day:dayInfo.long||dayInfo.label, round:dayInfo.round||dayInfo.label, games:espnGames };
+        cache[cacheKey] = liveData;
+        cache[cacheKey + '_live'] = true;
+        renderPanel(dayKey, liveData);
+        console.log(`[LoadDay] ${dayKey}: ${espnGames.length} games (ESPN only, no static)`);
       }
     }
   } catch(e) {
     console.warn('[LoadDay] ESPN fetch failed:', e.message);
-    // Fall back to AI enrichment if proxy failed
-    if (staticData) {
-      renderPanel(dayKey, staticData);
-    }
   }
 
   document.getElementById('mainRefresh').classList.remove('spin');
 }
+
+// Normalize ESPN abbreviations to match our static data
+function normAbbr(a) {
+  const map = {
+    'TA&M':'TAM','SMC':'SMC','UK':'UK','KU':'KU','M-OH':'M-OH',
+    'SJU':'SJU','QUC':'QUC','UNI':'UNI','PV':'PV','HPU':'HPU',
+    'MCN':'MCN','VILL':'VILL','CONN':'CONN','FUR':'FUR','TENN':'TENN',
+    'ISU':'ISU','SCU':'SCU','TTU':'TTU','USU':'USU','SLU':'SLU',
+    'VCU':'VCU','TEX':'TEX','HPU':'HPU','ILL':'ILL','ARK':'ARK',
+  };
+  return map[a] || a;
+}
+
+
+
 
 // Convert a day tab key to a YYYYMMDD date string
 function dayKeyToDate(dayKey) {

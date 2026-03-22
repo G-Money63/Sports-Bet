@@ -2832,7 +2832,20 @@ const _PLEG = {};
 // Called by ML and Spread pills
 function _parlayTap(el) {
   const key = el.getAttribute('data-pleg');
-  if (!key || !_PLEG[key]) return;
+  console.log('[ParlayTap] key:', key, 'found:', !!_PLEG[key], 'mode:', _parlayMode);
+  if (!key) { console.warn('[ParlayTap] No data-pleg attribute'); return; }
+  if (!_PLEG[key]) {
+    // Key not in map — build leg from data attributes directly
+    const parts = key.split('-');
+    const slot  = parts[parts.length - 1]; // 'away', 'home', 'spread'
+    const gameId = parts.slice(0, -2).join('-') || parts[0];
+    console.warn('[ParlayTap] Key not in _PLEG, gameId:', gameId);
+    // Try to find it anyway
+    const fallback = Object.values(_PLEG).find(l => l.id === key);
+    if (fallback) { toggleParlay(fallback); return; }
+    showToast('Tap a game tab to refresh odds first', 'var(--amber)');
+    return;
+  }
   toggleParlay(_PLEG[key]);
 }
 
@@ -2906,18 +2919,18 @@ function buildRow(g) {
         const sel_sp = (typeof isParlaySelected==='function') && isParlaySelected(gKey,'spread')  ? ' parlay-on' : '';
         const sel_ou = (typeof isParlaySelected==='function') && isParlaySelected(gKey,'ou')       ? ' parlay-on' : '';
         return `
-        <span class="ml-badge ${mlCls(awayML)} parlay-pill${sel_ma}" data-pleg="${gKey}-ml-away" onclick="event.stopPropagation();_parlayTap(this)">${away} ${awayML||'—'}</span>
-        <span class="ml-badge ${mlCls(homeML)} parlay-pill${sel_mh}" data-pleg="${gKey}-ml-home" onclick="event.stopPropagation();_parlayTap(this)">${home} ${homeML||'—'}</span>
-        <span class="spread-mini parlay-pill${sel_sp}" data-pleg="${gKey}-spread" onclick="event.stopPropagation();_parlayTap(this)">${spreadBadge}</span>
-        ${total ? `<span class="ou-mini parlay-pill${sel_ou}" data-ou-game="${gKey}" data-ou-away="${away}" data-ou-home="${home}" data-ou-total="${total}" data-ou-over="${overOdds}" data-ou-under="${underOdds}" onclick="event.stopPropagation();_ouTap(this)">O/U ${total}</span>` : ''}
+        <span class="ml-badge ${mlCls(awayML)} parlay-pill${sel_ma}" data-pleg="${gKey}-ml-away" onclick="event.stopPropagation();event.preventDefault();_parlayTap(this);return false;">${away} ${awayML||'—'}</span>
+        <span class="ml-badge ${mlCls(homeML)} parlay-pill${sel_mh}" data-pleg="${gKey}-ml-home" onclick="event.stopPropagation();event.preventDefault();_parlayTap(this);return false;">${home} ${homeML||'—'}</span>
+        <span class="spread-mini parlay-pill${sel_sp}" data-pleg="${gKey}-spread" onclick="event.stopPropagation();event.preventDefault();_parlayTap(this);return false;">${spreadBadge}</span>
+        ${total ? `<span class="ou-mini parlay-pill${sel_ou}" data-ou-game="${gKey}" data-ou-away="${away}" data-ou-home="${home}" data-ou-total="${total}" data-ou-over="${overOdds}" data-ou-under="${underOdds}" onclick="event.stopPropagation();event.preventDefault();_ouTap(this);return false;">O/U ${total}</span>` : ''}
         ${hasVar ? '<span class="variance-badge">LINE GAP</span>' : ''}`;
       })()}</div>`;
 
   return `
   <div class="game-row ${isLive?'is-live':isFinal?'is-final':''}" id="row-${g.id}">
-    <div class="game-row-inner" onclick="toggleGame('${g.id}')">
-      <div class="time-block">${timeBlock}</div>
-      <div class="matchup-block">
+    <div class="game-row-inner">
+      <div class="time-block" onclick="toggleGame('${g.id}')" style="cursor:pointer">${timeBlock}</div>
+      <div class="matchup-block" onclick="toggleGame('${g.id}')" style="cursor:pointer">
         <div class="team-line">
           <span class="seed">${g.away?.seed??'—'}</span>
           <span class="team-name ${isLive&&awayWinning||isFinal&&awayWinning?'fav':'dog'}">${g.away?.name??'TBD'}</span>

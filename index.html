@@ -493,14 +493,14 @@ body.light .spread-mini{background:#1A5FA812;color:#1A5FA8;border-color:#1A5FA84
 .parlay-pill:active{transform:scale(.95);}
 /* Default selected state */
 .parlay-pill.parlay-on{box-shadow:0 0 0 2px var(--amber);position:relative;}
-/* Parlay mode — show dashed amber border on all available pills */
-.parlay-mode-active .parlay-pill{outline:2px dashed var(--amber);outline-offset:2px;}
-/* Parlay mode — game already has a pick — dim other pills in that game */
-.parlay-mode-active .game-row.parlay-picked .parlay-pill:not(.parlay-on){outline:none;opacity:0.35;pointer-events:none;}
-/* Parlay mode — picked pill shows solid with checkmark glow */
-.parlay-mode-active .parlay-pill.parlay-on{outline:2px solid var(--amber);outline-offset:2px;box-shadow:0 0 0 4px rgba(186,117,23,.2);}
+/* Parlay mode — show subtle solid amber border on available pills */
+.parlay-mode-active .parlay-pill{outline:1.5px solid rgba(186,117,23,.5);outline-offset:2px;}
+/* Parlay mode — game already has a pick — dim other pills */
+.parlay-mode-active .game-row.parlay-picked .parlay-pill:not(.parlay-on){outline:none;opacity:0.3;pointer-events:none;}
+/* Parlay mode — picked pill */
+.parlay-mode-active .parlay-pill.parlay-on{outline:2px solid var(--amber);outline-offset:2px;box-shadow:0 0 0 3px rgba(186,117,23,.15);}
 /* Game row picked state */
-.game-row.parlay-picked{border-color:var(--amber)!important;}
+.game-row.parlay-picked{border-color:rgba(186,117,23,.5)!important;}
 .parlay-fab{position:fixed;bottom:88px;right:16px;z-index:900;background:var(--amber);color:#000;border:none;border-radius:50px;padding:10px 16px;font-family:var(--mono);font-size:12px;font-weight:800;cursor:pointer;box-shadow:0 4px 20px rgba(186,117,23,.5);display:none;align-items:center;gap:6px;transition:transform .15s;}
 .parlay-fab:active{transform:scale(.95);}
 .parlay-fab .pf-count{background:#000;color:var(--amber);border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;}
@@ -866,16 +866,29 @@ body.light .gmoney-pick{color:#5A3ECC;}
   <div style="display:flex;align-items:center;gap:5px;margin-bottom:8px">
     <button id="homeNavBtn" class="home-nav-btn active" onclick="showHomePanel()">🏠 Home</button>
     <button id="bracketNavBtn" class="home-nav-btn" onclick="showBracketPanel()">🏆 Bracket</button>
-    <button id="parlayNavBtn" class="home-nav-btn" onclick="openParlaySheet()">🎰 Parlay</button>
     <button id="picksNavBtn" class="home-nav-btn" onclick="showPicksPanel()">💰 G-Money Picks</button>
   </div>
 
   <div class="week-bar" id="weekBar" style="display:flex;align-items:center;gap:8px"><span class="week-label" style="flex-shrink:0;min-width:28px">WEEK</span></div>
-  <!-- DAY label + tabs aligned as a row -->
+  <!-- DAY tabs row -->
   <div style="display:flex;align-items:center;gap:8px">
-    <span id="dayLabel" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;color:var(--text3);flex-shrink:0;min-width:36px">SELECT</span>
+    <span id="dayLabel" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;color:var(--text3);flex-shrink:0;min-width:36px">DATE</span>
     <div class="day-tabs" id="dayTabs" style="flex:1;min-width:0;flex-wrap:wrap;gap:4px"></div>
-    <button id="parlayModeBtn" onclick="toggleParlayMode()" style="flex-shrink:0;font-family:var(--mono);font-size:10px;font-weight:700;padding:4px 9px;border-radius:16px;border:1.5px solid var(--border2);background:var(--card2);color:var(--text3);cursor:pointer;white-space:nowrap;transition:all .2s;">🎰</button>
+  </div>
+  <!-- Parlay row -->
+  <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+    <span style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;color:var(--text3);flex-shrink:0;min-width:36px">PARLAY</span>
+    <div style="display:flex;gap:4px;flex:1">
+      <button id="parlayModeBtn" onclick="toggleParlayMode()" style="flex:1;font-family:var(--mono);font-size:10px;font-weight:700;padding:5px 8px;border-radius:8px;border:1.5px solid var(--border2);background:var(--card2);color:var(--text3);cursor:pointer;transition:all .2s;white-space:nowrap;">
+        🎰 Build New
+      </button>
+      <button onclick="openGMoneyParlay()" style="flex:1;font-family:var(--mono);font-size:10px;font-weight:700;padding:5px 8px;border-radius:8px;border:1.5px solid var(--amber);background:rgba(186,117,23,.1);color:var(--amber);cursor:pointer;white-space:nowrap;">
+        ⚡ G-Money
+      </button>
+      <button id="viewSlipBtn" onclick="openViewSlips()" style="flex:1;font-family:var(--mono);font-size:10px;font-weight:700;padding:5px 8px;border-radius:8px;border:1.5px solid var(--border2);background:var(--card2);color:var(--text3);cursor:pointer;white-space:nowrap;">
+        📋 View Slips
+      </button>
+    </div>
   </div>
 </header>
 
@@ -5040,19 +5053,33 @@ let _parlayMode = false;
 let _ouPending  = null; // stores pending O/U leg while user picks over/under
 
 function updateParlayModeBtn() {
-  const btn = document.getElementById('parlayModeBtn');
+  const btn     = document.getElementById('parlayModeBtn');
+  const slipBtn = document.getElementById('viewSlipBtn');
   if (!btn) return;
   const legs = loadParlayLegs();
+  const saved = loadSavedParlays();
   if (_parlayMode) {
     btn.style.background  = 'var(--amber)';
     btn.style.color       = '#000';
     btn.style.borderColor = 'var(--amber)';
-    btn.textContent       = '🎰 ' + legs.length;
+    btn.textContent       = '🎰 Building · ' + legs.length + ' leg' + (legs.length !== 1 ? 's' : '');
   } else {
     btn.style.background  = 'var(--card2)';
-    btn.style.color       = 'var(--text3)';
-    btn.style.borderColor = 'var(--border2)';
-    btn.textContent       = legs.length > 0 ? '🎰 ' + legs.length : '🎰';
+    btn.style.color       = legs.length > 0 ? 'var(--amber)' : 'var(--text3)';
+    btn.style.borderColor = legs.length > 0 ? 'var(--amber)' : 'var(--border2)';
+    btn.textContent       = legs.length > 0 ? '🎰 Build New · ' + legs.length : '🎰 Build New';
+  }
+  if (slipBtn) {
+    const n = saved.length;
+    slipBtn.textContent   = n > 0 ? '📋 View Slips (' + n + ')' : '📋 View Slips';
+    slipBtn.style.borderColor = n > 0 ? 'var(--accent)' : 'var(--border2)';
+    slipBtn.style.color   = n > 0 ? 'var(--accent)' : 'var(--text3)';
+  }
+  // Done button
+  const doneBtn = document.getElementById('parlayDoneBtn');
+  if (doneBtn) {
+    doneBtn.style.display = (_parlayMode && legs.length >= 2) ? 'flex' : 'none';
+    doneBtn.textContent   = '✓ DONE — VIEW ' + legs.length + '-LEG SLIP';
   }
 }
 
@@ -5228,6 +5255,22 @@ function finishParlay() {
   updateParlayModeBtn();
   applyParlayModeUI();
   openParlaySheet();
+}
+
+function openViewSlips() {
+  // Open parlay sheet and scroll to saved slips
+  if (_parlayMode) {
+    _parlayMode = false;
+    updateParlayModeBtn();
+    applyParlayModeUI();
+  }
+  document.getElementById('parlaySheet').classList.add('open');
+  document.getElementById('parlayOverlay').style.display = 'block';
+  renderParlaySheet();
+  setTimeout(() => {
+    const sheet = document.getElementById('parlaySheet');
+    if (sheet) sheet.scrollTo({ top: sheet.scrollHeight, behavior: 'smooth' });
+  }, 200);
 }
 
 function openParlaySheet() {
@@ -5512,6 +5555,20 @@ function deleteParlay(id) {
   const saved = loadSavedParlays().filter(p => p.id !== id);
   saveSavedParlays(saved);
   renderParlaySheet();
+}
+
+function openGMoneyParlay() {
+  // Exit build mode if active
+  if (_parlayMode) {
+    _parlayMode = false;
+    updateParlayModeBtn();
+    applyParlayModeUI();
+  }
+  // Open the parlay sheet — G-Money auto-parlay shows at top
+  document.getElementById('parlaySheet').classList.add('open');
+  document.getElementById('parlayOverlay').style.display = 'block';
+  renderParlaySheet();
+  showToast('⚡ G-Money auto-parlay shown at top', 'var(--amber)');
 }
 
 function loadGMoneyParlay() {

@@ -488,7 +488,7 @@ body.light .spread-mini{background:#1A5FA812;color:#1A5FA8;border-color:#1A5FA84
 .variance-badge{font-family:var(--mono);font-size:9px;padding:2px 6px;border-radius:3px;background:#FFB02018;color:var(--amber);border:1px solid #FFB02033;letter-spacing:.06em}
 
 /* ── Parlay Builder ── */
-.parlay-pill{cursor:pointer;transition:transform .1s,box-shadow .15s,opacity .15s,border-color .15s;user-select:none;}
+.parlay-pill{cursor:pointer;transition:transform .1s,box-shadow .15s,opacity .15s,border-color .15s;user-select:none;-webkit-tap-highlight-color:transparent;appearance:none;-webkit-appearance:none;}
 .parlay-pill:active{transform:scale(.95);}
 /* Default selected state */
 .parlay-pill.parlay-on{box-shadow:0 0 0 2px var(--amber);position:relative;}
@@ -3056,10 +3056,10 @@ function buildRow(g) {
         const sel_sp = (typeof isParlaySelected==='function') && isParlaySelected(gKey,'spread')  ? ' parlay-on' : '';
         const sel_ou = (typeof isParlaySelected==='function') && isParlaySelected(gKey,'ou')       ? ' parlay-on' : '';
         return `
-        <span class="ml-badge ${mlCls(awayML)} parlay-pill${sel_ma}" data-pleg="${gKey}-ml-away" onclick="event.stopPropagation();event.preventDefault();_parlayTap(this);return false;">${away} ${awayML||'—'}</span>
-        <span class="ml-badge ${mlCls(homeML)} parlay-pill${sel_mh}" data-pleg="${gKey}-ml-home" onclick="event.stopPropagation();event.preventDefault();_parlayTap(this);return false;">${home} ${homeML||'—'}</span>
-        <span class="spread-mini parlay-pill${sel_sp}" data-pleg="${gKey}-spread" onclick="event.stopPropagation();event.preventDefault();_parlayTap(this);return false;">${spreadBadge}</span>
-        ${total ? `<span class="ou-mini parlay-pill${sel_ou}" data-ou-game="${gKey}" data-ou-away="${away}" data-ou-home="${home}" data-ou-total="${total}" data-ou-over="${overOdds}" data-ou-under="${underOdds}" onclick="event.stopPropagation();event.preventDefault();_ouTap(this);return false;">O/U ${total}</span>` : ''}
+        <button class="ml-badge ${mlCls(awayML)} parlay-pill${sel_ma}" data-pleg="${gKey}-ml-away" onclick="event.stopPropagation();_parlayTap(this);">${away} ${awayML||'—'}</button>
+        <button class="ml-badge ${mlCls(homeML)} parlay-pill${sel_mh}" data-pleg="${gKey}-ml-home" onclick="event.stopPropagation();_parlayTap(this);">${home} ${homeML||'—'}</button>
+        <button class="spread-mini parlay-pill${sel_sp}" data-pleg="${gKey}-spread" onclick="event.stopPropagation();_parlayTap(this);">${spreadBadge}</button>
+        ${total ? `<button class="ou-mini parlay-pill${sel_ou}" data-ou-game="${gKey}" data-ou-away="${away}" data-ou-home="${home}" data-ou-total="${total}" data-ou-over="${overOdds}" data-ou-under="${underOdds}" onclick="event.stopPropagation();_ouTap(this);">O/U ${total}</button>` : ''}
         ${hasVar ? '<span class="variance-badge">LINE GAP</span>' : ''}`;
       })()}</div>`;
 

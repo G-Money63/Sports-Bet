@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -6,6 +7,7 @@
 <title>G-Money Bets</title>
 
 <!-- PWA / Home Screen -->
+
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="G-Money Bets">
@@ -14,6 +16,7 @@
 <meta name="description" content="G-Money Bets — Live odds, spreads and AI picks across NCAA, NBA, NHL and more">
 
 <!-- Home screen icon (canvas-generated, no external image needed) -->
+
 <script>
 (function(){
   try {
@@ -31,6 +34,7 @@
   } catch(e){}
 })();
 </script>
+
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap');
 
@@ -741,88 +745,95 @@ body.light .gmoney-pick{color:#5A3ECC;}
 
 @media(max-width:400px){.game-row-inner{grid-template-columns:48px 1fr auto;gap:7px}}
 </style>
+
 </head>
 <body>
 
 <!-- ── SETTINGS MODAL ── -->
+
 <div class="modal-bg hidden" id="settingsModal">
   <div class="modal-sheet">
     <div class="sheet-handle"></div>
     <div class="sheet-title">Settings</div>
     <div class="sheet-sub">Configure data sources and preferences</div>
 
-    <!-- DATA SOURCES -->
-    <div class="settings-sect">
-      <div class="settings-sect-title">Data Sources</div>
-      <div class="source-grid">
-        <div class="source-tile active" id="src-tile-ai">
-          <div class="sport-icon">🤖</div>
-          <div class="source-tile-name">AI Search</div>
-          <div class="source-tile-desc">Always active · fallback</div>
-        </div>
-        <div class="source-tile" id="src-tile-oddsapi" onclick="toggleSourceTile('oddsapi')">
-          <div class="sport-icon">📊</div>
-          <div class="source-tile-name">The Odds API</div>
-          <div class="source-tile-desc">40+ books · live lines</div>
-        </div>
-        <div class="source-tile" id="src-tile-kalshi" onclick="toggleSourceTile('kalshi')">
-          <div class="sport-icon">🔮</div>
-          <div class="source-tile-name">Kalshi</div>
-          <div class="source-tile-desc">Event contracts · prob %</div>
-        </div>
-        <div class="source-tile" id="src-tile-compare">
-          <div class="sport-icon">⚖️</div>
-          <div class="source-tile-name">Line Compare</div>
-          <div class="source-tile-desc">Auto on w/ Odds API</div>
-        </div>
-      </div>
+```
+<!-- DATA SOURCES -->
+<div class="settings-sect">
+  <div class="settings-sect-title">Data Sources</div>
+  <div class="source-grid">
+    <div class="source-tile active" id="src-tile-ai">
+      <div class="sport-icon">🤖</div>
+      <div class="source-tile-name">AI Search</div>
+      <div class="source-tile-desc">Always active · fallback</div>
     </div>
-
-    <!-- ODDS API KEY -->
-    <div class="settings-sect" id="oddsApiSection" style="display:none">
-      <div class="settings-sect-title">The Odds API Key</div>
-      <div class="api-row">
-        <div class="api-label">Free key at the-odds-api.com (500 req/mo free)</div>
-        <div class="api-input-row">
-          <input class="api-input" id="oddsApiKeyInput" type="password" placeholder="Paste your API key here" />
-          <button class="api-save-btn" onclick="saveOddsApiKey()">Save</button>
-        </div>
-        <div class="api-status" id="oddsApiStatus"></div>
-      </div>
+    <div class="source-tile" id="src-tile-oddsapi" onclick="toggleSourceTile('oddsapi')">
+      <div class="sport-icon">📊</div>
+      <div class="source-tile-name">The Odds API</div>
+      <div class="source-tile-desc">40+ books · live lines</div>
     </div>
-
-    <!-- PREFERRED BOOK -->
-    <div class="settings-sect">
-      <div class="settings-sect-title">Preferred Sportsbook (shown in quick view)</div>
-      <select class="book-select" id="prefBookSelect" onchange="savePrefBook()">
-        <option value="consensus">Consensus (best available)</option>
-        <option value="DraftKings">DraftKings</option>
-        <option value="FanDuel">FanDuel</option>
-        <option value="BetMGM">BetMGM</option>
-        <option value="Caesars">Caesars</option>
-        <option value="PointsBet">PointsBet</option>
-        <option value="BetUS">BetUS</option>
-        <option value="bet365">bet365</option>
-      </select>
+    <div class="source-tile" id="src-tile-kalshi" onclick="toggleSourceTile('kalshi')">
+      <div class="sport-icon">🔮</div>
+      <div class="source-tile-name">Kalshi</div>
+      <div class="source-tile-desc">Event contracts · prob %</div>
     </div>
-
-    <!-- SPORT SELECT -->
-    <div class="settings-sect">
-      <div class="settings-sect-title">Active Event</div>
-      <div id="sportGrid"></div>
+    <div class="source-tile" id="src-tile-compare">
+      <div class="sport-icon">⚖️</div>
+      <div class="source-tile-name">Line Compare</div>
+      <div class="source-tile-desc">Auto on w/ Odds API</div>
     </div>
+  </div>
+</div>
 
-    <button class="kick-btn" style="width:100%;justify-content:center;margin-top:0" onclick="closeSettings()">Done</button>
+<!-- ODDS API KEY -->
+<div class="settings-sect" id="oddsApiSection" style="display:none">
+  <div class="settings-sect-title">The Odds API Key</div>
+  <div class="api-row">
+    <div class="api-label">Free key at the-odds-api.com (500 req/mo free)</div>
+    <div class="api-input-row">
+      <input class="api-input" id="oddsApiKeyInput" type="password" placeholder="Paste your API key here" />
+      <button class="api-save-btn" onclick="saveOddsApiKey()">Save</button>
+    </div>
+    <div class="api-status" id="oddsApiStatus"></div>
+  </div>
+</div>
+
+<!-- PREFERRED BOOK -->
+<div class="settings-sect">
+  <div class="settings-sect-title">Preferred Sportsbook (shown in quick view)</div>
+  <select class="book-select" id="prefBookSelect" onchange="savePrefBook()">
+    <option value="consensus">Consensus (best available)</option>
+    <option value="DraftKings">DraftKings</option>
+    <option value="FanDuel">FanDuel</option>
+    <option value="BetMGM">BetMGM</option>
+    <option value="Caesars">Caesars</option>
+    <option value="PointsBet">PointsBet</option>
+    <option value="BetUS">BetUS</option>
+    <option value="bet365">bet365</option>
+  </select>
+</div>
+
+<!-- SPORT SELECT -->
+<div class="settings-sect">
+  <div class="settings-sect-title">Active Event</div>
+  <div id="sportGrid"></div>
+</div>
+
+<button class="kick-btn" style="width:100%;justify-content:center;margin-top:0" onclick="closeSettings()">Done</button>
+```
+
   </div>
 </div>
 
 <!-- Install nudge (shown in browser, hidden when already installed) -->
+
 <div class="install-nudge" id="installNudge" style="display:none">
   <span>📲 <strong>Add to Home Screen</strong> — tap Share → "Add to Home Screen" for quick access</span>
   <button class="nudge-close" onclick="dismissNudge()">✕</button>
 </div>
 
 <!-- ── HEADER ── -->
+
 <header class="header">
   <div class="header-top">
     <div class="logo-area">
@@ -854,6 +865,7 @@ body.light .gmoney-pick{color:#5A3ECC;}
   </div>
 
   <!-- HOME + BRACKET + PICKS quick nav -->
+
   <div style="display:flex;align-items:center;gap:5px;margin-bottom:8px">
     <button id="homeNavBtn" class="home-nav-btn active" onclick="showHomePanel()">🏠 Home</button>
     <button id="bracketNavBtn" class="home-nav-btn" onclick="showBracketPanel()">🏆 Bracket</button>
@@ -871,18 +883,20 @@ body.light .gmoney-pick{color:#5A3ECC;}
     <span style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;color:var(--text3);flex-shrink:0;min-width:44px;text-align:right">PARLAY</span>
     <div style="display:flex;gap:4px;flex:1">
       <button id="parlayModeBtn" class="parlay-tab" onclick="toggleParlayMode()">🎰 Build New</button>
-      <button class="parlay-tab" style="border-color:var(--amber);color:var(--amber);background:rgba(186,117,23,.08);" onclick="openGMoneyParlay()">⚡ G-Money</button>
+      <button class="parlay-tab" id="gmoneyParlaybtn" onclick="openGMoneyParlay()">⚡ G-Money</button>
       <button id="viewSlipBtn" class="parlay-tab" onclick="openViewSlips()">📋 View Slips</button>
     </div>
   </div>
 </header>
 
 <!-- Parlay Done sticky button — shown when parlay mode active with 2+ legs -->
+
 <button id="parlayDoneBtn" onclick="finishParlay()" style="display:none;position:fixed;bottom:80px;left:16px;right:16px;z-index:930;background:var(--amber);color:#000;border:none;border-radius:12px;padding:14px;font-family:var(--mono);font-size:12px;font-weight:800;letter-spacing:.08em;cursor:pointer;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(186,117,23,.5);">
   ✓ DONE — VIEW SLIP
 </button>
 
 <!-- O/U Direction Picker Modal -->
+
 <div id="ouPickerOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:960;" onclick="closeOUPicker()"></div>
 <div id="ouPickerModal" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:970;background:var(--card);border-top:2px solid var(--amber);border-radius:18px 18px 0 0;padding:20px 16px 40px;">
   <div style="font-family:var(--mono);font-size:10px;font-weight:700;color:var(--amber);letter-spacing:.1em;margin-bottom:4px;">OVER / UNDER PICKER</div>
@@ -899,20 +913,25 @@ body.light .gmoney-pick{color:#5A3ECC;}
 </div>
 
 <!-- HOME PANEL -->
+
 <div id="homePanel" class="main"></div>
 
 <!-- BRACKET PANEL -->
+
 <div id="bracketPanel" class="main" style="display:none"></div>
 
 <!-- PICKS PANEL -->
+
 <div id="picksPanel" class="main" style="display:none"></div>
 
 <!-- ── Parlay FAB ── -->
+
 <button class="parlay-fab" id="parlayFab" onclick="openParlaySheet()">
   🎰 PARLAY <span class="pf-count" id="parlayCount">0</span>
 </button>
 
 <!-- ── Parlay Sheet ── -->
+
 <div class="parlay-sheet" id="parlaySheet">
   <div class="parlay-sheet-handle"></div>
   <div class="parlay-sheet-title">
@@ -924,6 +943,7 @@ body.light .gmoney-pick{color:#5A3ECC;}
 <div id="parlayOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:940;" onclick="closeParlaySheet()"></div>
 
 <!-- GAME PANELS -->
+
 <div class="main" id="mainPanels" style="display:none"></div>
 <!-- VERSION FOOTER -->
 <div class="ver-footer" id="verFooter">
@@ -935,6 +955,7 @@ body.light .gmoney-pick{color:#5A3ECC;}
 </div>
 
 <!-- DEBUG PANEL -->
+
 <div class="debug-overlay hidden" id="debugOverlay" onclick="if(event.target===this)toggleDebugPanel()">
   <div class="debug-sheet">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
@@ -3019,7 +3040,8 @@ function buildRow(g) {
   const total      = liveOdds?.total  ?? g.total?.line;
   const overOdds   = liveOdds?.overOdds  ?? g.total?.overJuice  ?? '-110';
   const underOdds  = liveOdds?.underOdds ?? g.total?.underJuice ?? '-110';
-  const spreadBadge = spreadLine ? `${g.away?.abbr??''} ${spreadLine}` : '—';
+  const awayAbbrStatic = g.away?.abbr || '';
+  const spreadBadge = spreadLine ? `${awayAbbrStatic} ${spreadLine}`.replace(/^\s+/,'').replace('undefined','') : '—';
 
   const score = getGameScore(g);
   const isLive  = score?.status === 'live';
@@ -3056,10 +3078,10 @@ function buildRow(g) {
         const sel_sp = (typeof isParlaySelected==='function') && isParlaySelected(gKey,'spread')  ? ' parlay-on' : '';
         const sel_ou = (typeof isParlaySelected==='function') && isParlaySelected(gKey,'ou')       ? ' parlay-on' : '';
         return `
-        <button class="ml-badge ${mlCls(awayML)} parlay-pill${sel_ma}" data-pleg="${gKey}-ml-away" onclick="event.stopPropagation();_parlayTap(this);">${away} ${awayML||'—'}</button>
-        <button class="ml-badge ${mlCls(homeML)} parlay-pill${sel_mh}" data-pleg="${gKey}-ml-home" onclick="event.stopPropagation();_parlayTap(this);">${home} ${homeML||'—'}</button>
-        <button class="spread-mini parlay-pill${sel_sp}" data-pleg="${gKey}-spread" onclick="event.stopPropagation();_parlayTap(this);">${spreadBadge}</button>
-        ${total ? `<button class="ou-mini parlay-pill${sel_ou}" data-ou-game="${gKey}" data-ou-away="${away}" data-ou-home="${home}" data-ou-total="${total}" data-ou-over="${overOdds}" data-ou-under="${underOdds}" onclick="event.stopPropagation();_ouTap(this);">O/U ${total}</button>` : ''}
+        <button class="ml-badge ${mlCls(awayML)} parlay-pill${sel_ma}" data-pleg="${gKey}-ml-away" ontouchstart="" onclick="_parlayTap(this);event.stopPropagation();">${away} ${awayML||'—'}</button>
+        <button class="ml-badge ${mlCls(homeML)} parlay-pill${sel_mh}" data-pleg="${gKey}-ml-home" ontouchstart="" onclick="_parlayTap(this);event.stopPropagation();">${home} ${homeML||'—'}</button>
+        <button class="spread-mini parlay-pill${sel_sp}" data-pleg="${gKey}-spread" ontouchstart="" onclick="_parlayTap(this);event.stopPropagation();">${spreadBadge}</button>
+        ${total ? `<button class="ou-mini parlay-pill${sel_ou}" data-ou-game="${gKey}" data-ou-away="${away}" data-ou-home="${home}" data-ou-total="${total}" data-ou-over="${overOdds}" data-ou-under="${underOdds}" ontouchstart="" onclick="_ouTap(this);event.stopPropagation();">O/U ${total}</button>` : ''}
         ${hasVar ? '<span class="variance-badge">LINE GAP</span>' : ''}`;
       })()}</div>`;
 
@@ -4402,6 +4424,17 @@ function renderHome() {
   }
 }
 
+function getRoundSubtitle() {
+  const t = new Date(), m = t.getMonth(), d = t.getDate();
+  if (m === 2 && d <= 20) return 'First Round · Round of 64 · 4 regions';
+  if (m === 2 && d <= 22) return 'Second Round · Round of 32 · 8 cities';
+  if (m === 2 && d <= 27) return 'Sweet 16 · Regional Semifinals · 2 sites';
+  if (m === 2 && d <= 29) return 'Elite Eight · Regional Finals · 4 sites';
+  if (m === 3 && d <= 4)  return 'Final Four · Indianapolis, IN';
+  if (m === 3 && d <= 6)  return 'National Championship · Indianapolis, IN';
+  return 'March Madness 2026';
+}
+
 function buildNCAAHome() {
   // Count live/final/upcoming from liveScores
   const games = Object.values(liveScores);
@@ -4476,17 +4509,19 @@ function buildNCAAHome() {
     <div class="home-hero">
       <div class="home-hero-bg"></div>
       <div class="home-hero-inner">
-        <div class="home-eyebrow"><div class="live-dot"></div>NCAA TOURNAMENT 2026</div>
+        <div class="home-eyebrow">${liveGames.length > 0 ? '<div class="live-dot"></div>' : ''}NCAA TOURNAMENT 2026</div>
         <div class="home-title">March <em>Madness</em></div>
-        <div class="home-sub">First Round · Round of 64 · 4 regions</div>
+        <div class="home-sub">${getRoundSubtitle()}</div>
         <div class="home-stats">
-          <div class="home-stat"><div class="home-stat-v">16</div><div class="home-stat-l">Today</div></div>
-          <div class="home-stat live-stat">
-            <div class="home-stat-v red"><div class="live-dot" style="width:8px;height:8px"></div><span id="homeLiveCount">${liveGames.length||'—'}</span></div>
-            <div class="home-stat-l red">Live Now</div>
+          <div class="home-stat"><div class="home-stat-v">${finalGames.length||'0'}</div><div class="home-stat-l">Final</div></div>
+          <div class="home-stat ${liveGames.length > 0 ? 'live-stat' : ''}">
+            ${liveGames.length > 0
+              ? `<div class="home-stat-v red"><div class="live-dot" style="width:8px;height:8px"></div><span id="homeLiveCount">${liveGames.length}</span></div><div class="home-stat-l red">Live Now</div>`
+              : `<div class="home-stat-v"><span id="homeLiveCount">0</span></div><div class="home-stat-l">Live</div>`
+            }
           </div>
-          <div class="home-stat"><div class="home-stat-v"><span id="homeFinalCount">${finalGames.length||'—'}</span></div><div class="home-stat-l">Finals</div></div>
-          <div class="home-stat"><div class="home-stat-v amber">4</div><div class="home-stat-l">Up Next</div></div>
+          <div class="home-stat"><div class="home-stat-v amber">${16 - finalGames.length > 0 ? 16 - finalGames.length : '—'}</div><div class="home-stat-l">Upcoming</div></div>
+          <div class="home-stat"><div class="home-stat-v">${new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'})}</div><div class="home-stat-l">Today</div></div>
         </div>
       </div>
     </div>
@@ -4502,8 +4537,8 @@ function buildNCAAHome() {
     <!-- Tournament roadmap -->
     <div class="home-sect"><div class="home-sect-t">📅 Tournament Roadmap</div></div>
     <div class="home-sched">
-      <div class="hs-row" onclick="showGamesPanel()"><div class="hs-date" style="color:var(--green)">THU–FRI<br>3/19–20</div><div class="hs-div" style="background:var(--green);opacity:.3"></div><div class="hs-info"><div class="hs-round">First Round</div><div class="hs-sub">32 games · 8 cities</div></div><span class="hs-badge live">✓ Now</span></div>
-      <div class="hs-row"><div class="hs-date">SAT–SUN<br>3/21–22</div><div class="hs-div"></div><div class="hs-info"><div class="hs-round">Second Round</div><div class="hs-sub">16 games · Round of 32</div></div>${s(2,21)}</div>
+      <div class="hs-row" onclick="showGamesPanel()"><div class="hs-date" style="color:var(--green)">THU–FRI<br>3/19–20</div><div class="hs-div" style="background:var(--green);opacity:.3"></div><div class="hs-info"><div class="hs-round">First Round</div><div class="hs-sub">32 games · 8 cities</div></div>${s(2,19)}</div>
+      <div class="hs-row"><div class="hs-date">SAT–SUN<br>3/21–22</div><div class="hs-div"></div><div class="hs-info"><div class="hs-round">Second Round</div><div class="hs-sub">16 games · Round of 32</div></div>${s(2,22)}</div>
       <div class="hs-row"><div class="hs-date">THU–FRI<br>3/26–27</div><div class="hs-div"></div><div class="hs-info"><div class="hs-round">Sweet 16</div><div class="hs-sub">8 games · 2 sites</div></div>${s(2,26)}</div>
       <div class="hs-row"><div class="hs-date">SAT–SUN<br>3/28–29</div><div class="hs-div"></div><div class="hs-info"><div class="hs-round">Elite Eight</div><div class="hs-sub">4 games · Regional Finals</div></div>${s(2,28)}</div>
       <div class="hs-row"><div class="hs-date">SAT<br>4/4</div><div class="hs-div"></div><div class="hs-info"><div class="hs-round">Final Four</div><div class="hs-sub">2 games · San Antonio</div></div>${s(3,4)}</div>
@@ -4775,6 +4810,14 @@ const R64_MAP = {
   fri_midwest: ['f4','f9'],                  // TTU/AKR, PUR/QNS
 };
 
+// R32 games by region — actual Second Round matchup IDs
+const R32_MAP = {
+  east:    ['s3','s2','s7','u7'],    // TCU/DUKE, LOU/MSU, VCU/ILL, UCLA/CONN
+  west:    ['s5','u6','u3','u4'],    // TEX/GONZ, USU/ARIZ, SJU/KU, TENN/UVA
+  south:   ['s4','u5','u1','u2'],    // TAM/HOU, IOWA/FLA, SCU/ISU, UK/ISU
+  midwest: ['s1','s6','s8','u8'],    // SLU/MICH, VAN/NEB, HPU/ARK, TTU/ALA
+};
+
 function makeTBDSlots(count, label) {
   return Array.from({length:count}, () => ({
     id: 'tbd-'+Math.random(), a:{s:'?',n:'TBD'}, h:{s:'?',n:'TBD'}, st:'tbd', as:0, hs:0, aw:false, tm:label||'TBD'
@@ -4874,7 +4917,32 @@ function buildFallbackBracket() {
       });
     }
 
-    const r32 = advance(r64, 2, dates.r32[region]);
+    // Build r32 from actual Second Round game results
+    const r32ids = R32_MAP[region] || [];
+    const r32 = r32ids.length ? r32ids.map(id => {
+      const g = gameById[id];
+      if (!g) return makeTBDSlots(1, dates.r32[region])[0];
+      const away = (g.away?.abbr||'').toUpperCase();
+      const home = (g.home?.abbr||'').toUpperCase();
+      const result = getGameResult(g);
+      const scoreData = getGameScore(g);
+      let st = 'pre', as = 0, hs = 0, aw = false, tm = g.timeET||dates.r32[region];
+      if (result) {
+        st = 'final'; as = result.awayScore; hs = result.homeScore; aw = as > hs; tm = 'FINAL';
+      } else if (scoreData?.status === 'final') {
+        const fl = scoreData.flipped || scoreData.home === away;
+        as = fl ? (scoreData.homeScore||0) : (scoreData.awayScore||0);
+        hs = fl ? (scoreData.awayScore||0) : (scoreData.homeScore||0);
+        st = 'final'; aw = as > hs; tm = 'FINAL';
+      } else if (scoreData?.status === 'live') {
+        const fl = scoreData.flipped || scoreData.home === away;
+        as = fl ? (scoreData.homeScore||0) : (scoreData.awayScore||0);
+        hs = fl ? (scoreData.awayScore||0) : (scoreData.homeScore||0);
+        st = 'live'; tm = scoreData.period ? 'P'+scoreData.period : 'LIVE';
+      }
+      return { id, a:{s:g.away?.seed||'?', n:away}, h:{s:g.home?.seed||'?', n:home}, st, as, hs, aw, tm };
+    }) : advance(r64, 2, dates.r32[region]);
+
     const s16 = advance(r32, 1, dates.s16[region]);
     const e8  = advance(s16, 1, dates.e8[region]);
     BRACKET_DATA[region] = { r64, r32, s16, e8 };
@@ -5432,9 +5500,10 @@ function addParlayLeg(leg) {
   saveParlayLegs(legs);
   updateParlayFab();
   updateParlayModeBtn();
-  applyParlayModeUI();
   const cacheKey = (getActiveEvent()?.id||'') + '_' + currentDayKey;
   if (cache[cacheKey]) renderPanel(currentDayKey, cache[cacheKey]);
+  // Run AFTER renderPanel so fresh DOM has the bar element
+  setTimeout(() => applyParlayModeUI(), 50);
 }
 
 // Gate toggleParlay — auto-activates parlay mode on first tap
@@ -5859,5 +5928,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 });
 </script>
+
 </body>
 </html>

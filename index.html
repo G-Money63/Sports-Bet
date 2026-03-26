@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -6,6 +7,7 @@
 <title>G-Money Bets</title>
 
 <!-- PWA / Home Screen -->
+
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="G-Money Bets">
@@ -14,6 +16,7 @@
 <meta name="description" content="G-Money Bets — Live odds, spreads and AI picks across NCAA, NBA, NHL and more">
 
 <!-- Home screen icon (canvas-generated, no external image needed) -->
+
 <script>
 (function(){
   try {
@@ -31,6 +34,7 @@
   } catch(e){}
 })();
 </script>
+
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap');
 
@@ -741,88 +745,95 @@ body.light .gmoney-pick{color:#5A3ECC;}
 
 @media(max-width:400px){.game-row-inner{grid-template-columns:48px 1fr auto;gap:7px}}
 </style>
+
 </head>
 <body>
 
 <!-- ── SETTINGS MODAL ── -->
+
 <div class="modal-bg hidden" id="settingsModal">
   <div class="modal-sheet">
     <div class="sheet-handle"></div>
     <div class="sheet-title">Settings</div>
     <div class="sheet-sub">Configure data sources and preferences</div>
 
-    <!-- DATA SOURCES -->
-    <div class="settings-sect">
-      <div class="settings-sect-title">Data Sources</div>
-      <div class="source-grid">
-        <div class="source-tile active" id="src-tile-ai">
-          <div class="sport-icon">🤖</div>
-          <div class="source-tile-name">AI Search</div>
-          <div class="source-tile-desc">Always active · fallback</div>
-        </div>
-        <div class="source-tile" id="src-tile-oddsapi" onclick="toggleSourceTile('oddsapi')">
-          <div class="sport-icon">📊</div>
-          <div class="source-tile-name">The Odds API</div>
-          <div class="source-tile-desc">40+ books · live lines</div>
-        </div>
-        <div class="source-tile" id="src-tile-kalshi" onclick="toggleSourceTile('kalshi')">
-          <div class="sport-icon">🔮</div>
-          <div class="source-tile-name">Kalshi</div>
-          <div class="source-tile-desc">Event contracts · prob %</div>
-        </div>
-        <div class="source-tile" id="src-tile-compare">
-          <div class="sport-icon">⚖️</div>
-          <div class="source-tile-name">Line Compare</div>
-          <div class="source-tile-desc">Auto on w/ Odds API</div>
-        </div>
-      </div>
+```
+<!-- DATA SOURCES -->
+<div class="settings-sect">
+  <div class="settings-sect-title">Data Sources</div>
+  <div class="source-grid">
+    <div class="source-tile active" id="src-tile-ai">
+      <div class="sport-icon">🤖</div>
+      <div class="source-tile-name">AI Search</div>
+      <div class="source-tile-desc">Always active · fallback</div>
     </div>
-
-    <!-- ODDS API KEY -->
-    <div class="settings-sect" id="oddsApiSection" style="display:none">
-      <div class="settings-sect-title">The Odds API Key</div>
-      <div class="api-row">
-        <div class="api-label">Free key at the-odds-api.com (500 req/mo free)</div>
-        <div class="api-input-row">
-          <input class="api-input" id="oddsApiKeyInput" type="password" placeholder="Paste your API key here" />
-          <button class="api-save-btn" onclick="saveOddsApiKey()">Save</button>
-        </div>
-        <div class="api-status" id="oddsApiStatus"></div>
-      </div>
+    <div class="source-tile" id="src-tile-oddsapi" onclick="toggleSourceTile('oddsapi')">
+      <div class="sport-icon">📊</div>
+      <div class="source-tile-name">The Odds API</div>
+      <div class="source-tile-desc">40+ books · live lines</div>
     </div>
-
-    <!-- PREFERRED BOOK -->
-    <div class="settings-sect">
-      <div class="settings-sect-title">Preferred Sportsbook (shown in quick view)</div>
-      <select class="book-select" id="prefBookSelect" onchange="savePrefBook()">
-        <option value="consensus">Consensus (best available)</option>
-        <option value="DraftKings">DraftKings</option>
-        <option value="FanDuel">FanDuel</option>
-        <option value="BetMGM">BetMGM</option>
-        <option value="Caesars">Caesars</option>
-        <option value="PointsBet">PointsBet</option>
-        <option value="BetUS">BetUS</option>
-        <option value="bet365">bet365</option>
-      </select>
+    <div class="source-tile" id="src-tile-kalshi" onclick="toggleSourceTile('kalshi')">
+      <div class="sport-icon">🔮</div>
+      <div class="source-tile-name">Kalshi</div>
+      <div class="source-tile-desc">Event contracts · prob %</div>
     </div>
-
-    <!-- SPORT SELECT -->
-    <div class="settings-sect">
-      <div class="settings-sect-title">Active Event</div>
-      <div id="sportGrid"></div>
+    <div class="source-tile" id="src-tile-compare">
+      <div class="sport-icon">⚖️</div>
+      <div class="source-tile-name">Line Compare</div>
+      <div class="source-tile-desc">Auto on w/ Odds API</div>
     </div>
+  </div>
+</div>
 
-    <button class="kick-btn" style="width:100%;justify-content:center;margin-top:0" onclick="closeSettings()">Done</button>
+<!-- ODDS API KEY -->
+<div class="settings-sect" id="oddsApiSection" style="display:none">
+  <div class="settings-sect-title">The Odds API Key</div>
+  <div class="api-row">
+    <div class="api-label">Free key at the-odds-api.com (500 req/mo free)</div>
+    <div class="api-input-row">
+      <input class="api-input" id="oddsApiKeyInput" type="password" placeholder="Paste your API key here" />
+      <button class="api-save-btn" onclick="saveOddsApiKey()">Save</button>
+    </div>
+    <div class="api-status" id="oddsApiStatus"></div>
+  </div>
+</div>
+
+<!-- PREFERRED BOOK -->
+<div class="settings-sect">
+  <div class="settings-sect-title">Preferred Sportsbook (shown in quick view)</div>
+  <select class="book-select" id="prefBookSelect" onchange="savePrefBook()">
+    <option value="consensus">Consensus (best available)</option>
+    <option value="DraftKings">DraftKings</option>
+    <option value="FanDuel">FanDuel</option>
+    <option value="BetMGM">BetMGM</option>
+    <option value="Caesars">Caesars</option>
+    <option value="PointsBet">PointsBet</option>
+    <option value="BetUS">BetUS</option>
+    <option value="bet365">bet365</option>
+  </select>
+</div>
+
+<!-- SPORT SELECT -->
+<div class="settings-sect">
+  <div class="settings-sect-title">Active Event</div>
+  <div id="sportGrid"></div>
+</div>
+
+<button class="kick-btn" style="width:100%;justify-content:center;margin-top:0" onclick="closeSettings()">Done</button>
+```
+
   </div>
 </div>
 
 <!-- Install nudge (shown in browser, hidden when already installed) -->
+
 <div class="install-nudge" id="installNudge" style="display:none">
   <span>📲 <strong>Add to Home Screen</strong> — tap Share → "Add to Home Screen" for quick access</span>
   <button class="nudge-close" onclick="dismissNudge()">✕</button>
 </div>
 
 <!-- ── HEADER ── -->
+
 <header class="header">
   <div class="header-top">
     <div class="logo-area">
@@ -854,6 +865,7 @@ body.light .gmoney-pick{color:#5A3ECC;}
   </div>
 
   <!-- HOME + BRACKET + PICKS quick nav -->
+
   <div style="display:flex;align-items:center;gap:5px;margin-bottom:8px">
     <button id="homeNavBtn" class="home-nav-btn active" onclick="showHomePanel()">🏠 Home</button>
     <button id="bracketNavBtn" class="home-nav-btn" onclick="showBracketPanel()">🏆 Bracket</button>
@@ -878,11 +890,13 @@ body.light .gmoney-pick{color:#5A3ECC;}
 </header>
 
 <!-- Parlay Done sticky button — shown when parlay mode active with 2+ legs -->
+
 <button id="parlayDoneBtn" onclick="finishParlay()" style="display:none;position:fixed;bottom:80px;left:16px;right:16px;z-index:930;background:var(--amber);color:#000;border:none;border-radius:12px;padding:14px;font-family:var(--mono);font-size:12px;font-weight:800;letter-spacing:.08em;cursor:pointer;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(186,117,23,.5);">
   ✓ DONE — VIEW SLIP
 </button>
 
 <!-- O/U Direction Picker Modal -->
+
 <div id="ouPickerOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:960;" onclick="closeOUPicker()"></div>
 <div id="ouPickerModal" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:970;background:var(--card);border-top:2px solid var(--amber);border-radius:18px 18px 0 0;padding:20px 16px 40px;">
   <div style="font-family:var(--mono);font-size:10px;font-weight:700;color:var(--amber);letter-spacing:.1em;margin-bottom:4px;">OVER / UNDER PICKER</div>
@@ -899,20 +913,25 @@ body.light .gmoney-pick{color:#5A3ECC;}
 </div>
 
 <!-- HOME PANEL -->
+
 <div id="homePanel" class="main"></div>
 
 <!-- BRACKET PANEL -->
+
 <div id="bracketPanel" class="main" style="display:none"></div>
 
 <!-- PICKS PANEL -->
+
 <div id="picksPanel" class="main" style="display:none"></div>
 
 <!-- ── Parlay FAB ── -->
+
 <button class="parlay-fab" id="parlayFab" onclick="openParlaySheet()">
   🎰 PARLAY <span class="pf-count" id="parlayCount">0</span>
 </button>
 
 <!-- ── Parlay Sheet ── -->
+
 <div class="parlay-sheet" id="parlaySheet">
   <div class="parlay-sheet-handle"></div>
   <div class="parlay-sheet-title">
@@ -924,6 +943,7 @@ body.light .gmoney-pick{color:#5A3ECC;}
 <div id="parlayOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:940;" onclick="closeParlaySheet()"></div>
 
 <!-- GAME PANELS -->
+
 <div class="main" id="mainPanels" style="display:none"></div>
 <!-- VERSION FOOTER -->
 <div class="ver-footer" id="verFooter">
@@ -935,6 +955,7 @@ body.light .gmoney-pick{color:#5A3ECC;}
 </div>
 
 <!-- DEBUG PANEL -->
+
 <div class="debug-overlay hidden" id="debugOverlay" onclick="if(event.target===this)toggleDebugPanel()">
   <div class="debug-sheet">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
@@ -5907,5 +5928,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 });
 </script>
+
 </body>
 </html>

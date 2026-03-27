@@ -492,7 +492,14 @@ body.light .spread-mini{background:#1A5FA812;color:#1A5FA8;border-color:#1A5FA84
 .variance-badge{font-family:var(--mono);font-size:9px;padding:2px 6px;border-radius:3px;background:#FFB02018;color:var(--amber);border:1px solid #FFB02033;letter-spacing:.06em}
 
 /* ── Parlay Builder ── */
-.parlay-pill{cursor:pointer;transition:transform .1s,box-shadow .15s,opacity .15s,border-color .15s;user-select:none;-webkit-tap-highlight-color:transparent;appearance:none;-webkit-appearance:none;}
+.pb-btn{font-family:var(--mono);padding:12px 8px;border-radius:10px;cursor:pointer;border:2px solid var(--border);background:var(--card2);color:var(--text2);width:100%;text-align:center;transition:all .12s;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+.pb-btn:active{transform:scale(.95);}
+.pb-type{font-size:9px;opacity:.6;letter-spacing:.06em;margin-bottom:3px;}
+.pb-team{font-size:13px;font-weight:700;margin-bottom:2px;}
+.pb-odds{font-size:14px;font-weight:800;}
+.pb-picked-green{border-color:var(--green)!important;background:rgba(0,232,130,.15)!important;color:var(--green)!important;}
+.pb-picked-blue{border-color:var(--accent)!important;background:rgba(91,184,255,.15)!important;color:var(--accent)!important;}
+.pb-picked-amber{border-color:var(--amber)!important;background:rgba(186,117,23,.15)!important;color:var(--amber)!important;}
 .parlay-pill:active{transform:scale(.95);}
 /* Default selected state */
 .parlay-pill.parlay-on{box-shadow:0 0 0 2px var(--amber);position:relative;}
@@ -5681,6 +5688,10 @@ function selectSpread(side) {
   };
   closeSpreadPicker();
   addParlayLeg(leg);
+  // Re-render builder if open
+  if (document.getElementById('parlayBuilderModal')?.style.display !== 'none') {
+    setTimeout(renderParlayBuilder, 50);
+  }
 }
 
 // Update spread pill onclick to use picker
@@ -5756,6 +5767,34 @@ function applyParlayModeUI() {
     const cnt = bar.querySelector('#parlayModeCount');
     if (cnt) cnt.textContent = legs.length + (legs.length === 1 ? ' leg' : ' legs');
   }
+}
+
+// ── PARLAY BUILDER TOUCH HANDLER ─────────────────────────────
+// Called via ontouchstart on each bet button — reliable on iOS
+function _pbTouch(el) {
+  // Prevent double-fire from click
+  el._pbHandled = Date.now();
+  const type = el.getAttribute('data-pb');
+  const gid  = el.getAttribute('data-gid');
+  const away = el.getAttribute('data-away');
+  const home = el.getAttribute('data-home');
+
+  if (type === 'ml-away' || type === 'ml-home') {
+    const isAway = type === 'ml-away';
+    const aml = el.getAttribute('data-aml');
+    const hml = el.getAttribute('data-hml');
+    pbAddML(gid, away, home, aml, hml, isAway ? 'away' : 'home');
+  } else if (type === 'spread') {
+    const line = el.getAttribute('data-line');
+    if (!line) { showToast('No spread available', 'var(--text3)'); return; }
+    showSpreadPicker(gid, away, home, line, '-110', '-110');
+    return; // renderParlayBuilder called after picker closes
+  } else if (type === 'over' || type === 'under') {
+    const total = el.getAttribute('data-total');
+    const odds  = el.getAttribute('data-odds');
+    pbAddOU(gid, away, home, total, odds, type);
+  }
+  renderParlayBuilder();
 }
 
 // ── PARLAY BUILDER MODAL ──────────────────────────────────────
@@ -5894,39 +5933,34 @@ function renderParlayBuilder() {
       <!-- Bet buttons grid -->
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;padding:10px;">
         <!-- Away ML -->
-        <button ontouchstart="" onclick="pbAddML('${gid}','${away}','${home}','${awayML}','${homeML}','away');renderParlayBuilder()"
-          style="${btnStyle(isAwayMLPicked, 'var(--green)')}">
-          <div style="font-size:10px;opacity:.7">ML</div>
-          <div>${away}</div>
-          <div style="font-size:13px;font-weight:800">${awayML}</div>
+        <button class="pb-btn${isAwayMLPicked?' pb-picked-green':''}" data-pb="ml-away" data-gid="${gid}" data-away="${away}" data-home="${home}" data-aml="${awayML}" data-hml="${homeML}" ontouchstart="_pbTouch(this)">
+          <div class="pb-type">ML</div>
+          <div class="pb-team">${away}</div>
+          <div class="pb-odds">${awayML}</div>
         </button>
         <!-- Home ML -->
-        <button ontouchstart="" onclick="pbAddML('${gid}','${away}','${home}','${awayML}','${homeML}','home');renderParlayBuilder()"
-          style="${btnStyle(isHomeMLPicked, 'var(--green)')}">
-          <div style="font-size:10px;opacity:.7">ML</div>
-          <div>${home}</div>
-          <div style="font-size:13px;font-weight:800">${homeML}</div>
+        <button class="pb-btn${isHomeMLPicked?' pb-picked-green':''}" data-pb="ml-home" data-gid="${gid}" data-away="${away}" data-home="${home}" data-aml="${awayML}" data-hml="${homeML}" ontouchstart="_pbTouch(this)">
+          <div class="pb-type">ML</div>
+          <div class="pb-team">${home}</div>
+          <div class="pb-odds">${homeML}</div>
         </button>
         <!-- Spread -->
-        <button ontouchstart="" onclick="pbAddSpread('${gid}','${away}','${home}','${spreadLine||''}');renderParlayBuilder()"
-          style="${btnStyle(isSpreadPicked, 'var(--accent)')}">
-          <div style="font-size:10px;opacity:.7">SPREAD</div>
-          <div style="font-size:11px">${away} ${awaySpreadLine}</div>
-          <div style="font-size:11px">${home} ${homeSpreadLine}</div>
+        <button class="pb-btn${isSpreadPicked?' pb-picked-blue':''}" data-pb="spread" data-gid="${gid}" data-away="${away}" data-home="${home}" data-line="${spreadLine||''}" ontouchstart="_pbTouch(this)">
+          <div class="pb-type">SPREAD</div>
+          <div class="pb-team" style="font-size:11px">${away} ${awaySpreadLine}</div>
+          <div class="pb-team" style="font-size:11px">${home} ${homeSpreadLine}</div>
         </button>
         <!-- Over -->
-        <button ontouchstart="" onclick="pbAddOU('${gid}','${away}','${home}','${total}','${overOdds}','over');renderParlayBuilder()"
-          style="${btnStyle(isOUPicked && legs.find(l=>l.gameId===gid&&l.type==='O/U')?.label?.startsWith('OVER'), 'var(--amber)')}">
-          <div style="font-size:10px;opacity:.7">OVER</div>
-          <div style="font-size:14px;font-weight:800">${total||'—'}</div>
-          <div style="font-size:11px">${overOdds}</div>
+        <button class="pb-btn${isOUPicked&&curLeg?.label?.startsWith('OVER')?' pb-picked-amber':''}" data-pb="over" data-gid="${gid}" data-away="${away}" data-home="${home}" data-total="${total||''}" data-odds="${overOdds}" ontouchstart="_pbTouch(this)">
+          <div class="pb-type">OVER</div>
+          <div class="pb-odds" style="font-size:16px">${total||'—'}</div>
+          <div class="pb-type">${overOdds}</div>
         </button>
         <!-- Under -->
-        <button ontouchstart="" onclick="pbAddOU('${gid}','${away}','${home}','${total}','${underOdds}','under');renderParlayBuilder()"
-          style="${btnStyle(isOUPicked && legs.find(l=>l.gameId===gid&&l.type==='O/U')?.label?.startsWith('UNDER'), 'var(--amber)')}">
-          <div style="font-size:10px;opacity:.7">UNDER</div>
-          <div style="font-size:14px;font-weight:800">${total||'—'}</div>
-          <div style="font-size:11px">${underOdds}</div>
+        <button class="pb-btn${isOUPicked&&curLeg?.label?.startsWith('UNDER')?' pb-picked-amber':''}" data-pb="under" data-gid="${gid}" data-away="${away}" data-home="${home}" data-total="${total||''}" data-odds="${underOdds}" ontouchstart="_pbTouch(this)">
+          <div class="pb-type">UNDER</div>
+          <div class="pb-odds" style="font-size:16px">${total||'—'}</div>
+          <div class="pb-type">${underOdds}</div>
         </button>
         <!-- Remove if picked -->
         ${hasPick ? `<button ontouchstart="" onclick="removeParlayLeg('${curLeg?.id}');renderParlayBuilder()"
@@ -5955,15 +5989,7 @@ function pbAddML(gid, away, home, awayML, homeML, side) {
 
 function pbAddSpread(gid, away, home, spreadLine) {
   if (!spreadLine) { showToast('No spread available', 'var(--text3)'); return; }
-  // Show spread picker popup
   showSpreadPicker(gid, away, home, spreadLine, '-110', '-110');
-  // After picker closes, re-render builder
-  const orig = window.closeSpreadPicker;
-  window.closeSpreadPicker = function() {
-    orig();
-    window.closeSpreadPicker = orig;
-    setTimeout(renderParlayBuilder, 50);
-  };
 }
 
 function pbAddOU(gid, away, home, total, odds, direction) {

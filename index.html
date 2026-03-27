@@ -883,7 +883,7 @@ body.light .gmoney-pick{color:#5A3ECC;}
   <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
     <span style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;color:var(--text3);flex-shrink:0;min-width:44px;text-align:right">PARLAY</span>
     <div style="display:flex;gap:4px;flex:1">
-      <button id="parlayModeBtn" class="parlay-tab" onclick="toggleParlayMode()">🎰 Build New</button>
+      <button id="parlayModeBtn" class="parlay-tab" onclick="openParlayBuilder()">🎰 Build New</button>
       <button class="parlay-tab" id="gmoneyParlaybtn" onclick="openGMoneyParlay()">⚡ G-Money</button>
       <button id="viewSlipBtn" class="parlay-tab" onclick="openViewSlips()">📋 View Slips</button>
     </div>
@@ -936,6 +936,31 @@ body.light .gmoney-pick{color:#5A3ECC;}
 </button>
 
 <!-- ── Parlay Sheet ── -->
+
+<!-- Full-Screen Parlay Builder Modal -->
+
+<div id="parlayBuilderModal" style="display:none;position:fixed;inset:0;z-index:980;background:var(--bg);flex-direction:column;">
+  <!-- Header -->
+  <div style="background:var(--card);border-bottom:1px solid var(--border);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+    <div>
+      <div style="font-family:var(--mono);font-size:13px;font-weight:800;color:var(--amber)">🎰 BUILD PARLAY</div>
+      <div id="pbLegCount" style="font-family:var(--mono);font-size:10px;color:var(--text3);margin-top:2px">Tap any bet below to add a leg</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button id="pbViewSlipBtn" onclick="finishParlayBuilder()" style="display:none;font-family:var(--mono);font-size:11px;font-weight:800;padding:8px 14px;border-radius:8px;background:var(--amber);color:#000;border:none;cursor:pointer;">VIEW SLIP →</button>
+      <button onclick="closeParlayBuilder()" style="background:none;border:none;color:var(--text3);font-size:22px;cursor:pointer;padding:4px;">✕</button>
+    </div>
+  </div>
+  <!-- Leg summary strip -->
+  <div id="pbLegStrip" style="display:none;background:var(--card2);border-bottom:1px solid var(--border);padding:8px 16px;overflow-x:auto;white-space:nowrap;flex-shrink:0;"></div>
+  <!-- Games list -->
+  <div id="pbGamesList" style="flex:1;overflow-y:auto;padding:8px 12px 100px;"></div>
+  <!-- Bottom action bar -->
+  <div style="position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--border);padding:12px 16px;display:flex;gap:8px;z-index:981;">
+    <button onclick="clearParlay();renderParlayBuilder()" style="flex:1;font-family:var(--mono);font-size:11px;font-weight:700;padding:12px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text3);cursor:pointer;">🗑 CLEAR</button>
+    <button id="pbDoneBtn" onclick="finishParlayBuilder()" style="flex:3;font-family:var(--mono);font-size:12px;font-weight:800;padding:12px;border-radius:8px;background:var(--amber);color:#000;border:none;cursor:pointer;">✓ DONE — VIEW SLIP</button>
+  </div>
+</div>
 
 <!-- Spread Direction Picker Modal -->
 
@@ -5733,6 +5758,243 @@ function applyParlayModeUI() {
   }
 }
 
+// ── PARLAY BUILDER MODAL ──────────────────────────────────────
+function openParlayBuilder() {
+  const modal = document.getElementById('parlayBuilderModal');
+  if (!modal) return;
+  modal.style.display = 'flex';
+  renderParlayBuilder();
+}
+
+function closeParlayBuilder() {
+  const modal = document.getElementById('parlayBuilderModal');
+  if (modal) modal.style.display = 'none';
+}
+
+function finishParlayBuilder() {
+  const legs = loadParlayLegs();
+  if (legs.length < 2) { showToast('Add at least 2 legs', 'var(--red)'); return; }
+  closeParlayBuilder();
+  openParlaySheet();
+}
+
+function renderParlayBuilder() {
+  const legs      = loadParlayLegs();
+  const legCount  = document.getElementById('pbLegCount');
+  const legStrip  = document.getElementById('pbLegStrip');
+  const gamesList = document.getElementById('pbGamesList');
+  const doneBtn   = document.getElementById('pbDoneBtn');
+  const viewBtn   = document.getElementById('pbViewSlipBtn');
+
+  // Update header count
+  if (legCount) {
+    legCount.textContent = legs.length > 0
+      ? legs.length + ' leg' + (legs.length > 1 ? 's' : '') + ' added — tap more or tap Done'
+      : 'Tap any bet below to add a leg';
+  }
+
+  // Update done button
+  if (doneBtn) {
+    doneBtn.style.background = legs.length >= 2 ? 'var(--amber)' : 'var(--card2)';
+    doneBtn.style.color      = legs.length >= 2 ? '#000' : 'var(--text3)';
+    doneBtn.style.border     = legs.length >= 2 ? 'none' : '1px solid var(--border)';
+    doneBtn.textContent      = legs.length >= 2 ? '✓ DONE — VIEW ' + legs.length + '-LEG SLIP' : '✓ DONE (2 legs min)';
+  }
+  if (viewBtn) viewBtn.style.display = legs.length >= 2 ? 'block' : 'none';
+
+  // Leg strip
+  if (legStrip) {
+    if (legs.length > 0) {
+      legStrip.style.display = 'block';
+      legStrip.innerHTML = legs.map(l => `
+        <span style="display:inline-flex;align-items:center;gap:4px;background:var(--amber);color:#000;font-family:var(--mono);font-size:10px;font-weight:700;padding:4px 8px;border-radius:20px;margin-right:6px;">
+          ${l.label} <span style="opacity:.6">${l.odds}</span>
+          <button onclick="removeParlayLeg('${l.id}');renderParlayBuilder()" style="background:none;border:none;color:#000;cursor:pointer;font-size:12px;padding:0 0 0 2px;">✕</button>
+        </span>`).join('');
+    } else {
+      legStrip.style.display = 'none';
+    }
+  }
+
+  // Build game cards
+  if (!gamesList) return;
+  const cacheKey = (getActiveEvent()?.id||'') + '_' + currentDayKey;
+  const data = cache[cacheKey];
+  if (!data?.games?.length) {
+    gamesList.innerHTML = `<div style="text-align:center;padding:60px 20px;color:var(--text3)">
+      <div style="font-size:32px;margin-bottom:12px">🏀</div>
+      <div style="font-family:var(--mono);font-size:12px">Select a date tab first to load games</div>
+    </div>`;
+    return;
+  }
+
+  const pickedGames = new Set(legs.map(l => l.gameId));
+
+  gamesList.innerHTML = data.games.map(g => {
+    const gid      = String(g.id || '');
+    const away     = (g.away?.abbr || g.away?.name || 'AWAY').toUpperCase();
+    const home     = (g.home?.abbr || g.home?.name || 'HOME').toUpperCase();
+    const awayFull = g.away?.name || away;
+    const homeFull = g.home?.name || home;
+    const awaySeed = g.away?.seed ? '#'+g.away.seed : '';
+    const homeSeed = g.home?.seed ? '#'+g.home.seed : '';
+
+    // Get odds
+    const liveOdds = getGameOdds(g);
+    const pref     = getPrefLine(g);
+    const awayML   = liveOdds?.awayML ?? pref.awayML ?? '—';
+    const homeML   = liveOdds?.homeML ?? pref.homeML ?? '—';
+    const sp       = g.spread;
+    const spreadLine = liveOdds?.spread ?? (sp?.line != null ? (sp.line > 0 ? '+' : '') + sp.line : null);
+    const total    = liveOdds?.total ?? g.total?.line;
+    const overOdds = liveOdds?.overOdds  ?? g.total?.overJuice  ?? '-110';
+    const underOdds= liveOdds?.underOdds ?? g.total?.underJuice ?? '-110';
+
+    // Score if final
+    const score    = getGameScore(g);
+    const isFinal  = score?.status === 'final';
+    const isLive   = score?.status === 'live';
+    const hasPick  = pickedGames.has(gid);
+    const curLeg   = legs.find(l => l.gameId === gid);
+
+    const awaySpreadLine = spreadLine ? (parseFloat(spreadLine) > 0 ? '+'+parseFloat(spreadLine) : ''+parseFloat(spreadLine)) : '—';
+    const homeSpreadLine = spreadLine ? (parseFloat(spreadLine) > 0 ? ''+(-parseFloat(spreadLine)) : '+'+ (-parseFloat(spreadLine))) : '—';
+
+    // Bet buttons — large tappable
+    const btnStyle = (picked, color) => `
+      font-family:var(--mono);font-size:12px;font-weight:700;
+      padding:12px 8px;border-radius:8px;cursor:pointer;
+      border:2px solid ${picked ? color : 'var(--border)'};
+      background:${picked ? color+'22' : 'var(--card2)'};
+      color:${picked ? color : 'var(--text2)'};
+      transition:all .15s;width:100%;text-align:center;
+      -webkit-tap-highlight-color:transparent;`;
+
+    const isAwayMLPicked = legs.some(l => l.id === gid+'-ml-away');
+    const isHomeMLPicked = legs.some(l => l.id === gid+'-ml-home');
+    const isSpreadPicked = legs.some(l => l.gameId === gid && l.type === 'Spread');
+    const isOUPicked     = legs.some(l => l.gameId === gid && l.type === 'O/U');
+
+    return `<div style="background:var(--card);border:2px solid ${hasPick ? 'var(--amber)' : 'var(--border)'};border-radius:12px;margin-bottom:10px;overflow:hidden;">
+      <!-- Game header -->
+      <div style="padding:10px 14px 6px;border-bottom:1px solid var(--border)">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div style="font-family:var(--mono);font-size:10px;color:var(--text3)">${g.timeET||g.timePT||''} · ${g.region||''}</div>
+          ${isFinal ? `<div style="font-family:var(--mono);font-size:10px;color:var(--green)">✓ FINAL ${score.awayScore}-${score.homeScore}</div>` : ''}
+          ${isLive  ? `<div style="display:flex;align-items:center;gap:4px"><div class="live-dot"></div><span style="font-family:var(--mono);font-size:10px;color:var(--red)">LIVE</span></div>` : ''}
+          ${hasPick ? `<div style="font-family:var(--mono);font-size:10px;color:var(--amber)">✓ ${curLeg?.label||'Added'}</div>` : ''}
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:6px">
+          <div>
+            <div style="font-family:var(--mono);font-size:14px;font-weight:700;color:var(--text)">${awaySeed} ${awayFull}</div>
+            <div style="font-family:var(--mono);font-size:14px;font-weight:700;color:var(--text)">${homeSeed} ${homeFull}</div>
+          </div>
+        </div>
+      </div>
+      <!-- Bet buttons grid -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;padding:10px;">
+        <!-- Away ML -->
+        <button ontouchstart="" onclick="pbAddML('${gid}','${away}','${home}','${awayML}','${homeML}','away');renderParlayBuilder()"
+          style="${btnStyle(isAwayMLPicked, 'var(--green)')}">
+          <div style="font-size:10px;opacity:.7">ML</div>
+          <div>${away}</div>
+          <div style="font-size:13px;font-weight:800">${awayML}</div>
+        </button>
+        <!-- Home ML -->
+        <button ontouchstart="" onclick="pbAddML('${gid}','${away}','${home}','${awayML}','${homeML}','home');renderParlayBuilder()"
+          style="${btnStyle(isHomeMLPicked, 'var(--green)')}">
+          <div style="font-size:10px;opacity:.7">ML</div>
+          <div>${home}</div>
+          <div style="font-size:13px;font-weight:800">${homeML}</div>
+        </button>
+        <!-- Spread -->
+        <button ontouchstart="" onclick="pbAddSpread('${gid}','${away}','${home}','${spreadLine||''}');renderParlayBuilder()"
+          style="${btnStyle(isSpreadPicked, 'var(--accent)')}">
+          <div style="font-size:10px;opacity:.7">SPREAD</div>
+          <div style="font-size:11px">${away} ${awaySpreadLine}</div>
+          <div style="font-size:11px">${home} ${homeSpreadLine}</div>
+        </button>
+        <!-- Over -->
+        <button ontouchstart="" onclick="pbAddOU('${gid}','${away}','${home}','${total}','${overOdds}','over');renderParlayBuilder()"
+          style="${btnStyle(isOUPicked && legs.find(l=>l.gameId===gid&&l.type==='O/U')?.label?.startsWith('OVER'), 'var(--amber)')}">
+          <div style="font-size:10px;opacity:.7">OVER</div>
+          <div style="font-size:14px;font-weight:800">${total||'—'}</div>
+          <div style="font-size:11px">${overOdds}</div>
+        </button>
+        <!-- Under -->
+        <button ontouchstart="" onclick="pbAddOU('${gid}','${away}','${home}','${total}','${underOdds}','under');renderParlayBuilder()"
+          style="${btnStyle(isOUPicked && legs.find(l=>l.gameId===gid&&l.type==='O/U')?.label?.startsWith('UNDER'), 'var(--amber)')}">
+          <div style="font-size:10px;opacity:.7">UNDER</div>
+          <div style="font-size:14px;font-weight:800">${total||'—'}</div>
+          <div style="font-size:11px">${underOdds}</div>
+        </button>
+        <!-- Remove if picked -->
+        ${hasPick ? `<button ontouchstart="" onclick="removeParlayLeg('${curLeg?.id}');renderParlayBuilder()"
+          style="font-family:var(--mono);font-size:11px;font-weight:700;padding:12px 8px;border-radius:8px;cursor:pointer;border:2px solid var(--red);background:rgba(255,68,102,.1);color:var(--red);width:100%;-webkit-tap-highlight-color:transparent;">
+          ✕ REMOVE
+        </button>` : '<div></div>'}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// Parlay builder add helpers
+function pbAddML(gid, away, home, awayML, homeML, side) {
+  const isAway = side === 'away';
+  const team   = isAway ? away : home;
+  const odds   = isAway ? awayML : homeML;
+  const leg = { id: gid+'-ml-'+side, gameId: gid, type: 'ML', label: team+' ML', odds: String(odds), game: away+'v'+home, away, home };
+  const legs = loadParlayLegs();
+  // Toggle off if already picked
+  if (legs.some(l => l.id === leg.id)) {
+    removeParlayLeg(leg.id);
+  } else {
+    addParlayLeg(leg);
+  }
+}
+
+function pbAddSpread(gid, away, home, spreadLine) {
+  if (!spreadLine) { showToast('No spread available', 'var(--text3)'); return; }
+  // Show spread picker popup
+  showSpreadPicker(gid, away, home, spreadLine, '-110', '-110');
+  // After picker closes, re-render builder
+  const orig = window.closeSpreadPicker;
+  window.closeSpreadPicker = function() {
+    orig();
+    window.closeSpreadPicker = orig;
+    setTimeout(renderParlayBuilder, 50);
+  };
+}
+
+function pbAddOU(gid, away, home, total, odds, direction) {
+  if (!total || total === 'undefined') { showToast('No total available', 'var(--text3)'); return; }
+  const isOver = direction === 'over';
+  const leg = {
+    id:     gid + '-ou-' + direction,
+    gameId: gid,
+    type:   'O/U',
+    label:  (isOver ? 'OVER ' : 'UNDER ') + total,
+    odds:   String(odds),
+    game:   away + 'v' + home,
+    away, home,
+  };
+  const legs = loadParlayLegs();
+  if (legs.some(l => l.id === leg.id)) {
+    removeParlayLeg(leg.id);
+  } else {
+    addParlayLeg(leg);
+  }
+}
+
+function removeParlayLeg(id) {
+  let legs = loadParlayLegs();
+  legs = legs.filter(l => l.id !== id);
+  saveParlayLegs(legs);
+  updateParlayFab();
+  updateParlayModeBtn();
+  updatePillHighlights();
+}
+
 function toggleParlayMode() {
   const ev = getActiveEvent();
   if (ev.status && ev.status !== 'active') {
@@ -6133,7 +6395,7 @@ function renderParlaySheet() {
         </div>
         <div class="parlay-leg-right">
           <div class="parlay-leg-odds">${oddsStr}</div>
-          <button class="parlay-leg-del" onclick="removeParlalyLeg('${l.id}')">✕</button>
+          <button class="parlay-leg-del" onclick="removeParlayLeg('${l.id}')">✕</button>
         </div>
       </div>`;
     }).join('');
@@ -6198,7 +6460,7 @@ function updateParlayCalc(dec) {
   if (tp) tp.textContent = (stake*dec).toFixed(2);
 }
 
-function removeParlalyLeg(id) {
+function removeParlayLeg(id) {
   let legs = loadParlayLegs();
   legs = legs.filter(l => l.id !== id);
   saveParlayLegs(legs);

@@ -870,6 +870,7 @@ body.light .gmoney-pick{color:#5A3ECC;}
     <button id="homeNavBtn" class="home-nav-btn active" onclick="showHomePanel()">🏠 Home</button>
     <button id="bracketNavBtn" class="home-nav-btn" onclick="showBracketPanel()">🏆 Bracket</button>
     <button id="picksNavBtn" class="home-nav-btn" onclick="showPicksPanel()">💰 G-Money Picks</button>
+    <button id="myBetsNavBtn" class="home-nav-btn" onclick="showMyBetsPanel()">📋 My Bets</button>
   </div>
 
   <div class="week-bar" id="weekBar" style="display:flex;align-items:center;gap:8px"><span class="week-label" style="flex-shrink:0;min-width:44px;text-align:right">WEEK</span></div>
@@ -924,6 +925,10 @@ body.light .gmoney-pick{color:#5A3ECC;}
 
 <div id="picksPanel" class="main" style="display:none"></div>
 
+<!-- MY BETS PANEL -->
+
+<div id="myBetsPanel" class="main" style="display:none"></div>
+
 <!-- ── Parlay FAB ── -->
 
 <button class="parlay-fab" id="parlayFab" onclick="openParlaySheet()">
@@ -931,6 +936,19 @@ body.light .gmoney-pick{color:#5A3ECC;}
 </button>
 
 <!-- ── Parlay Sheet ── -->
+
+<!-- Spread Direction Picker Modal -->
+
+<div id="spreadPickerOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:960;" onclick="closeSpreadPicker()"></div>
+<div id="spreadPickerModal" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:970;background:var(--card);border-top:2px solid var(--accent);border-radius:18px 18px 0 0;padding:20px 16px 40px;">
+  <div style="font-family:var(--mono);font-size:10px;font-weight:700;color:var(--accent);letter-spacing:.1em;margin-bottom:4px;">SPREAD PICKER</div>
+  <div id="spreadPickerGame" style="font-family:var(--mono);font-size:12px;color:var(--text3);margin-bottom:16px;"></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+    <button id="spreadPickerAway" onclick="selectSpread('away')" style="padding:16px;border-radius:10px;border:2px solid var(--accent);background:rgba(91,184,255,.08);color:var(--accent);font-family:var(--mono);font-size:13px;font-weight:800;cursor:pointer;line-height:1.4;"></button>
+    <button id="spreadPickerHome" onclick="selectSpread('home')" style="padding:16px;border-radius:10px;border:2px solid var(--accent);background:rgba(91,184,255,.08);color:var(--accent);font-family:var(--mono);font-size:13px;font-weight:800;cursor:pointer;line-height:1.4;"></button>
+  </div>
+  <button onclick="closeSpreadPicker()" style="width:100%;margin-top:12px;padding:10px;background:none;border:1px solid var(--border);border-radius:8px;color:var(--text3);font-family:var(--mono);font-size:11px;cursor:pointer;">CANCEL</button>
+</div>
 
 <div class="parlay-sheet" id="parlaySheet">
   <div class="parlay-sheet-handle"></div>
@@ -2982,6 +3000,7 @@ function renderPanel(dayKey, data) {
   ` + sorted.map(buildRow).join('');
   // Apply parlay mode visual states after render
   if (typeof applyParlayModeUI === 'function') applyParlayModeUI();
+  if (typeof updatePillHighlights === 'function') setTimeout(updatePillHighlights, 30);
 }
 
 // Global map for parlay leg data — avoids JSON.stringify in onclick attrs
@@ -3060,13 +3079,12 @@ function buildRow(g) {
     : `<div class="game-time">${displayTime}</div>
        <div class="game-meta">${metaLine}</div>`;
 
-  // Right column — scores when live/final, odds when pregame
-  const rightCol = (isLive || isFinal)
-    ? `<div class="score-block">
-        <span class="score-badge ${isLive?(awayWinning?'leading':'trailing'):'final-'+(awayWinning?'w':'l')}">${g.away?.abbr??''} ${score.awayScore}</span>
-        <span class="score-badge ${isLive?(homeWinning?'leading':'trailing'):'final-'+(homeWinning?'w':'l')}">${g.home?.abbr??''} ${score.homeScore}</span>
-       </div>`
-    : `<div class="odds-block">${(()=>{
+  // Right column — always show odds pills; show score badge for live/final
+  const scoreBadge = (isLive || isFinal) ? `<div class="score-block" style="margin-bottom:4px">
+      <span class="score-badge ${isLive?(awayWinning?'leading':'trailing'):'final-'+(awayWinning?'w':'l')}">${g.away?.abbr??''} ${score.awayScore}</span>
+      <span class="score-badge ${isLive?(homeWinning?'leading':'trailing'):'final-'+(homeWinning?'w':'l')}">${g.home?.abbr??''} ${score.homeScore}</span>
+     </div>` : '';
+  const rightCol = `<div class="odds-block">${scoreBadge}${(()=>{
         const away = (g.away?.abbr || '').toUpperCase();
         const home = (g.home?.abbr || '').toUpperCase();
         const gKey = String(g.id || '');
@@ -3080,7 +3098,7 @@ function buildRow(g) {
         return `
         <button class="ml-badge ${mlCls(awayML)} parlay-pill${sel_ma}" data-pleg="${gKey}-ml-away" ontouchstart="" onclick="_parlayTap(this);event.stopPropagation();">${away} ${awayML||'—'}</button>
         <button class="ml-badge ${mlCls(homeML)} parlay-pill${sel_mh}" data-pleg="${gKey}-ml-home" ontouchstart="" onclick="_parlayTap(this);event.stopPropagation();">${home} ${homeML||'—'}</button>
-        <button class="spread-mini parlay-pill${sel_sp}" data-pleg="${gKey}-spread" ontouchstart="" onclick="_parlayTap(this);event.stopPropagation();">${spreadBadge}</button>
+        <button class="spread-mini parlay-pill${sel_sp}" data-pleg="${gKey}-spread" data-sp-game="${gKey}" data-sp-away="${away}" data-sp-home="${home}" data-sp-line="${spreadLine||''}" data-sp-aodds="-110" data-sp-hodds="-110" ontouchstart="" onclick="_spreadTap(this);event.stopPropagation();">${spreadBadge}</button>
         ${total ? `<button class="ou-mini parlay-pill${sel_ou}" data-ou-game="${gKey}" data-ou-away="${away}" data-ou-home="${home}" data-ou-total="${total}" data-ou-over="${overOdds}" data-ou-under="${underOdds}" ontouchstart="" onclick="_ouTap(this);event.stopPropagation();">O/U ${total}</button>` : ''}
         ${hasVar ? '<span class="variance-badge">LINE GAP</span>' : ''}`;
       })()}</div>`;
@@ -3307,7 +3325,7 @@ async function fetchGMoneyPick(g, elId) {
         setTimeout(function() { delete gmoneyCache[gid]; fetchGMoneyPick(g, elId); }, 20000);
         return;
       }
-      el.innerHTML = "<div class=\"gmoney-head\"><div class=\"gmoney-title\">G-Money Bets</div></div><div class=\"gmoney-text\" style=\"color:var(--text3)\">API error " + resp.status + " — retry.</div>";
+      el.innerHTML = "<div class=\"gmoney-head\"><div class=\"gmoney-title\">G-Money Bets</div></div><div class=\"gmoney-text\" style=\"color:var(--text3)\">G-Money's picks require the API key — set ANTHROPIC_API_KEY in Cloud Run env vars and redeploy.</div>";
       return;
     }
     var data = await resp.json();
@@ -4104,6 +4122,226 @@ function renderPicksPanel() {
 
 let picksRefreshInterval = null;
 
+// ── MY BETS PANEL ─────────────────────────────────────────────
+const MY_BETS_KEY     = 'gmoney_my_bets_v1';
+const MY_PARLAYS_KEY  = 'gmoney_my_parlays_v1';
+
+function loadMyBets()       { try { return JSON.parse(localStorage.getItem(MY_BETS_KEY)||'[]'); } catch(e) { return []; } }
+function saveMyBets(b)      { localStorage.setItem(MY_BETS_KEY, JSON.stringify(b)); }
+function loadMyParlays()    { try { return JSON.parse(localStorage.getItem(MY_PARLAYS_KEY)||'[]'); } catch(e) { return []; } }
+function saveMyParlays(p)   { localStorage.setItem(MY_PARLAYS_KEY, JSON.stringify(p)); }
+
+function showMyBetsPanel() {
+  if (picksRefreshInterval) { clearInterval(picksRefreshInterval); picksRefreshInterval = null; }
+  activeMainView = 'mybets';
+  document.getElementById('homePanel').style.display    = 'none';
+  document.getElementById('bracketPanel').style.display = 'none';
+  document.getElementById('mainPanels').style.display   = 'none';
+  document.getElementById('picksPanel').style.display   = 'none';
+  document.getElementById('myBetsPanel').style.display  = '';
+  document.getElementById('homeNavBtn').classList.remove('active');
+  document.getElementById('bracketNavBtn').classList.remove('active');
+  document.getElementById('picksNavBtn')?.classList.remove('active');
+  document.getElementById('myBetsNavBtn').classList.add('active');
+  document.querySelectorAll('.day-tab').forEach(t => t.classList.remove('active'));
+  renderMyBetsPanel();
+}
+
+function renderMyBetsPanel() {
+  const panel    = document.getElementById('myBetsPanel');
+  const bets     = loadMyBets();
+  const parlays  = loadMyParlays();
+  // Also include saved parlays from builder
+  const saved    = loadSavedParlays();
+
+  const wins   = bets.filter(b => b.result === 'win').length;
+  const losses = bets.filter(b => b.result === 'loss').length;
+  const pending= bets.filter(b => b.result === 'pending').length;
+  const pnl    = bets.reduce((sum, b) => {
+    if (b.result === 'win')  return sum + (b.toWin || 0);
+    if (b.result === 'loss') return sum - (b.stake || 25);
+    return sum;
+  }, 0);
+
+  panel.innerHTML = `
+  <div style="padding:0 0 100px">
+    <!-- Header stats -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:14px 14px 0">
+      <div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:10px 8px;text-align:center">
+        <div style="font-family:var(--mono);font-size:18px;font-weight:800;color:var(--green)">${wins}</div>
+        <div style="font-family:var(--mono);font-size:9px;color:var(--text3)">WINS</div>
+      </div>
+      <div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:10px 8px;text-align:center">
+        <div style="font-family:var(--mono);font-size:18px;font-weight:800;color:var(--red)">${losses}</div>
+        <div style="font-family:var(--mono);font-size:9px;color:var(--text3)">LOSSES</div>
+      </div>
+      <div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:10px 8px;text-align:center">
+        <div style="font-family:var(--mono);font-size:18px;font-weight:800;color:var(--amber)">${pending}</div>
+        <div style="font-family:var(--mono);font-size:9px;color:var(--text3)">PENDING</div>
+      </div>
+      <div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:10px 8px;text-align:center">
+        <div style="font-family:var(--mono);font-size:18px;font-weight:800;color:${pnl>=0?'var(--green)':'var(--red)'}">${pnl>=0?'+':''}$${Math.abs(pnl).toFixed(0)}</div>
+        <div style="font-family:var(--mono);font-size:9px;color:var(--text3)">P&L</div>
+      </div>
+    </div>
+
+    <!-- Add bet button -->
+    <div style="padding:12px 14px 0;display:flex;gap:8px">
+      <button onclick="showAddBetForm()" style="flex:1;font-family:var(--mono);font-size:11px;font-weight:700;padding:10px;border-radius:8px;background:var(--accent-d);border:1px solid var(--accent);color:var(--accent);cursor:pointer;">+ ADD STRAIGHT BET</button>
+      <button onclick="showAddParlayForm()" style="flex:1;font-family:var(--mono);font-size:11px;font-weight:700;padding:10px;border-radius:8px;background:var(--amber-d);border:1px solid var(--amber);color:var(--amber);cursor:pointer;">+ ADD PARLAY</button>
+    </div>
+
+    <!-- Saved parlay slips from builder -->
+    ${saved.length ? `
+    <div style="padding:14px 14px 0">
+      <div style="font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:.1em;margin-bottom:8px">🎰 PARLAY SLIPS FROM BUILDER</div>
+      ${saved.map((p,i) => buildSavedParlayCard(p,i)).join('')}
+    </div>` : ''}
+
+    <!-- Straight bets -->
+    ${bets.length ? `
+    <div style="padding:14px 14px 0">
+      <div style="font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:.1em;margin-bottom:8px">📝 STRAIGHT BETS</div>
+      ${bets.map((b,i) => buildBetCard(b,i)).join('')}
+    </div>` : bets.length === 0 && saved.length === 0 ? `
+    <div style="text-align:center;padding:60px 24px;color:var(--text3)">
+      <div style="font-size:40px;margin-bottom:12px">📋</div>
+      <div style="font-family:var(--mono);font-size:13px;font-weight:700;margin-bottom:6px">No bets yet</div>
+      <div style="font-size:13px">Add bets you've placed on DraftKings, FanDuel etc to track your results</div>
+    </div>` : ''}
+  </div>
+
+  <!-- Add Bet Form (hidden by default) -->
+  <div id="addBetForm" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:960;overflow-y:auto">
+    <div style="background:var(--card);border-radius:16px 16px 0 0;padding:20px 16px 40px;position:absolute;bottom:0;left:0;right:0;max-height:90vh;overflow-y:auto">
+      <div style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--accent);letter-spacing:.1em;margin-bottom:16px">ADD STRAIGHT BET</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <input id="betGame" placeholder="Game (e.g. Duke vs SJU)" style="${inputStyle()}">
+        <input id="betPick" placeholder="Your pick (e.g. Duke -6.5)" style="${inputStyle()}">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <input id="betOdds" placeholder="Odds (e.g. -110)" style="${inputStyle()}">
+          <input id="betStake" placeholder="Stake ($)" type="number" style="${inputStyle()}">
+        </div>
+        <select id="betBook" style="${inputStyle()}">
+          <option value="">Book (optional)</option>
+          <option>DraftKings</option><option>FanDuel</option><option>BetMGM</option>
+          <option>Caesars</option><option>PointsBet</option><option>Other</option>
+        </select>
+        <select id="betResult" style="${inputStyle()}">
+          <option value="pending">Pending</option>
+          <option value="win">Win ✅</option>
+          <option value="loss">Loss ❌</option>
+          <option value="push">Push</option>
+        </select>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px">
+        <button onclick="submitBet()" style="padding:12px;border-radius:8px;background:var(--accent);border:none;color:#000;font-family:var(--mono);font-size:11px;font-weight:800;cursor:pointer;">SAVE BET</button>
+        <button onclick="document.getElementById('addBetForm').style.display='none'" style="padding:12px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text3);font-family:var(--mono);font-size:11px;cursor:pointer;">CANCEL</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function inputStyle() {
+  return 'width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-family:var(--mono);font-size:12px;box-sizing:border-box;';
+}
+
+function buildBetCard(b, i) {
+  const rc = b.result === 'win' ? 'var(--green)' : b.result === 'loss' ? 'var(--red)' : 'var(--amber)';
+  const ri = b.result === 'win' ? '✅' : b.result === 'loss' ? '❌' : '⏳';
+  return `<div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
+    <div style="flex:1">
+      <div style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--text)">${b.pick}</div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--text3);margin-top:2px">${b.game||''} · ${b.book||''}${b.odds?' · '+b.odds:''}</div>
+      ${b.stake ? `<div style="font-family:var(--mono);font-size:10px;color:var(--text3)">$${b.stake} to win $${b.toWin||'?'}</div>` : ''}
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="font-family:var(--mono);font-size:11px;font-weight:700;color:${rc}">${ri} ${b.result.toUpperCase()}</span>
+      <button onclick="updateBetResult(${i})" style="font-size:11px;background:none;border:1px solid var(--border);border-radius:6px;padding:3px 8px;color:var(--text3);cursor:pointer;">Edit</button>
+      <button onclick="deleteBet(${i})" style="font-size:14px;background:none;border:none;color:var(--text3);cursor:pointer;">✕</button>
+    </div>
+  </div>`;
+}
+
+function buildSavedParlayCard(p, i) {
+  const rc = p.result === 'win' ? 'var(--green)' : p.result === 'loss' ? 'var(--red)' : 'var(--amber)';
+  const ri = p.result === 'win' ? '✅' : p.result === 'loss' ? '❌' : '⏳';
+  const legs = p.legs || [];
+  return `<div style="background:var(--card2);border:1px solid var(--amber);border-radius:10px;padding:12px 14px;margin-bottom:8px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--amber)">${legs.length}-LEG PARLAY${p.stake?' · $'+p.stake:''}</div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <span style="font-family:var(--mono);font-size:10px;color:${rc}">${ri} ${(p.result||'pending').toUpperCase()}</span>
+        <button onclick="updateSavedParlayResult(${i})" style="font-size:10px;background:none;border:1px solid var(--border);border-radius:5px;padding:2px 6px;color:var(--text3);cursor:pointer;">Edit</button>
+        <button onclick="deleteSavedParlay(${i})" style="font-size:14px;background:none;border:none;color:var(--text3);cursor:pointer;">✕</button>
+      </div>
+    </div>
+    ${legs.map(l => `<div style="font-family:var(--mono);font-size:11px;color:var(--text2);padding:2px 0;border-bottom:1px solid var(--border)">${l.label} <span style="color:var(--text3)">${l.odds}</span></div>`).join('')}
+    ${p.payout ? `<div style="font-family:var(--mono);font-size:10px;color:var(--green);margin-top:6px">Potential payout: $${p.payout}</div>` : ''}
+  </div>`;
+}
+
+function showAddBetForm() {
+  document.getElementById('addBetForm').style.display = 'block';
+}
+
+function showAddParlayForm() {
+  // Open parlay builder sheet
+  openParlaySheet();
+}
+
+function submitBet() {
+  const game  = document.getElementById('betGame').value.trim();
+  const pick  = document.getElementById('betPick').value.trim();
+  const odds  = document.getElementById('betOdds').value.trim();
+  const stake = parseFloat(document.getElementById('betStake').value) || 0;
+  const book  = document.getElementById('betBook').value;
+  const result= document.getElementById('betResult').value;
+  if (!pick) { showToast('Enter your pick', 'var(--red)'); return; }
+  const toWin = odds ? Math.round(stake * (parseInt(odds) > 0 ? parseInt(odds)/100 : 100/Math.abs(parseInt(odds)))) : 0;
+  const bets = loadMyBets();
+  bets.unshift({ game, pick, odds, stake, toWin, book, result, date: new Date().toLocaleDateString('en-US',{month:'numeric',day:'numeric'}) });
+  saveMyBets(bets);
+  document.getElementById('addBetForm').style.display = 'none';
+  showToast('✅ Bet saved', 'var(--green)');
+  renderMyBetsPanel();
+}
+
+function deleteBet(i) {
+  const bets = loadMyBets();
+  bets.splice(i, 1);
+  saveMyBets(bets);
+  renderMyBetsPanel();
+}
+
+function updateBetResult(i) {
+  const bets = loadMyBets();
+  const b = bets[i];
+  const opts = ['pending','win','loss','push'];
+  const cur  = opts.indexOf(b.result);
+  b.result   = opts[(cur + 1) % opts.length];
+  saveMyBets(bets);
+  renderMyBetsPanel();
+}
+
+function deleteSavedParlay(i) {
+  const saved = loadSavedParlays();
+  saved.splice(i, 1);
+  localStorage.setItem(SAVED_PARLAYS_KEY, JSON.stringify(saved));
+  updateParlayModeBtn();
+  renderMyBetsPanel();
+}
+
+function updateSavedParlayResult(i) {
+  const saved = loadSavedParlays();
+  const p = saved[i];
+  const opts = ['pending','win','loss'];
+  const cur  = opts.indexOf(p.result||'pending');
+  p.result   = opts[(cur + 1) % opts.length];
+  localStorage.setItem(SAVED_PARLAYS_KEY, JSON.stringify(saved));
+  renderMyBetsPanel();
+}
+
 function showPicksPanel() {
   if (picksRefreshInterval) { clearInterval(picksRefreshInterval); picksRefreshInterval = null; }
   activeMainView = 'picks';
@@ -4189,6 +4427,7 @@ function showHomePanel() {
   document.getElementById('homePanel').style.display = '';
   document.getElementById('bracketPanel').style.display = 'none';
   document.getElementById('picksPanel').style.display = 'none';
+  document.getElementById('myBetsPanel').style.display = 'none';
   document.getElementById('mainPanels').style.display = 'none';
   document.getElementById('homeNavBtn').classList.add('active');
   document.getElementById('bracketNavBtn').classList.remove('active');
@@ -4209,6 +4448,7 @@ function showBracketPanel() {
   document.getElementById('homePanel').style.display = 'none';
   document.getElementById('bracketPanel').style.display = '';
   document.getElementById('picksPanel').style.display = 'none';
+  document.getElementById('myBetsPanel').style.display = 'none';
   document.getElementById('mainPanels').style.display = 'none';
   document.getElementById('homeNavBtn').classList.remove('active');
   document.getElementById('bracketNavBtn').classList.add('active');
@@ -4226,6 +4466,8 @@ function showGamesPanel() {
   activeMainView = 'games';
   document.getElementById('homePanel').style.display = 'none';
   document.getElementById('bracketPanel').style.display = 'none';
+  document.getElementById('picksPanel').style.display = 'none';
+  document.getElementById('myBetsPanel').style.display = 'none';
   document.getElementById('mainPanels').style.display = '';
   document.getElementById('homeNavBtn').classList.remove('active');
   document.getElementById('bracketNavBtn').classList.remove('active');
@@ -5367,8 +5609,73 @@ function isParlaySelected(gameId, slot) {
 }
 
 // Global parlay mode state
-let _parlayMode = false;
-let _ouPending  = null; // stores pending O/U leg while user picks over/under
+let _parlayMode   = false;
+let _ouPending    = null; // stores pending O/U leg while user picks over/under
+let _spreadPending = null; // stores pending spread leg while user picks side
+
+// ── SPREAD PICKER ─────────────────────────────────────────────
+function showSpreadPicker(gameId, away, home, spreadLine, awayOdds, homeOdds) {
+  _spreadPending = { gameId, away, home, spreadLine, awayOdds, homeOdds };
+  const overlay  = document.getElementById('spreadPickerOverlay');
+  const modal    = document.getElementById('spreadPickerModal');
+  const gameEl   = document.getElementById('spreadPickerGame');
+  const awayBtn  = document.getElementById('spreadPickerAway');
+  const homeBtn  = document.getElementById('spreadPickerHome');
+  if (!modal) return;
+  const line = parseFloat(spreadLine) || 0;
+  const awayLine = (line > 0 ? '+' : '') + line;
+  const homeLine = (line > 0 ? '' : '+') + (-line);
+  if (gameEl)  gameEl.textContent  = away + ' vs ' + home;
+  if (awayBtn) awayBtn.innerHTML   = away + '<br><span style="font-size:16px">' + awayLine + '</span><br><span style="font-size:11px;opacity:.7">' + (awayOdds||'-110') + '</span>';
+  if (homeBtn) homeBtn.innerHTML   = home + '<br><span style="font-size:16px">' + homeLine + '</span><br><span style="font-size:11px;opacity:.7">' + (homeOdds||'-110') + '</span>';
+  overlay.style.display = 'block';
+  modal.style.display   = 'block';
+}
+
+function closeSpreadPicker() {
+  document.getElementById('spreadPickerOverlay').style.display = 'none';
+  document.getElementById('spreadPickerModal').style.display   = 'none';
+  _spreadPending = null;
+}
+
+function selectSpread(side) {
+  if (!_spreadPending) return;
+  const { gameId, away, home, spreadLine, awayOdds, homeOdds } = _spreadPending;
+  const line = parseFloat(spreadLine) || 0;
+  const isAway = side === 'away';
+  const team   = isAway ? away : home;
+  const pick   = isAway ? ((line > 0 ? '+' : '') + line) : ((line > 0 ? '' : '+') + (-line));
+  const leg = {
+    id:    gameId + '-spread-' + side,
+    gameId,
+    type:  'Spread',
+    label: team + ' ' + pick,
+    odds:  isAway ? (awayOdds||'-110') : (homeOdds||'-110'),
+    game:  away + 'v' + home,
+    away, home,
+  };
+  closeSpreadPicker();
+  addParlayLeg(leg);
+}
+
+// Update spread pill onclick to use picker
+function _spreadTap(el) {
+  const key      = el.getAttribute('data-pleg');
+  const gameId   = el.getAttribute('data-sp-game');
+  const away     = el.getAttribute('data-sp-away');
+  const home     = el.getAttribute('data-sp-home');
+  const line     = el.getAttribute('data-sp-line');
+  const awayOdds = el.getAttribute('data-sp-aodds');
+  const homeOdds = el.getAttribute('data-sp-hodds');
+  if (gameId && line) {
+    if (!_parlayMode) { _parlayMode = true; updateParlayModeBtn(); }
+    showSpreadPicker(gameId, away, home, line, awayOdds, homeOdds);
+  } else {
+    _parlayTap(el);
+  }
+}
+
+
 
 function updateParlayModeBtn() {
   const btn     = document.getElementById('parlayModeBtn');
@@ -5495,15 +5802,55 @@ function addParlayLeg(leg) {
     if (legs.length >= 12) { showToast('Max 12 legs', 'var(--amber)'); return; }
     legs.push(leg);
     const n = legs.length;
-    showToast('✓ ' + leg.label + ' added · ' + n + ' leg' + (n > 1 ? 's' : ''), 'var(--amber)');
+    showToast('✓ ' + leg.label + ' · ' + n + ' leg' + (n > 1 ? 's' : ''), 'var(--amber)');
   }
   saveParlayLegs(legs);
   updateParlayFab();
   updateParlayModeBtn();
-  const cacheKey = (getActiveEvent()?.id||'') + '_' + currentDayKey;
-  if (cache[cacheKey]) renderPanel(currentDayKey, cache[cacheKey]);
-  // Run AFTER renderPanel so fresh DOM has the bar element
-  setTimeout(() => applyParlayModeUI(), 50);
+  // Update pill highlights in place — NO full re-render
+  updatePillHighlights();
+  setTimeout(() => applyParlayModeUI(), 30);
+}
+
+function updatePillHighlights() {
+  const legs = loadParlayLegs();
+  const pickedIds  = new Set(legs.map(l => l.id));
+  const pickedGames= new Set(legs.map(l => l.gameId));
+  // Update each pill
+  document.querySelectorAll('.parlay-pill').forEach(el => {
+    const pleg   = el.getAttribute('data-pleg');
+    const ouGame = el.getAttribute('data-ou-game');
+    const spGame = el.getAttribute('data-sp-game');
+    const gameId = el.getAttribute('data-ou-game') || el.getAttribute('data-sp-game') ||
+                   (pleg ? pleg.split('-').slice(0,-2).join('-') || pleg.split('-')[0] : null);
+    if (pleg) {
+      const on = pickedIds.has(pleg) || pickedIds.has(pleg + '-away') || pickedIds.has(pleg + '-home');
+      el.classList.toggle('parlay-on', on);
+    }
+    if (ouGame) {
+      const on = legs.some(l => l.gameId === ouGame && l.type === 'O/U');
+      el.classList.toggle('parlay-on', on);
+    }
+    if (spGame) {
+      const on = legs.some(l => l.gameId === spGame && l.type === 'Spread');
+      el.classList.toggle('parlay-on', on);
+    }
+    // Dim pills for games already picked (different pill same game)
+    if (gameId && pickedGames.has(gameId)) {
+      const thisLegId = pleg || (ouGame ? ouGame+'-ou' : null) || (spGame ? spGame+'-spread' : null);
+      const isPicked  = legs.some(l => l.gameId === gameId && (l.id === pleg || (ouGame && l.type==='O/U') || (spGame && l.type==='Spread')));
+      el.style.opacity = (!isPicked && pickedGames.has(gameId)) ? '0.35' : '';
+      el.style.pointerEvents = (!isPicked && pickedGames.has(gameId)) ? 'none' : '';
+    } else {
+      el.style.opacity = '';
+      el.style.pointerEvents = '';
+    }
+  });
+  // Update game row borders
+  document.querySelectorAll('.game-row').forEach(row => {
+    const gid = row.id.replace('row-', '');
+    row.classList.toggle('parlay-picked', pickedGames.has(gid));
+  });
 }
 
 // Gate toggleParlay — auto-activates parlay mode on first tap
@@ -5640,22 +5987,18 @@ function saveParlayToSlip() {
     decimal: odds.decimal,
     payout: (stake * odds.decimal).toFixed(2),
     toWin: (stake * odds.decimal - stake).toFixed(2),
-    status: 'pending'
+    result: 'pending',
   });
   saveSavedParlays(saved.slice(0,20));
-  saveParlayLegs([]); // clear builder after saving
-  _parlayMode = false; // exit parlay mode
+  saveParlayLegs([]);
+  _parlayMode = false;
+  updateParlayModeBtn();
+  updatePillHighlights();
   updateParlayFab();
-  renderParlaySheet();
-  // Flash the saved slip section
-  showToast('✅ Parlay saved! Scroll down to see your slip.', 'var(--green)');
-  setTimeout(() => {
-    const sheet = document.getElementById('parlaySheet');
-    if (sheet) sheet.scrollTo({ top: sheet.scrollHeight, behavior: 'smooth' });
-  }, 300);
-  // Re-render panel to clear pill highlights
-  const cacheKey = (getActiveEvent()?.id||'') + '_' + currentDayKey;
-  if (cache[cacheKey]) renderPanel(currentDayKey, cache[cacheKey]);
+  closeParlaySheet();
+  showToast('🎰 Parlay saved! ' + legs.length + ' legs · ' + odds.american, 'var(--green)');
+  // Navigate to My Bets to show the saved ticket
+  setTimeout(() => showMyBetsPanel(), 400);
 }
 
 // G-Money auto-parlay: picks 3-4 best legs from today's games
@@ -5817,8 +6160,7 @@ function renderParlaySheet() {
     </div>`;
 
     html += `<div class="parlay-actions">
-      <button class="parlay-btn save" onclick="saveParlayToSlip()">💾 SAVE SLIP</button>
-      <button class="parlay-btn copy" onclick="copyParlayToClipboard()">📋 COPY</button>
+      <button class="parlay-btn save" onclick="saveParlayToSlip()" style="flex:2;background:var(--amber);color:#000;border-color:var(--amber);">✅ DONE — SAVE TICKET</button>
       <button class="parlay-btn clear" onclick="clearParlay()">🗑 CLEAR</button>
     </div>`;
   }

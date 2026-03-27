@@ -1,16 +1,6276 @@
-const express = require('express');
-const path    = require('path');
-const app = express();
+<!DOCTYPE html>
 
-app.use(express.json({ limit: '2mb' }));
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>G-Money Bets</title>
 
-app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  if (req.method === 'OPTIONS') return res.sendStatus(204);
-  next();
+<!-- PWA / Home Screen -->
+
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="G-Money Bets">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#07090C">
+<meta name="description" content="G-Money Bets — Live odds, spreads and AI picks across NCAA, NBA, NHL and more">
+
+<!-- Home screen icon (canvas-generated, no external image needed) -->
+
+<script>
+(function(){
+  try {
+    var c=document.createElement('canvas'); c.width=c.height=180;
+    var x=c.getContext('2d');
+    x.fillStyle='#07090C'; x.fillRect(0,0,180,180);
+    x.fillStyle='#FFC230';
+    x.font='bold 72px system-ui'; x.textAlign='center'; x.textBaseline='middle';
+    x.fillText('🏀',90,80);
+    x.font='bold 22px system-ui'; x.fillStyle='#EBF2FC';
+    x.fillText("G-Money",90,130);
+    var link=document.createElement('link');
+    link.rel='apple-touch-icon'; link.href=c.toDataURL('image/png');
+    document.head.appendChild(link);
+  } catch(e){}
+})();
+</script>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap');
+
+:root {
+  --bg:#07090C; --surface:#0C1017; --card:#111820; --card2:#18222E; --card3:#1D2A38;
+  --border:#253040; --border2:#2E3D50;
+  --green:#00E882; --green-d:#00E88218;
+  --red:#FF5577;   --red-d:#FF557718;
+  --amber:#FFC230; --amber-d:#FFC23018;
+  --blue:#5BB8FF;  --blue-d:#5BB8FF18;
+  --kalshi:#7C5CFC; --kalshi-d:#7C5CFC18;
+  --accent:#FFC230; --accent-d:#FFC23018;
+  --text:#EBF2FC; --text2:#B8CCDF; --text3:#8AAAC4;
+  --mono:'DM Mono',monospace; --sans:'Syne',sans-serif;
+}
+
+/* ── HOME / BRACKET NAV BUTTONS ── */
+.home-nav-btn{font-family:var(--mono);font-size:10px;font-weight:500;padding:5px 13px;border-radius:20px;border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;transition:all .15s;white-space:nowrap;}
+.home-nav-btn.active{background:var(--accent-d);color:var(--accent);border-color:var(--accent);}
+body.light .home-nav-btn{color:var(--text3);}
+body.light .home-nav-btn.active{color:var(--accent);}
+
+/* ── VERSION FOOTER ── */
+.ver-footer{position:fixed;bottom:0;left:0;right:0;max-width:100%;background:var(--surface);border-top:1px solid var(--border);padding:6px 14px;padding-bottom:max(6px,env(safe-area-inset-bottom));display:flex;align-items:center;justify-content:space-between;z-index:40;}
+.ver-badge{font-family:var(--mono);font-size:9px;background:var(--card2);border:1px solid var(--border2);border-radius:4px;padding:2px 8px;color:var(--text3);cursor:pointer;transition:all .15s;}
+.ver-badge:hover{border-color:var(--accent);color:var(--accent);}
+.ver-date{font-family:var(--mono);font-size:9px;color:var(--text3);}
+
+/* ── DEBUG PANEL ── */
+.debug-overlay{position:fixed;inset:0;background:#00000075;z-index:60;display:flex;align-items:flex-end;}
+.debug-overlay.hidden{display:none;}
+.debug-sheet{width:100%;background:var(--surface);border-radius:18px 18px 0 0;border-top:1px solid var(--border2);padding:18px 18px 36px;max-height:70vh;overflow-y:auto;}
+.debug-ok{color:var(--green);}.debug-fail{color:var(--red);}.debug-warn{color:var(--amber);}
+
+/* ── HOME PANEL STYLES ── */
+.home-hero{margin:12px 14px;background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;position:relative;}
+.home-hero-bg{position:absolute;inset:0;background:radial-gradient(ellipse at 85% 15%,var(--accent-d) 0%,transparent 55%),radial-gradient(ellipse at 15% 85%,#5BB8FF08 0%,transparent 50%);pointer-events:none;}
+.home-hero-inner{padding:16px;position:relative;}
+.home-eyebrow{font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;gap:6px;}
+.home-title{font-family:var(--sans);font-size:26px;font-weight:800;color:var(--text);line-height:1.05;margin-bottom:3px;}
+.home-title em{color:var(--accent);font-style:normal;}
+.home-sub{font-family:var(--mono);font-size:11px;color:var(--text3);margin-bottom:14px;}
+.home-stats{display:flex;gap:7px;}
+.home-stat{background:var(--card2);border:1px solid var(--border2);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:3px;flex:1;}
+.home-stat.live-stat{border-color:#FF557750;background:linear-gradient(135deg,#FF557712,#FF557708);}
+.home-stat-v{font-family:var(--mono);font-size:19px;font-weight:500;color:var(--text);display:flex;align-items:center;gap:5px;}
+.home-stat-v.red{color:var(--red);}.home-stat-v.amber{color:var(--amber);}
+.home-stat-l{font-family:var(--mono);font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;}
+.home-stat-l.red{color:var(--red);opacity:.9;}
+.home-sect{display:flex;align-items:center;justify-content:space-between;margin:16px 14px 8px;}
+.home-sect-t{font-family:var(--mono);font-size:10px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;}
+.home-sect-a{font-family:var(--mono);font-size:10px;color:var(--accent);background:none;border:none;cursor:pointer;padding:0;}
+.home-pad{padding:0 14px;}
+
+/* Live strip */
+.home-live-strip{display:flex;gap:8px;overflow-x:auto;padding:0 14px 4px;margin:0;scrollbar-width:none;}
+.home-live-strip::-webkit-scrollbar{display:none;}
+.hlc{flex-shrink:0;width:154px;background:var(--card);border:1.5px solid var(--red);border-radius:12px;padding:10px 12px;position:relative;overflow:hidden;cursor:pointer;}
+.hlc::before{content:'';position:absolute;inset:0;background:var(--red-d);pointer-events:none;}
+.hlc-tag{display:flex;align-items:center;gap:4px;margin-bottom:7px;position:relative;}
+.hlc-t{font-family:var(--mono);font-size:9px;color:var(--red);font-weight:500;}
+.hlc-clk{font-family:var(--mono);font-size:9px;color:var(--text3);margin-left:auto;}
+.hlc-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;position:relative;}
+.hlc-row:last-child{margin-bottom:0;}
+.hlc-name{font-family:var(--sans);font-size:13px;font-weight:700;color:var(--text);}
+.hlc-sc{font-family:var(--mono);font-size:15px;font-weight:500;color:var(--text);}
+.hlc-sc.lead{color:var(--green);}
+.hlc-net{font-family:var(--mono);font-size:9px;color:var(--text3);margin-top:6px;position:relative;}
+.hfc{flex-shrink:0;width:154px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px 12px;opacity:.82;cursor:pointer;}
+.hfc-tag{font-family:var(--mono);font-size:9px;color:var(--red);margin-bottom:7px;font-weight:500;}
+
+/* Schedule rows */
+.home-sched{display:flex;flex-direction:column;gap:6px;padding:0 14px;}
+.hs-row{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;cursor:pointer;transition:border-color .15s;}
+.hs-row:hover{border-color:var(--border2);}
+.hs-date{font-family:var(--mono);font-size:10px;color:var(--accent);font-weight:500;width:54px;flex-shrink:0;line-height:1.3;text-align:center;}
+.hs-div{width:1px;height:32px;background:var(--border);flex-shrink:0;}
+.hs-info{flex:1;}
+.hs-round{font-family:var(--sans);font-size:13px;font-weight:700;color:var(--text);}
+.hs-sub{font-family:var(--mono);font-size:10px;color:var(--text3);margin-top:2px;}
+.hs-badge{font-family:var(--mono);font-size:9px;padding:3px 8px;border-radius:5px;flex-shrink:0;}
+.hs-badge.live{background:var(--green-d);color:var(--green);border:1px solid #00E88230;}
+.hs-badge.done{background:var(--green-d);color:var(--green);border:1px solid #00E88230;}
+.hs-badge.soon{background:var(--card2);color:var(--text3);border:1px solid var(--border);}
+.hs-badge.next{background:var(--card2);color:var(--text3);border:1px solid var(--border);}
+
+/* Next sport card */
+.next-sport-card{margin:0 14px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px;cursor:pointer;}
+.ns-ico{font-size:28px;flex-shrink:0;}
+.ns-title{font-family:var(--sans);font-size:14px;font-weight:700;color:var(--text);margin-bottom:2px;}
+.ns-sub{font-family:var(--mono);font-size:10px;color:var(--text3);}
+.ns-badge{margin-left:auto;font-family:var(--mono);font-size:9px;background:var(--blue-d);color:var(--blue);border:1px solid #5BB8FF30;border-radius:6px;padding:4px 9px;flex-shrink:0;white-space:nowrap;}
+
+/* ── NBA SERIES CARDS ── */
+.nba-conf-label{font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;font-weight:500;}
+.nba-conf-label.west{color:var(--accent);}
+.nba-conf-label.east{color:var(--blue);}
+.series-list{display:flex;flex-direction:column;gap:8px;}
+.series-card{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;cursor:pointer;transition:border-color .15s;}
+.series-card:hover{border-color:var(--border2);}
+.series-card.sc-live{border-color:var(--red);}
+.series-card.sc-live .sc-bar{background:var(--red);}
+.series-card.sc-west .sc-bar{background:var(--accent);}
+.series-card.sc-east .sc-bar{background:var(--blue);}
+.sc-bar{height:2px;opacity:.5;}
+.sc-inner{padding:11px 14px 10px;}
+.sc-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px;}
+.sc-round{font-family:var(--mono);font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;}
+.sc-tags{display:flex;align-items:center;gap:6px;}
+.sc-live-tag{display:flex;align-items:center;gap:4px;font-family:var(--mono);font-size:9px;color:var(--red);}
+.conf-tag{font-family:var(--mono);font-size:8px;padding:2px 7px;border-radius:4px;font-weight:500;}
+.conf-tag.east{background:var(--blue-d);color:var(--blue);border:1px solid #5BB8FF30;}
+.conf-tag.west{background:var(--nba-d);color:var(--accent);border:1px solid #C9553A30;}
+.conf-tag.nhl{background:#60AAEE18;color:#60AAEE;border:1px solid #60AAEE30;}
+.sc-matchup{display:flex;align-items:center;gap:6px;}
+.sc-team{flex:1;}
+.sc-team.right{text-align:right;}
+.sc-seed{font-family:var(--mono);font-size:9px;color:var(--text3);margin-bottom:1px;}
+.sc-name{font-family:var(--sans);font-size:14px;font-weight:800;color:var(--text);line-height:1.1;}
+.sc-name.leading{color:var(--green);}
+.sc-rec{font-family:var(--mono);font-size:9px;color:var(--text3);margin-top:2px;}
+.sc-score-wrap{text-align:center;flex-shrink:0;padding:0 10px;}
+.sc-score{font-family:var(--mono);font-size:26px;font-weight:500;line-height:1;letter-spacing:.06em;color:var(--text2);}
+.sc-score.leads{color:var(--green);}
+.sc-score-lbl{font-family:var(--mono);font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-top:2px;}
+.sc-footer{padding:8px 14px;background:var(--card2);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.sc-next{font-family:var(--mono);font-size:9px;color:var(--text3);}
+.sc-next strong{color:var(--amber);}
+.sc-odds{font-family:var(--mono);font-size:9px;color:var(--text3);}
+.sc-odds span{color:var(--text2);}
+
+/* live strip (in NBA home) */
+.nba-live-strip{display:flex;gap:8px;overflow-x:auto;padding:0 14px 4px;margin:0 -14px;scrollbar-width:none;}
+.nba-live-strip::-webkit-scrollbar{display:none;}
+.nlc{flex-shrink:0;width:158px;background:var(--card);border:1.5px solid var(--red);border-radius:12px;padding:10px 12px;position:relative;overflow:hidden;}
+.nlc::before{content:'';position:absolute;inset:0;background:var(--red-d);pointer-events:none;}
+.nlc-tag{display:flex;align-items:center;gap:4px;margin-bottom:7px;position:relative;}
+.nlc-t{font-family:var(--mono);font-size:9px;color:var(--red);font-weight:500;}
+.nlc-clk{font-family:var(--mono);font-size:9px;color:var(--text3);margin-left:auto;}
+.nlc-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;position:relative;}
+.nlc-row:last-child{margin-bottom:0;}
+.nlc-name{font-family:var(--sans);font-size:13px;font-weight:700;color:var(--text);}
+.nlc-sc{font-family:var(--mono);font-size:15px;font-weight:500;}
+.nlc-sc.lead{color:var(--green);}
+.nlc-sc.trail{color:var(--text2);}
+.nlc-series{font-family:var(--mono);font-size:9px;color:var(--text3);margin-top:5px;position:relative;}
+
+/* ── BRACKET PANEL STYLES ── */
+.brk-region-tabs{display:flex;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:0;z-index:5;flex-shrink:0;}
+.brk-tab{flex:1;padding:9px 4px;text-align:center;font-family:var(--mono);font-size:10px;font-weight:500;color:var(--text3);cursor:pointer;transition:all .15s;border-bottom:2px solid transparent;letter-spacing:.04em;}
+.brk-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.brk-round-hdr{display:flex;padding:5px 14px 2px;background:var(--surface);}
+.brk-rh-item{font-family:var(--mono);font-size:8px;color:var(--border2);text-transform:uppercase;letter-spacing:.05em;text-align:center;}
+.brk-area{padding:8px 14px 80px;overflow-x:auto;}
+.brk-tree{display:flex;align-items:flex-start;}
+.bmc{background:var(--card);border:1px solid var(--border);border-radius:7px;overflow:hidden;width:74px;cursor:pointer;transition:border-color .15s,transform .1s;flex-shrink:0;}
+.bmc:hover{border-color:var(--accent);transform:scale(1.03);}
+.bmc.blive{border-color:var(--red);}
+.bmc.blive::before{content:'';display:block;height:2px;background:var(--red);opacity:.7;}
+.bmc.bfinal{opacity:.85;}
+.bmc.btbd{opacity:.4;cursor:default;}
+.bmc:hover.btbd{transform:none;border-color:var(--border);}
+.btr{display:flex;align-items:center;padding:3px 5px;gap:3px;border-bottom:1px solid var(--border);min-height:22px;}
+.btr:last-child{border-bottom:none;}
+.btr.bwin{background:var(--green-d);}
+.btr.blos{opacity:.4;}
+.btr.bll{background:var(--red-d);}
+.bts{font-family:var(--mono);font-size:7px;color:var(--text3);width:9px;flex-shrink:0;text-align:right;}
+.btn{font-family:var(--sans);font-size:9px;font-weight:700;color:var(--text);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.btn.bw{color:var(--green);}.btn.bl{color:var(--red);}
+.bsc{font-family:var(--mono);font-size:8px;color:var(--text2);flex-shrink:0;}
+.bsc.blead{color:var(--green);font-weight:500;}
+.bsc.brl{color:var(--red);font-weight:500;}
+.btbd-card{width:74px;height:46px;background:var(--card);border:1px dashed var(--border);border-radius:7px;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;}
+.btbd-l{font-family:var(--mono);font-size:7px;color:var(--border2);}
+.btbd-t{font-family:var(--mono);font-size:8px;color:var(--text3);margin-top:2px;}
+.live-tag{display:flex;align-items:center;gap:5px}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--red);animation:livePulse 1.2s ease infinite;flex-shrink:0}
+@keyframes livePulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.4;transform:scale(0.8)}}
+.live-text{font-family:var(--mono);font-size:11px;color:var(--red);font-weight:500;line-height:1}
+.final-text{font-family:var(--mono);font-size:11px;color:var(--red);font-weight:500;line-height:1}
+.live-period{font-family:var(--mono);font-size:10px;color:var(--text3)}
+.game-row.is-live{border-color:var(--red)!important}
+.game-row.is-final{opacity:0.82}
+.score-badge{font-family:var(--mono);font-size:14px;font-weight:500;padding:3px 0;border-radius:5px;width:92px;text-align:center;display:block;box-sizing:border-box}
+.score-badge.leading {background:var(--green-d);color:var(--green);border:1px solid #00E88230}
+.score-badge.trailing{background:var(--card2);color:var(--text2);border:1px solid var(--border)}
+.score-badge.final-w {background:var(--green-d);color:var(--green);border:1px solid #00E88230}
+.score-badge.final-l {background:var(--card2);color:var(--text2);border:1px solid var(--border)}
+body.light .score-badge.trailing,
+body.light .score-badge.final-l{background:var(--card3);color:var(--text3);border-color:var(--border)}
+
+/* ── LIGHT MODE ── */
+body.light {
+  --bg:#F4F6FA; --surface:#FFFFFF; --card:#FFFFFF; --card2:#F0F2F7; --card3:#E8EBF2;
+  --border:#D4D8E4; --border2:#BCC2D0;
+  --green:#007A40; --green-d:#007A4015;
+  --red:#C41E3A;   --red-d:#C41E3A15;
+  --amber:#B8780A; --amber-d:#B8780A15;
+  --blue:#1A5FA8;  --blue-d:#1A5FA815;
+  --kalshi:#4A2EB8; --kalshi-d:#4A2EB815;
+  --accent:#B8780A; --accent-d:#B8780A15;
+  --text:#0D1220; --text2:#1E2E42; --text3:#3A4E66;
+}
+
+/* Light mode specific contrast fixes */
+body.light .round-label { color:#3A4E68; }
+body.light .spread-mini { color:#3A4E68; font-weight:600; }
+body.light .game-net    { color:#3A4E68; }
+body.light .game-time   { color:#8A5E00; font-weight:700; }
+body.light .week-label,
+body.light .source-label { color:#3A4E68; }
+body.light .sect        { color:#1E2D42; }
+body.light .book-name   { color:#2A3A52; }
+body.light .fh-label    { color:#2A3A52; }
+body.light .prop-market { color:#2A3A52; }
+body.light .cons-label  { color:#2A3A52; }
+body.light .src-hint    { color:#3A4E68; }
+body.light .disclaimer  { color:#4A5E78; }
+body.light .logo-event  { color:#3A4E68; }
+
+/* Light mode badge fixes — ensure text is readable on light backgrounds */
+body.light .ml-badge.neg { background:#C41E3A12; color:#B01030; border-color:#C41E3A40; }
+body.light .ml-badge.pos { background:#007A4012; color:#006035; border-color:#007A4040; }
+body.light .ml-badge.evn { background:#1A5FA812; color:#1A5FA8; border-color:#1A5FA840; }
+body.light .day-tab      { color:#2A3A52; }
+body.light .week-chip    { color:#2A3A52; }
+/* Bracket light mode — darker text on cards */
+body.light .btn          { color:#1E2D42; }
+body.light .bts          { color:#3A4E68; }
+body.light .bsc          { color:#2A3A52; }
+body.light .bsc.blead    { color:#006035; }
+body.light .bsc.brl      { color:#B01030; }
+body.light .bmc          { background:#FFFFFF; border-color:#B0BAC8; }
+body.light .bmc.blive    { border-color:#C41E3A; }
+body.light .btr          { border-color:#D4D8E4; }
+body.light .btr.bwin     { background:#007A4015; }
+body.light .btr.blos     { opacity:.5; }
+body.light .btr.bll      { background:#C41E3A15; }
+body.light .btbd-card    { border-color:#B0BAC8; background:#E8EBF2; }
+body.light .btbd-l       { color:#4A5E78; }
+body.light .btbd-t       { color:#1E2D42; font-weight:600; }
+body.light .brk-tab      { color:#4A5E78; }
+body.light .brk-tab.active { color:var(--accent); }
+body.light .brk-rh-item  { color:#8A9AB0; }
+/* Home panel light mode */
+body.light .home-stat    { background:#FFFFFF; border-color:#C8CEDD; }
+body.light .home-stat-v  { color:#0D1220; }
+body.light .home-stat-l  { color:#4A5E78; }
+body.light .hs-round     { color:#0D1220; }
+body.light .hs-sub       { color:#4A5E78; }
+body.light .sc-name      { color:#0D1220; }
+body.light .sc-seed      { color:#4A5E78; }
+body.light .sc-rec       { color:#4A5E78; }
+body.light .sc-round     { color:#4A5E78; }
+body.light .sc-score     { color:#2A3A52; }
+body.light .sc-score-lbl { color:#4A5E78; }
+body.light .sc-next      { color:#4A5E78; }
+body.light .sc-odds      { color:#4A5E78; }
+body.light .series-card  { background:#FFFFFF; border-color:#C8CEDD; }
+body.light .sc-footer    { background:#F0F2F7; border-color:#C8CEDD; }
+body.light .source-btn   { color:#2A3A52; }
+body.light .tz-badge     { color:#2A3A52; }
+body.light .variance-badge { background:#8A5E0018; color:#8A5E00; border-color:#8A5E0040; }
+body.light .book-team    { color:#0D1220; }
+body.light .sc-muted     { color:#2A3A52; }
+body.light .odds-table td { background:var(--card); }
+body.light .src-opt-desc { color:#2A3A52; }
+body.light .sp-row       { color:#2A3A52; }
+body.light .loading-msg  { color:#2A3A52; }
+
+/* ── THEME TOGGLE BUTTON ── */
+.theme-btn {
+  width:34px; height:34px; border-radius:7px;
+  border:1px solid var(--border2); background:var(--card2);
+  color:var(--text2); cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  transition:all .15s; font-size:17px; flex-shrink:0;
+}
+.theme-btn:hover { background:var(--card3); }
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{font-size:15px}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;overflow-x:hidden;}
+
+/* Safe area padding when installed as home screen app */
+@media all and (display-mode: standalone) {
+  .header { padding-top: max(13px, env(safe-area-inset-top)); }
+  .main   { padding-bottom: max(100px, calc(80px + env(safe-area-inset-bottom))); }
+}
+
+/* Install nudge banner */
+.install-nudge{
+  display:flex;align-items:center;gap:10px;
+  background:var(--amber-d);border-bottom:1px solid var(--amber)44;
+  padding:10px 16px;font-size:12px;color:var(--text);
+  font-family:var(--mono);letter-spacing:.02em;
+}
+.install-nudge span{flex:1}
+.install-nudge strong{color:var(--amber)}
+.nudge-close{background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer;padding:0 4px;line-height:1}
+body::after{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='0.03'/%3E%3C/svg%3E");pointer-events:none;z-index:999}
+
+/* ── SETTINGS MODAL ── */
+.modal-bg{position:fixed;inset:0;z-index:500;background:#00000088;backdrop-filter:blur(8px);display:flex;align-items:flex-end;justify-content:center}
+.modal-bg.hidden{display:none}
+.modal-sheet{background:var(--card);border:1px solid var(--border2);border-bottom:none;border-radius:18px 18px 0 0;padding:20px 16px 44px;width:100%;max-width:560px;animation:slideUp .28s cubic-bezier(.4,0,.2,1);max-height:90vh;overflow-y:auto}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.sheet-handle{width:40px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 18px}
+.sheet-title{font-size:16px;font-weight:800;color:var(--text);margin-bottom:4px}
+.sheet-sub{font-size:12px;color:var(--text2);margin-bottom:18px}
+
+/* Settings sections */
+.settings-sect{margin-bottom:20px}
+.settings-sect-title{font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--text2);margin-bottom:10px;font-weight:500}
+
+/* API key inputs */
+.api-row{display:flex;flex-direction:column;gap:4px;margin-bottom:10px}
+.api-label{font-family:var(--mono);font-size:10px;color:var(--text2);letter-spacing:.08em}
+.api-input-row{display:flex;gap:6px}
+.api-input{flex:1;background:var(--card3);border:1px solid var(--border2);border-radius:7px;padding:9px 12px;font-family:var(--mono);font-size:11px;color:var(--text);outline:none;transition:border-color .15s}
+.api-input:focus{border-color:var(--accent)}
+.api-input::placeholder{color:var(--text3)}
+.api-save-btn{padding:9px 14px;background:var(--accent);border:none;border-radius:7px;color:#000;font-family:var(--mono);font-size:11px;font-weight:500;cursor:pointer;white-space:nowrap}
+.api-status{font-family:var(--mono);font-size:10px;margin-top:3px}
+.api-status.ok{color:var(--green)} .api-status.err{color:var(--red)} .api-status.warn{color:var(--amber)}
+
+/* Source preference toggles */
+.source-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.source-tile{background:var(--card2);border:1px solid var(--border2);border-radius:9px;padding:10px 12px;cursor:pointer;transition:all .15s;display:flex;flex-direction:column;gap:3px}
+.source-tile:hover{background:var(--card3)}
+.source-tile.active{border-color:var(--accent);background:var(--accent-d)}
+.source-tile-name{font-size:12px;font-weight:700;color:var(--text)}
+.source-tile-desc{font-family:var(--mono);font-size:10px;color:var(--text2)}
+
+/* Preferred book selector */
+.book-select{width:100%;background:var(--card3);border:1px solid var(--border2);border-radius:7px;padding:9px 12px;font-family:var(--mono);font-size:12px;color:var(--text);outline:none;cursor:pointer}
+.book-select option{background:var(--card2)}
+
+/* Sport tiles */
+.sport-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.sport-tile{background:var(--card2);border:1px solid var(--border2);border-radius:10px;padding:14px 12px;cursor:pointer;transition:all .15s;display:flex;flex-direction:column;gap:5px}
+.sport-tile:hover{background:var(--card3);transform:translateY(-1px)}
+.sport-tile.active{border-color:var(--accent);background:var(--accent-d)}
+.sport-icon{font-size:22px;line-height:1} .sport-name{font-size:13px;font-weight:700;color:var(--text)} .sport-event{font-family:var(--mono);font-size:10px;color:var(--text2)} .sport-weeks{font-family:var(--mono);font-size:9.5px;color:var(--text3);margin-top:2px}
+
+/* ── HEADER ── */
+.header{background:var(--bg);border-bottom:1px solid var(--border);padding:12px 16px 10px;}
+
+.header-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:11px}
+.logo-area{display:flex;flex-direction:column;gap:1px}
+.logo{font-family:var(--sans);font-size:18px;font-weight:800;letter-spacing:-.02em;color:var(--text);line-height:1}
+.logo span{color:var(--accent)}
+.logo-event{font-family:var(--mono);font-size:10px;color:var(--text2);letter-spacing:.06em;margin-top:2px}
+.header-right{display:flex;align-items:center;gap:7px}
+.tz-badge{font-family:var(--mono);font-size:11px;color:var(--text2);background:var(--card2);border:1px solid var(--border2);padding:4px 9px;border-radius:5px;letter-spacing:.04em}
+.icon-btn{width:34px;height:34px;border-radius:7px;border:1px solid var(--border2);background:var(--card2);color:var(--accent);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;font-size:15px;flex-shrink:0}
+.icon-btn:hover{background:var(--card3)}
+.icon-btn.spin svg{animation:doSpin .7s linear infinite}
+@keyframes doSpin{to{transform:rotate(360deg)}}
+
+/* SOURCE BUTTON + POPOVER */
+.source-btn{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:5px 11px;border-radius:6px;
+  border:1px solid var(--border2);background:var(--card2);
+  color:var(--text2);font-family:var(--mono);font-size:11px;font-weight:500;
+  cursor:pointer;transition:all .15s;letter-spacing:.04em;
+  margin-bottom:10px;
+}
+.source-btn:hover{background:var(--card3);color:var(--text)}
+.source-btn .src-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);flex-shrink:0}
+.source-btn .src-caret{font-size:9px;color:var(--text3)}
+
+.source-popover{
+  position:absolute;top:calc(100% + 6px);left:16px;
+  background:var(--card2);border:1px solid var(--border2);
+  border-radius:10px;padding:8px;z-index:200;
+  min-width:210px;box-shadow:0 8px 32px #00000060;
+  animation:fadeIn .15s ease;
+}
+.source-popover.hidden{display:none}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+
+.src-opt{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 11px;border-radius:7px;cursor:pointer;
+  transition:background .12s;
+}
+.src-opt:hover{background:var(--card3)}
+.src-opt.selected{background:var(--accent-d)}
+.src-opt-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.src-opt-info{flex:1}
+.src-opt-name{font-size:12.5px;font-weight:700;color:var(--text)}
+.src-opt-desc{font-family:var(--mono);font-size:10px;color:var(--text2);margin-top:1px}
+.src-opt.selected .src-opt-name{color:var(--accent)}
+.src-opt-check{color:var(--accent);font-size:13px;opacity:0;flex-shrink:0}
+.src-opt.selected .src-opt-check{opacity:1}
+.src-opt.disabled-opt{opacity:.4;cursor:not-allowed;pointer-events:none}
+.src-sep{height:1px;background:var(--border);margin:5px 0}
+.src-hint{font-family:var(--mono);font-size:9.5px;color:var(--text3);padding:4px 11px 2px}
+
+/* week + day tabs */
+.week-bar{display:flex;align-items:center;gap:8px;margin-bottom:10px;overflow-x:auto;scrollbar-width:none}
+.week-bar::-webkit-scrollbar{display:none}
+.week-label{font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:.1em;white-space:nowrap;flex-shrink:0;min-width:44px;text-align:right}
+.week-chip{flex-shrink:0;padding:5px 12px;border-radius:5px;border:1px solid var(--border);background:var(--card);color:var(--text3);font-family:var(--mono);font-size:10px;cursor:pointer;transition:all .15s;white-space:nowrap;font-weight:500}
+.week-chip:hover{color:var(--text2);border-color:var(--border2)}
+.week-chip.active{background:var(--accent-d);border-color:var(--accent);color:var(--accent)}
+.day-tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;flex-wrap:wrap}
+.day-tabs::-webkit-scrollbar{display:none}
+.day-tab{flex-shrink:0;padding:5px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--card2);color:var(--text2);font-family:var(--mono);font-size:10.5px;cursor:pointer;transition:all .15s;letter-spacing:.02em;white-space:nowrap;font-weight:500}
+.day-tab:hover{color:var(--text);background:var(--card3)}
+.day-tab.active{background:var(--accent-d);border-color:var(--accent);color:var(--accent)}
+.parlay-tab{flex:1;padding:5px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--card2);color:var(--text2);font-family:var(--mono);font-size:10.5px;cursor:pointer;transition:all .15s;letter-spacing:.02em;white-space:nowrap;font-weight:500;text-align:center;}
+.parlay-tab:hover{color:var(--text);background:var(--card3)}
+.parlay-tab.active{background:var(--amber);border-color:var(--amber);color:#000;}
+
+/* ── MAIN ── */
+.main{padding:14px 14px 100px;}
+.panel{display:none} .panel.active{display:block}
+.round-label{font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--text3);padding:6px 2px 8px}
+
+/* ── GAME ROW ── */
+.game-row{background:var(--card);border:1px solid var(--border);border-radius:11px;margin-bottom:9px;cursor:pointer;overflow:hidden;transition:border-color .15s,box-shadow .15s;position:relative;z-index:1;}
+.game-row:hover{border-color:var(--border2);box-shadow:0 2px 12px #00000040}
+.game-row.open{border-color:var(--accent)}
+.game-row-inner{padding:12px 13px;display:grid;grid-template-columns:90px 1fr auto;align-items:center;gap:12px}
+.time-block{display:flex;flex-direction:column;gap:3px;flex-shrink:0;min-width:90px}
+.game-time{font-family:var(--mono);font-size:11px;color:var(--accent);font-weight:500;line-height:1;white-space:nowrap}
+.game-net{font-family:var(--mono);font-size:10px;color:var(--text3)}
+.game-meta{font-family:var(--mono);font-size:10px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.matchup-block{display:flex;flex-direction:column;gap:5px;min-width:0}
+.team-line{display:flex;align-items:center;gap:7px}
+.seed{font-family:var(--mono);font-size:10px;color:var(--text2);background:var(--card3);border:1px solid var(--border2);border-radius:3px;padding:1px 5px;min-width:22px;text-align:center;flex-shrink:0;line-height:1.6}
+.team-name{font-size:13.5px;font-weight:700;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.team-name.fav{color:var(--text)} .team-name.dog{color:var(--text2)}
+.divider-vs{height:1px;background:var(--border);margin-left:31px}
+.odds-block{display:flex;flex-direction:column;gap:3px;align-items:flex-end;flex-shrink:0}
+.odds-row-top{display:flex;flex-direction:column;gap:3px;align-items:flex-end}
+.odds-row-bot{display:flex;flex-direction:column;gap:3px;align-items:flex-end;margin-top:0}
+.ou-mini{font-family:var(--mono);font-size:11px;font-weight:500;padding:3px 0;border-radius:5px;white-space:nowrap;width:100px;text-align:center;display:block;box-sizing:border-box;background:var(--card2);color:var(--accent);border:1px solid var(--border);}
+.ml-badge{font-family:var(--mono);font-size:11px;font-weight:500;padding:3px 0;border-radius:5px;line-height:1;white-space:nowrap;width:100px;text-align:center;display:block;box-sizing:border-box}
+.ml-badge.neg{background:var(--red-d);color:var(--red);border:1px solid #FF557730}
+.ml-badge.pos{background:var(--green-d);color:var(--green);border:1px solid #00E88230}
+.ml-badge.evn{background:var(--blue-d);color:var(--blue);border:1px solid #5BB8FF30}
+.spread-mini{
+  font-family:var(--mono);font-size:11px;font-weight:500;
+  padding:3px 0;border-radius:5px;white-space:nowrap;
+  width:100px;text-align:center;display:block;box-sizing:border-box;
+  background:var(--blue-d);color:var(--blue);border:1px solid #5BB8FF30;
+}
+body.light .spread-mini{background:#1A5FA812;color:#1A5FA8;border-color:#1A5FA840;}
+
+/* variance warning badge */
+.variance-badge{font-family:var(--mono);font-size:9px;padding:2px 6px;border-radius:3px;background:#FFB02018;color:var(--amber);border:1px solid #FFB02033;letter-spacing:.06em}
+
+/* ── Parlay Builder ── */
+.parlay-pill{cursor:pointer;transition:transform .1s,box-shadow .15s,opacity .15s,border-color .15s;user-select:none;-webkit-tap-highlight-color:transparent;appearance:none;-webkit-appearance:none;}
+.parlay-pill:active{transform:scale(.95);}
+/* Default selected state */
+.parlay-pill.parlay-on{box-shadow:0 0 0 2px var(--amber);position:relative;}
+/* Parlay mode — show subtle solid amber border on available pills */
+.parlay-mode-active .parlay-pill{outline:1.5px solid rgba(186,117,23,.5);outline-offset:2px;}
+/* Parlay mode — game already has a pick — dim other pills */
+.parlay-mode-active .game-row.parlay-picked .parlay-pill:not(.parlay-on){outline:none;opacity:0.3;pointer-events:none;}
+/* Parlay mode — picked pill */
+.parlay-mode-active .parlay-pill.parlay-on{outline:2px solid var(--amber);outline-offset:2px;box-shadow:0 0 0 3px rgba(186,117,23,.15);}
+/* Game row picked state */
+.game-row.parlay-picked{border-color:rgba(186,117,23,.5)!important;}
+.parlay-fab{position:fixed;bottom:88px;right:16px;z-index:900;background:var(--amber);color:#000;border:none;border-radius:50px;padding:10px 16px;font-family:var(--mono);font-size:12px;font-weight:800;cursor:pointer;box-shadow:0 4px 20px rgba(186,117,23,.5);display:none;align-items:center;gap:6px;transition:transform .15s;}
+.parlay-fab:active{transform:scale(.95);}
+.parlay-fab .pf-count{background:#000;color:var(--amber);border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;}
+.parlay-sheet{position:fixed;bottom:0;left:0;right:0;z-index:950;background:var(--card);border-top:2px solid var(--amber);border-radius:18px 18px 0 0;padding:0 0 40px;max-height:85vh;overflow-y:auto;transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);box-shadow:0 -8px 40px rgba(0,0,0,.6);}
+.parlay-sheet.open{transform:translateY(0);}
+.parlay-sheet-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:12px auto 0;}
+.parlay-sheet-title{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--amber);letter-spacing:.12em;text-transform:uppercase;padding:14px 16px 8px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);}
+.parlay-leg{display:flex;align-items:center;gap:0;border-bottom:1px solid var(--border);min-height:56px;}
+.parlay-leg-type{width:4px;align-self:stretch;flex-shrink:0;}
+.parlay-leg-type.ml{background:var(--green);}
+.parlay-leg-type.spread{background:var(--accent);}
+.parlay-leg-type.ou{background:var(--amber);}
+.parlay-leg-num{font-family:var(--mono);font-size:13px;font-weight:800;color:var(--amber);width:26px;flex-shrink:0;text-align:center;}
+.parlay-leg-body{flex:1;min-width:0;padding:8px 4px;}
+.parlay-leg-pick{font-size:13px;font-weight:800;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;}
+.parlay-leg-matchup{font-family:var(--mono);font-size:9px;color:var(--text3);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.parlay-leg-badge{display:inline-block;font-family:var(--mono);font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;margin-top:2px;letter-spacing:.04em;}
+.parlay-leg-badge.ml{background:rgba(0,232,130,.12);color:var(--green);border:1px solid rgba(0,232,130,.25);}
+.parlay-leg-badge.spread{background:rgba(91,184,255,.12);color:var(--accent);border:1px solid rgba(91,184,255,.25);}
+.parlay-leg-badge.ou{background:rgba(186,117,23,.12);color:var(--amber);border:1px solid rgba(186,117,23,.25);}
+.parlay-leg-right{display:flex;flex-direction:column;align-items:flex-end;justify-content:center;padding:8px 12px 8px 4px;gap:4px;flex-shrink:0;}
+.parlay-leg-odds{font-family:var(--mono);font-size:13px;font-weight:800;color:var(--accent);}
+.parlay-leg-del{background:none;border:none;color:var(--text3);font-size:14px;cursor:pointer;padding:2px;line-height:1;}
+.gmp-leg{display:flex;align-items:flex-start;gap:8px;padding:4px 0;}
+.gmp-leg-text{flex:1;min-width:0;font-size:12px;line-height:1.4;word-break:break-word;}
+.parlay-payout{background:var(--card2);border:1px solid var(--border);border-radius:10px;margin:12px 16px;padding:14px;}
+.parlay-payout-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.parlay-payout-label{font-family:var(--mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;}
+.parlay-payout-val{font-family:var(--mono);font-size:15px;font-weight:700;color:var(--amber);}
+.parlay-stake-row{display:flex;align-items:center;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);}
+.parlay-stake-input{background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:14px;padding:6px 10px;width:80px;text-align:right;}
+.parlay-actions{display:flex;gap:8px;padding:0 16px;margin-top:4px;}
+.parlay-btn{flex:1;padding:12px;border-radius:8px;border:none;font-family:var(--mono);font-size:11px;font-weight:700;cursor:pointer;letter-spacing:.06em;}
+.parlay-btn.save{background:var(--amber);color:#000;}
+.parlay-btn.clear{background:var(--card2);color:var(--text3);border:1px solid var(--border);}
+.parlay-btn.copy{background:var(--accent-d);color:var(--accent);border:1px solid var(--accent);}
+.saved-parlays{padding:0 16px;margin-top:8px;}
+.saved-parlay-card{background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px;}
+.parlay-empty{text-align:center;padding:24px 16px;color:var(--text3);font-size:13px;line-height:1.6;}
+.sp-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+.sp-title{font-family:var(--mono);font-size:10px;font-weight:700;color:var(--amber);letter-spacing:.08em;}
+.sp-legs{font-size:11px;color:var(--text);line-height:1.7;word-break:break-word;}
+.sp-footer{display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-family:var(--mono);font-size:12px;gap:8px;flex-wrap:wrap;}
+.sp-odds{color:var(--amber);font-weight:700;}
+.sp-payout{color:var(--green);font-weight:700;}
+.gmoney-parlay{background:linear-gradient(135deg,#BA751715,var(--card2));border:1px solid var(--amber);border-radius:10px;padding:12px 14px;margin:8px 16px;}
+.gmp-header{font-family:var(--mono);font-size:10px;font-weight:700;color:var(--amber);letter-spacing:.1em;margin-bottom:8px;}
+.gmp-legs{font-size:12px;color:var(--text);line-height:1.6;}
+.gmp-num{font-family:var(--mono);font-size:11px;color:var(--amber);font-weight:800;min-width:16px;flex-shrink:0;padding-top:1px;}
+.gmp-odds-badge{font-family:var(--mono);font-size:11px;background:var(--amber);color:#000;border-radius:4px;padding:2px 8px;font-weight:800;flex-shrink:0;}
+.gmp-footer{margin-top:10px;padding-top:8px;border-top:1px solid #BA751730;display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:11px;gap:8px;flex-wrap:wrap;}
+.parlay-empty{text-align:center;padding:24px 16px;color:var(--text3);font-size:13px;}
+.parlay-tip{font-family:var(--mono);font-size:9px;color:var(--text3);text-align:center;padding:4px 16px;letter-spacing:.05em;}
+
+
+/* kalshi inline */
+.kalshi-inline{font-family:var(--mono);font-size:10px;color:var(--kalshi);background:var(--kalshi-d);border:1px solid #7C5CFC30;padding:2px 6px;border-radius:3px;white-space:nowrap}
+
+/* ── DETAIL DRAWER ── */
+.detail-drawer{max-height:0;overflow:hidden;transition:max-height .38s cubic-bezier(.4,0,.2,1);background:var(--surface)}
+.detail-drawer.open{max-height:2000px;border-top:1px solid var(--border)}
+.drawer-inner{padding:16px 13px 18px}
+.sect{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--text2);margin-top:16px;margin-bottom:9px;padding-top:14px;border-top:1px solid var(--border);font-weight:500;display:flex;align-items:center;gap:8px}
+.sect:first-child{margin-top:0;padding-top:0;border-top:none}
+.sect-badge{font-size:9px;padding:2px 7px;border-radius:3px;letter-spacing:.08em;font-weight:500;text-transform:uppercase}
+.sect-badge.live{background:#00E88218;color:var(--green);border:1px solid #00E88230}
+.sect-badge.kalshi{background:var(--kalshi-d);color:var(--kalshi);border:1px solid #7C5CFC30}
+.sect-badge.ai{background:var(--amber-d);color:var(--amber);border:1px solid #FFC23030}
+
+/* SOURCE COMPARISON TABLE */
+.source-compare{width:100%;border-collapse:collapse;border-radius:8px;overflow:hidden;border:1px solid var(--border)}
+.source-compare th{background:var(--card3);font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--text2);padding:8px 10px;text-align:left;border-bottom:1px solid var(--border2);font-weight:500}
+.source-compare td{padding:8px 10px;font-size:12px;border-bottom:1px solid var(--border);background:var(--card)}
+.source-compare tr:last-child td{border-bottom:none}
+.source-compare tr:hover td{background:var(--card2)}
+.source-compare .book-td{font-weight:700;color:var(--text);display:flex;align-items:center;gap:6px}
+.source-compare .book-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.sc-ml{font-family:var(--mono);font-size:11.5px;font-weight:500}
+.sc-ml.n{color:var(--red)} .sc-ml.p{color:var(--green)}
+.sc-best{background:var(--green-d)!important} /* highlight row with best value */
+.sc-num{font-family:var(--mono);font-size:11.5px;color:var(--amber)}
+.sc-muted{font-family:var(--mono);font-size:11px;color:var(--text2)}
+
+/* VARIANCE ALERT */
+.variance-alert{background:#FFB02012;border:1px solid #FFB02030;border-radius:8px;padding:10px 12px;margin-bottom:8px;display:flex;gap:10px;align-items:flex-start}
+.va-icon{font-size:16px;flex-shrink:0}
+.va-text{font-size:12px;line-height:1.6;color:var(--text)}
+.va-text strong{color:var(--amber)}
+
+/* KALSHI CARD */
+.kalshi-card{background:var(--kalshi-d);border:1px solid #7C5CFC30;border-radius:9px;padding:12px 14px}
+.kalshi-markets{display:flex;flex-direction:column;gap:8px}
+.kalshi-market-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.km-question{font-size:12.5px;color:var(--text);flex:1;line-height:1.4}
+.km-price-pair{display:flex;gap:5px;flex-shrink:0}
+.km-yes{font-family:var(--mono);font-size:11.5px;padding:3px 8px;border-radius:4px;background:var(--green-d);color:var(--green);border:1px solid #00E88228}
+.km-no{font-family:var(--mono);font-size:11.5px;padding:3px 8px;border-radius:4px;background:var(--red-d);color:var(--red);border:1px solid #FF557728}
+.km-implied{font-family:var(--mono);font-size:10px;color:var(--kalshi);margin-top:2px}
+
+/* consensus row */
+.consensus-row{background:var(--card2);border:1px solid var(--border2);border-radius:8px;padding:10px 12px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px}
+.cons-item{display:flex;flex-direction:column;gap:3px}
+.cons-label{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--text3)}
+.cons-val{font-family:var(--mono);font-size:14px;font-weight:500;color:var(--text)}
+.cons-val.best{color:var(--green)} .cons-val.worst{color:var(--red)}
+.cons-sub{font-family:var(--mono);font-size:10px;color:var(--text2)}
+
+/* odds table */
+.odds-table{width:100%;border-collapse:collapse;border-radius:8px;overflow:hidden;border:1px solid var(--border)}
+.odds-table th{background:var(--card3);font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--text2);padding:8px 10px;text-align:left;border-bottom:1px solid var(--border2);font-weight:500}
+.odds-table td{padding:9px 10px;font-size:12.5px;border-bottom:1px solid var(--border);background:var(--card)}
+.odds-table tr:last-child td{border-bottom:none}
+.t-td{font-weight:700;color:var(--text)} .m-td{font-family:var(--mono);font-size:12px}
+.m-td.fav{color:var(--red)} .m-td.dog{color:var(--green)} .m-td.neu{color:var(--amber)}
+
+/* props */
+.props-list{display:flex;flex-direction:column;gap:7px}
+.prop-row{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px 12px;display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center}
+.prop-player{font-size:12.5px;font-weight:700;color:var(--text);line-height:1.2}
+.prop-market{font-family:var(--mono);font-size:10.5px;color:var(--text2);margin-top:3px}
+.prop-odds-col{display:flex;flex-direction:column;align-items:flex-end;gap:3px}
+.prop-line{font-family:var(--mono);font-size:12px;color:var(--accent);font-weight:500}
+.prop-ovun{display:flex;gap:4px}
+.prop-ov{font-family:var(--mono);font-size:10.5px;padding:2px 7px;border-radius:4px;font-weight:500;background:var(--green-d);color:var(--green);border:1px solid #00E88228}
+.prop-un{font-family:var(--mono);font-size:10.5px;padding:2px 7px;border-radius:4px;font-weight:500;background:var(--red-d);color:var(--red);border:1px solid #FF557728}
+
+/* first half */
+.fh-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.fh-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px 11px}
+.fh-label{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--text2);margin-bottom:5px;font-weight:500}
+.fh-val{font-family:var(--mono);font-size:14px;font-weight:500;color:var(--text);line-height:1}
+.fh-sub{font-size:10.5px;color:var(--text2);margin-top:3px}
+
+/* sharp angle */
+.ai-tip{background:linear-gradient(135deg,var(--accent-d),transparent);border:1px solid var(--accent)44;border-radius:9px;padding:11px 13px;margin-top:4px}
+.ai-tip-head{font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:6px;font-weight:500}
+.ai-tip-text{font-size:12.5px;line-height:1.65;color:var(--text)}
+/* G-Money Picks Panel */
+/* G-Money Picks Panel — redesigned */
+.picks-page{padding-bottom:80px;display:flex;flex-direction:column;gap:12px;}
+.picks-hero{background:var(--card2);border:1px solid var(--border);border-radius:14px;padding:16px;position:relative;overflow:hidden;}
+.picks-hero::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#7C5CFC,#FF5577,#FFC230);}
+.picks-hero-lbl{font-family:var(--mono);font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.12em;margin-bottom:8px;margin-top:4px;}
+.picks-record-row{display:flex;align-items:center;gap:16px;margin-bottom:14px;}
+.picks-record-block{display:flex;flex-direction:column;align-items:center;gap:3px;}
+.picks-record-num{font-family:var(--sans);font-size:32px;font-weight:800;line-height:1;}
+.prn-win{color:var(--green);} .prn-loss{color:var(--red);} .prn-pct{color:#9B8FE8;}
+.picks-record-lbl{font-family:var(--mono);font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;}
+.picks-divider{width:1px;height:48px;background:var(--border);}
+.picks-stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.picks-stat{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;}
+.picks-stat-lbl{font-family:var(--mono);font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;}
+.picks-stat-val{font-family:var(--sans);font-size:18px;font-weight:700;color:var(--text);}
+.picks-stat-val.up{color:var(--green);} .picks-stat-val.dn{color:var(--red);}
+/* Bankroll card */
+.bk-card{background:var(--card2);border:1px solid var(--border);border-radius:14px;padding:14px;}
+.bk-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;}
+.bk-title{font-family:var(--sans);font-size:13px;font-weight:600;color:var(--text);}
+.bk-sub{font-family:var(--mono);font-size:9px;color:var(--text3);margin-top:2px;}
+.bk-amount{font-family:var(--sans);font-size:22px;font-weight:800;color:var(--green);text-align:right;}
+.bk-change{font-family:var(--mono);font-size:9px;color:var(--green);text-align:right;margin-top:2px;}
+.bk-amount.dn{color:var(--red);} .bk-change.dn{color:var(--red);}
+.bk-meter-labels{display:flex;justify-content:space-between;font-family:var(--mono);font-size:9px;color:var(--text3);margin-bottom:4px;}
+.bk-track{height:6px;background:var(--border);border-radius:3px;overflow:hidden;}
+.bk-fill{height:100%;border-radius:3px;transition:width .5s;}
+.bk-ticks{display:flex;justify-content:space-between;font-family:var(--mono);font-size:9px;color:var(--text3);margin-top:3px;}
+/* Pick items */
+.pick-item{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.pick-top{display:flex;align-items:stretch;}
+.pick-badge{width:40px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:13px;font-weight:700;flex-shrink:0;}
+.pick-badge.win{background:var(--green-d);color:var(--green);}
+.pick-badge.loss{background:var(--red-d);color:var(--red);}
+.pick-badge.push{background:var(--card2);color:var(--text3);}
+.pick-badge.pending{background:var(--amber-d);color:var(--amber);}
+.pick-body{flex:1;padding:10px 10px 10px 0;min-width:0;}
+.pick-game-title{font-family:var(--sans);font-size:13px;font-weight:600;color:var(--text);}
+.pick-round-lbl{font-family:var(--mono);font-size:9px;color:var(--text3);margin-top:1px;}
+.pick-chips{display:flex;align-items:center;gap:5px;margin-top:7px;flex-wrap:wrap;}
+.chip{font-family:var(--mono);font-size:9px;padding:2px 7px;border-radius:4px;border:1px solid var(--border);color:var(--text3);}
+.chip-bet{border-color:#00E88240;color:var(--green);background:var(--green-d);}
+.chip-bet-l{border-color:#FF557740;color:var(--red);background:var(--red-d);}
+.chip-odds{background:var(--card2);}
+.pick-footer{display:flex;justify-content:space-between;align-items:center;padding:7px 10px;border-top:1px solid var(--border);background:var(--card2);}
+.pick-footer-detail{font-family:var(--mono);font-size:9px;color:var(--text3);}
+.pick-footer-pnl{font-family:var(--mono);font-size:11px;font-weight:600;}
+.pick-footer-pnl.up{color:var(--green);} .pick-footer-pnl.dn{color:var(--red);}
+.picks-section-lbl{font-family:var(--mono);font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;}
+/* G-Money's Brackets CSS */
+
+.smack-card{background:linear-gradient(135deg,#7C5CFC14,#FF557708);border:1px solid #7C5CFC35;border-radius:14px;padding:14px;position:relative;overflow:hidden;}
+.smack-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#7C5CFC,#FF5577,#FFC230,#00E882);opacity:.8;}
+.smack-loading{font-family:var(--mono);font-size:11px;color:var(--text3);padding:8px 0;}
+.smack-game{margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid #7C5CFC20;}
+.smack-game:last-child{margin-bottom:0;padding-bottom:0;border-bottom:none;}
+.smack-game-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+.smack-matchup{font-family:var(--sans);font-size:13px;font-weight:700;color:var(--text);}
+.smack-time{font-family:var(--mono);font-size:9px;color:var(--text3);}
+.smack-pick{display:inline-flex;align-items:center;gap:5px;background:#7C5CFC18;border:1px solid #7C5CFC30;border-radius:6px;padding:3px 9px;margin:5px 0;font-family:var(--mono);font-size:11px;font-weight:500;color:#B09DFF;}
+.smack-text{font-family:var(--mono);font-size:11px;color:var(--text2);line-height:1.6;}
+.smack-disclaimer{font-family:var(--mono);font-size:9px;color:var(--text3);margin-top:12px;padding-top:10px;border-top:1px solid #7C5CFC20;font-style:italic;}
+body.light .smack-card{background:linear-gradient(135deg,#7C5CFC10,#FF557705);}
+body.light .smack-matchup{color:var(--text);}
+body.light .smack-text{color:var(--text2);}
+body.light .smack-pick{color:#5A3ECC;}
+.gmoney-card{background:linear-gradient(135deg,#7C5CFC18,#FF557708);border:1px solid #7C5CFC40;border-radius:9px;padding:11px 13px;margin-top:8px;position:relative;overflow:hidden;}
+.gmoney-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#7C5CFC,#FF5577,#FFC230);opacity:.7;}
+.gmoney-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.gmoney-title{font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:#B09DFF;font-weight:500;}
+.gmoney-badge{font-family:var(--mono);font-size:8px;background:#7C5CFC22;color:#B09DFF;border:1px solid #7C5CFC40;border-radius:4px;padding:2px 6px;}
+.gmoney-text{font-size:12.5px;line-height:1.65;color:var(--text);}
+.gmoney-loading{font-family:var(--mono);font-size:11px;color:var(--text3);display:flex;align-items:center;gap:6px;}
+.gmoney-pick{display:inline-flex;align-items:center;gap:5px;background:#7C5CFC18;border:1px solid #7C5CFC30;border-radius:6px;padding:3px 9px;margin:6px 0 4px;font-family:var(--mono);font-size:11px;font-weight:500;color:#B09DFF;}
+body.light .gmoney-card{background:linear-gradient(135deg,#7C5CFC10,#FF557705);}
+body.light .gmoney-text{color:var(--text);}
+body.light .gmoney-title{color:#5A3ECC;}
+body.light .gmoney-badge{color:#5A3ECC;background:#7C5CFC15;}
+body.light .gmoney-pick{color:#5A3ECC;}
+
+/* loading / empty / error */
+.loading-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:56px 20px;gap:14px}
+.spinner-ring{width:38px;height:38px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:doSpin .75s linear infinite}
+.loading-msg{font-family:var(--mono);font-size:12px;color:var(--text2);letter-spacing:.06em;text-align:center;line-height:1.7}
+.source-progress{display:flex;flex-direction:column;gap:6px;margin-top:10px;min-width:200px}
+.sp-row{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;color:var(--text2)}
+.sp-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.sp-dot.pending{background:var(--border2)}
+.sp-dot.loading{background:var(--amber);animation:pulseDot .8s ease infinite}
+.sp-dot.done{background:var(--green)}
+.sp-dot.fail{background:var(--red)}
+@keyframes pulseDot{0%,100%{opacity:1}50%{opacity:.4}}
+.empty-wrap{text-align:center;padding:50px 20px}
+.empty-wrap h3{font-family:var(--sans);font-size:20px;font-weight:800;color:var(--text);margin-bottom:8px}
+.empty-wrap p{font-size:13px;color:var(--text2);line-height:1.6}
+.kick-btn{margin-top:18px;display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:var(--accent);color:#000;font-family:var(--mono);font-size:12px;font-weight:500;border:none;border-radius:7px;cursor:pointer;letter-spacing:.04em;transition:opacity .15s}
+.kick-btn:hover{opacity:.85}
+.err-box{background:var(--red-d);border:1px solid #FF557740;border-radius:9px;padding:14px 16px;margin:8px 0;font-size:12.5px;color:var(--text);line-height:1.7}
+.err-box strong{color:var(--red)}
+.disclaimer{font-family:var(--mono);font-size:10px;color:var(--text3);text-align:center;padding:16px 12px;border-top:1px solid var(--border);line-height:1.7;margin-top:8px}
+
+@media(max-width:400px){.game-row-inner{grid-template-columns:48px 1fr auto;gap:7px}}
+</style>
+
+</head>
+<body>
+
+<!-- ── SETTINGS MODAL ── -->
+
+<div class="modal-bg hidden" id="settingsModal">
+  <div class="modal-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Settings</div>
+    <div class="sheet-sub">Configure data sources and preferences</div>
+
+```
+<!-- DATA SOURCES -->
+<div class="settings-sect">
+  <div class="settings-sect-title">Data Sources</div>
+  <div class="source-grid">
+    <div class="source-tile active" id="src-tile-ai">
+      <div class="sport-icon">🤖</div>
+      <div class="source-tile-name">AI Search</div>
+      <div class="source-tile-desc">Always active · fallback</div>
+    </div>
+    <div class="source-tile" id="src-tile-oddsapi" onclick="toggleSourceTile('oddsapi')">
+      <div class="sport-icon">📊</div>
+      <div class="source-tile-name">The Odds API</div>
+      <div class="source-tile-desc">40+ books · live lines</div>
+    </div>
+    <div class="source-tile" id="src-tile-kalshi" onclick="toggleSourceTile('kalshi')">
+      <div class="sport-icon">🔮</div>
+      <div class="source-tile-name">Kalshi</div>
+      <div class="source-tile-desc">Event contracts · prob %</div>
+    </div>
+    <div class="source-tile" id="src-tile-compare">
+      <div class="sport-icon">⚖️</div>
+      <div class="source-tile-name">Line Compare</div>
+      <div class="source-tile-desc">Auto on w/ Odds API</div>
+    </div>
+  </div>
+</div>
+
+<!-- ODDS API KEY -->
+<div class="settings-sect" id="oddsApiSection" style="display:none">
+  <div class="settings-sect-title">The Odds API Key</div>
+  <div class="api-row">
+    <div class="api-label">Free key at the-odds-api.com (500 req/mo free)</div>
+    <div class="api-input-row">
+      <input class="api-input" id="oddsApiKeyInput" type="password" placeholder="Paste your API key here" />
+      <button class="api-save-btn" onclick="saveOddsApiKey()">Save</button>
+    </div>
+    <div class="api-status" id="oddsApiStatus"></div>
+  </div>
+</div>
+
+<!-- PREFERRED BOOK -->
+<div class="settings-sect">
+  <div class="settings-sect-title">Preferred Sportsbook (shown in quick view)</div>
+  <select class="book-select" id="prefBookSelect" onchange="savePrefBook()">
+    <option value="consensus">Consensus (best available)</option>
+    <option value="DraftKings">DraftKings</option>
+    <option value="FanDuel">FanDuel</option>
+    <option value="BetMGM">BetMGM</option>
+    <option value="Caesars">Caesars</option>
+    <option value="PointsBet">PointsBet</option>
+    <option value="BetUS">BetUS</option>
+    <option value="bet365">bet365</option>
+  </select>
+</div>
+
+<!-- SPORT SELECT -->
+<div class="settings-sect">
+  <div class="settings-sect-title">Active Event</div>
+  <div id="sportGrid"></div>
+</div>
+
+<button class="kick-btn" style="width:100%;justify-content:center;margin-top:0" onclick="closeSettings()">Done</button>
+```
+
+  </div>
+</div>
+
+<!-- Install nudge (shown in browser, hidden when already installed) -->
+
+<div class="install-nudge" id="installNudge" style="display:none">
+  <span>📲 <strong>Add to Home Screen</strong> — tap Share → "Add to Home Screen" for quick access</span>
+  <button class="nudge-close" onclick="dismissNudge()">✕</button>
+</div>
+
+<!-- ── HEADER ── -->
+
+<header class="header">
+  <div class="header-top">
+    <div class="logo-area">
+      <div class="logo" id="appLogo">G-Money <span>Bets</span></div>
+      <div class="logo-event" id="eventSubtitle">NCAA Tournament</div>
+    </div>
+    <div class="header-right">
+      <div style="position:relative">
+        <button class="source-btn" id="sourceBtn" onclick="toggleSourcePopover()" style="margin-bottom:0;padding:4px 8px;font-size:10px">
+          <span class="src-dot"></span>
+          <span id="sourceBtnLabel">CONSENSUS</span>
+          <span class="src-caret">&#9662;</span>
+        </button>
+        <div class="source-popover hidden" id="sourcePopover">
+          <div class="src-hint">Show odds from</div>
+          <div class="src-sep"></div>
+          <div id="sourcePopoverOptions"></div>
+        </div>
+      </div>
+      <button class="icon-btn" onclick="openSettings()" title="Settings" style="font-size:17px">⚙</button>
+      <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle light/dark mode">🌙</button>
+      <button class="icon-btn" id="mainRefresh" onclick="refreshCurrentTab()" title="Refresh">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <path d="M1 4v6h6"/><path d="M23 20v-6h-6"/>
+          <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- HOME + BRACKET + PICKS quick nav -->
+
+  <div style="display:flex;align-items:center;gap:5px;margin-bottom:8px">
+    <button id="homeNavBtn" class="home-nav-btn active" onclick="showHomePanel()">🏠 Home</button>
+    <button id="bracketNavBtn" class="home-nav-btn" onclick="showBracketPanel()">🏆 Bracket</button>
+    <button id="picksNavBtn" class="home-nav-btn" onclick="showPicksPanel()">💰 G-Money Picks</button>
+    <button id="myBetsNavBtn" class="home-nav-btn" onclick="showMyBetsPanel()">📋 My Bets</button>
+  </div>
+
+  <div class="week-bar" id="weekBar" style="display:flex;align-items:center;gap:8px"><span class="week-label" style="flex-shrink:0;min-width:44px;text-align:right">WEEK</span></div>
+  <!-- DAY tabs row -->
+  <div style="display:flex;align-items:center;gap:8px">
+    <span id="dayLabel" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;color:var(--text3);flex-shrink:0;min-width:44px;text-align:right">DATE</span>
+    <div class="day-tabs" id="dayTabs" style="flex:1;min-width:0;flex-wrap:wrap;gap:4px"></div>
+  </div>
+  <!-- Parlay row -->
+  <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+    <span style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;color:var(--text3);flex-shrink:0;min-width:44px;text-align:right">PARLAY</span>
+    <div style="display:flex;gap:4px;flex:1">
+      <button id="parlayModeBtn" class="parlay-tab" onclick="toggleParlayMode()">🎰 Build New</button>
+      <button class="parlay-tab" id="gmoneyParlaybtn" onclick="openGMoneyParlay()">⚡ G-Money</button>
+      <button id="viewSlipBtn" class="parlay-tab" onclick="openViewSlips()">📋 View Slips</button>
+    </div>
+  </div>
+</header>
+
+<!-- Parlay Done sticky button — shown when parlay mode active with 2+ legs -->
+
+<button id="parlayDoneBtn" onclick="finishParlay()" style="display:none;position:fixed;bottom:80px;left:16px;right:16px;z-index:930;background:var(--amber);color:#000;border:none;border-radius:12px;padding:14px;font-family:var(--mono);font-size:12px;font-weight:800;letter-spacing:.08em;cursor:pointer;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(186,117,23,.5);">
+  ✓ DONE — VIEW SLIP
+</button>
+
+<!-- O/U Direction Picker Modal -->
+
+<div id="ouPickerOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:960;" onclick="closeOUPicker()"></div>
+<div id="ouPickerModal" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:970;background:var(--card);border-top:2px solid var(--amber);border-radius:18px 18px 0 0;padding:20px 16px 40px;">
+  <div style="font-family:var(--mono);font-size:10px;font-weight:700;color:var(--amber);letter-spacing:.1em;margin-bottom:4px;">OVER / UNDER PICKER</div>
+  <div id="ouPickerGame" style="font-family:var(--mono);font-size:12px;color:var(--text3);margin-bottom:16px;"></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+    <button id="ouPickerOver" onclick="selectOU('over')" style="padding:16px;border-radius:10px;border:2px solid var(--green);background:rgba(0,232,130,.08);color:var(--green);font-family:var(--mono);font-size:14px;font-weight:800;cursor:pointer;">
+      📈 OVER
+    </button>
+    <button id="ouPickerUnder" onclick="selectOU('under')" style="padding:16px;border-radius:10px;border:2px solid var(--red);background:rgba(255,68,102,.08);color:var(--red);font-family:var(--mono);font-size:14px;font-weight:800;cursor:pointer;">
+      📉 UNDER
+    </button>
+  </div>
+  <button onclick="closeOUPicker()" style="width:100%;margin-top:12px;padding:10px;background:none;border:1px solid var(--border);border-radius:8px;color:var(--text3);font-family:var(--mono);font-size:11px;cursor:pointer;">CANCEL</button>
+</div>
+
+<!-- HOME PANEL -->
+
+<div id="homePanel" class="main"></div>
+
+<!-- BRACKET PANEL -->
+
+<div id="bracketPanel" class="main" style="display:none"></div>
+
+<!-- PICKS PANEL -->
+
+<div id="picksPanel" class="main" style="display:none"></div>
+
+<!-- MY BETS PANEL -->
+
+<div id="myBetsPanel" class="main" style="display:none"></div>
+
+<!-- ── Parlay FAB ── -->
+
+<button class="parlay-fab" id="parlayFab" onclick="openParlaySheet()">
+  🎰 PARLAY <span class="pf-count" id="parlayCount">0</span>
+</button>
+
+<!-- ── Parlay Sheet ── -->
+
+<!-- Spread Direction Picker Modal -->
+
+<div id="spreadPickerOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:960;" onclick="closeSpreadPicker()"></div>
+<div id="spreadPickerModal" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:970;background:var(--card);border-top:2px solid var(--accent);border-radius:18px 18px 0 0;padding:20px 16px 40px;">
+  <div style="font-family:var(--mono);font-size:10px;font-weight:700;color:var(--accent);letter-spacing:.1em;margin-bottom:4px;">SPREAD PICKER</div>
+  <div id="spreadPickerGame" style="font-family:var(--mono);font-size:12px;color:var(--text3);margin-bottom:16px;"></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+    <button id="spreadPickerAway" onclick="selectSpread('away')" style="padding:16px;border-radius:10px;border:2px solid var(--accent);background:rgba(91,184,255,.08);color:var(--accent);font-family:var(--mono);font-size:13px;font-weight:800;cursor:pointer;line-height:1.4;"></button>
+    <button id="spreadPickerHome" onclick="selectSpread('home')" style="padding:16px;border-radius:10px;border:2px solid var(--accent);background:rgba(91,184,255,.08);color:var(--accent);font-family:var(--mono);font-size:13px;font-weight:800;cursor:pointer;line-height:1.4;"></button>
+  </div>
+  <button onclick="closeSpreadPicker()" style="width:100%;margin-top:12px;padding:10px;background:none;border:1px solid var(--border);border-radius:8px;color:var(--text3);font-family:var(--mono);font-size:11px;cursor:pointer;">CANCEL</button>
+</div>
+
+<div class="parlay-sheet" id="parlaySheet">
+  <div class="parlay-sheet-handle"></div>
+  <div class="parlay-sheet-title">
+    <span>🎰 PARLAY BUILDER</span>
+    <button onclick="closeParlaySheet()" style="background:none;border:none;color:var(--text3);font-size:18px;cursor:pointer;">✕</button>
+  </div>
+  <div id="parlaySheetContent"></div>
+</div>
+<div id="parlayOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:940;" onclick="closeParlaySheet()"></div>
+
+<!-- GAME PANELS -->
+
+<div class="main" id="mainPanels" style="display:none"></div>
+<!-- VERSION FOOTER -->
+<div class="ver-footer" id="verFooter">
+  <div style="display:flex;align-items:center;gap:8px">
+    <button class="ver-badge" onclick="toggleDebugPanel()" title="Tap for diagnostics">v1.4</button>
+    <span class="ver-date">Mar 19, 2026</span>
+  </div>
+  <span class="ver-date">G-Money Bets</span>
+</div>
+
+<!-- DEBUG PANEL -->
+
+<div class="debug-overlay hidden" id="debugOverlay" onclick="if(event.target===this)toggleDebugPanel()">
+  <div class="debug-sheet">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div style="font-family:var(--mono);font-size:11px;font-weight:500;color:var(--text)">🔧 Diagnostics · v1.4</div>
+      <button onclick="toggleDebugPanel()" style="font-family:var(--mono);font-size:10px;color:var(--text3);background:none;border:none;cursor:pointer">✕ close</button>
+    </div>
+    <!-- Changelog -->
+    <div style="font-family:var(--mono);font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Changelog</div>
+    <div style="font-family:var(--mono);font-size:10px;color:var(--text2);line-height:1.8;margin-bottom:12px;padding:10px;background:var(--card2);border:1px solid var(--border);border-radius:8px">
+      <div style="color:var(--accent);margin-bottom:4px">v1.4 · Mar 20 2026</div>
+      <div>+ G-Money Picks tab (pick tracker, bankroll, real odds)</div>
+      <div>+ Dynamic bracket from STATIC_GAMES + ESPN overlay</div>
+      <div>+ G-Money Bracket tab with champion/F4/upset picks</div>
+      <div>+ Final Four tab in bracket</div>
+      <div>+ Auto-refresh bracket after games go final</div>
+      <div>+ Consensus button moved to header row</div>
+      <div>+ Text contrast improved throughout</div>
+      <div style="color:var(--text3);margin-top:6px">v1.2 · Mar 19 2026</div>
+      <div style="color:var(--text3)">+ Fixed header (position:fixed + JS offset)</div>
+      <div style="color:var(--text3)">+ G-Money Smack Talk on home page</div>
+      <div style="color:var(--text3)">+ NHL Playoffs added (live + home screen)</div>
+      <div style="color:var(--text3)">+ NBA live score feed (league= param)</div>
+      <div style="color:var(--text3)">+ SELECT label on day tabs</div>
+      <div style="color:var(--text3)">+ Sports grid sorted Active/Coming/More</div>
+      <div style="color:var(--text3);margin-top:6px">v1.1 · Mar 18 2026</div>
+      <div style="color:var(--text3)">+ Live scores, bracket, home panel</div>
+      <div style="color:var(--text3)">+ G-Money per-game picks</div>
+      <div style="color:var(--text3)">+ NCAA/NBA/NHL events</div>
+    </div>
+    <div id="debugContent" style="font-family:var(--mono);font-size:10px;color:var(--text2);line-height:1.7"></div>
+    <button onclick="runDiagnostics()" style="margin-top:10px;width:100%;padding:8px;background:var(--card2);border:1px solid var(--border);border-radius:8px;font-family:var(--mono);font-size:10px;color:var(--accent);cursor:pointer">↻ Re-run diagnostics</button>
+  </div>
+</div>
+
+<div class="disclaimer">⚠ Odds via AI + The Odds API + Kalshi · entertainment only · verify at sportsbook · gamble responsibly · 1-800-GAMBLER</div>
+
+<script>
+// ═══════════════════════════════════════════
+// PROXY CONFIG — set this to your Cloud Run URL after deploying
+// See sports-bet-proxy/README.md for setup instructions
+// ═══════════════════════════════════════════
+const PROXY_URL = 'https://sports-bet-proxy-251253105381.us-central1.run.app';
+
+// ═══════════════════════════════════════════
+// EVENT CONFIGS
+// ═══════════════════════════════════════════
+const EVENTS = [
+  { id:'ncaam-w1', icon:'🏀', name:"NCAA Tournament", sport:'NCAA Tournament', status:'active', statusMsg:'March Madness is live — Round of 32 this weekend', accent:'#FFC230', tz:'PT · La Quinta', tzFull:'America/Los_Angeles',
+    oddsApiSport:'basketball_ncaab', kalshiKeyword:'NCAA',
+    weeks:[
+      { label:'Wk 1 — R64/R32', days:[
+        {key:'thu',label:'THU 3/19',long:'Thursday March 19 2026',round:'First Round'},
+        {key:'fri',label:'FRI 3/20',long:'Friday March 20 2026',round:'First Round'},
+        {key:'sat',label:'SAT 3/21',long:'Saturday March 21 2026',round:'Second Round'},
+        {key:'sun',label:'SUN 3/22',long:'Sunday March 22 2026',round:'Second Round'},
+      ]},
+      { label:'Wk 2 — S16/E8', days:[
+        {key:'thu2',label:'THU 3/26',long:'Thursday March 26 2026',round:'Sweet 16'},
+        {key:'fri2',label:'FRI 3/27',long:'Friday March 27 2026',round:'Sweet 16'},
+        {key:'sat2',label:'SAT 3/28',long:'Saturday March 28 2026',round:'Elite Eight'},
+        {key:'sun2',label:'SUN 3/29',long:'Sunday March 29 2026',round:'Elite Eight'},
+      ]},
+      { label:'Wk 3 — F4/Champ', days:[
+        {key:'sat3',label:'SAT 4/4',long:'Saturday April 4 2026',round:'Final Four'},
+        {key:'mon3',label:'MON 4/6',long:'Monday April 6 2026',round:'National Championship'},
+      ]},
+    ]
+  },
+  { id:'nfl-playoffs', icon:'🏈', name:'NFL Playoffs', sport:'NFL', status:'offseason', statusMsg:'NFL season complete. Next season kicks off September 2026', accent:'#FF6B35', tz:'PT', tzFull:'America/Los_Angeles', oddsApiSport:'americanfootball_nfl',
+    weeks:[
+      {label:'Wild Card',days:[{key:'sat',label:'SAT',long:'Wild Card Saturday',round:'Wild Card'},{key:'sun',label:'SUN',long:'Wild Card Sunday',round:'Wild Card'}]},
+      {label:'Divisional',days:[{key:'sat',label:'SAT',long:'Divisional Saturday',round:'Divisional'},{key:'sun',label:'SUN',long:'Divisional Sunday',round:'Divisional'}]},
+      {label:'Conf Champs',days:[{key:'sun',label:'SUN',long:'Conference Championship Sunday',round:'Conf. Championship'}]},
+      {label:'Super Bowl',days:[{key:'sun',label:'SUN',long:'Super Bowl Sunday',round:'Super Bowl'}]},
+    ]
+  },
+  { id:'nba-playoffs', icon:'🏀', name:'NBA Playoffs', sport:'NBA', status:'upcoming', statusMsg:'NBA Playoffs tip off mid-April 2026. Check back then for picks and bracket', accent:'#C9A84C', tz:'PT', tzFull:'America/Los_Angeles', oddsApiSport:'basketball_nba',
+    weeks:[
+      {label:'Round 1',days:[{key:'g1',label:'Game 1',long:'Round 1 Game 1',round:'First Round'},{key:'g2',label:'Game 2',long:'Round 1 Game 2',round:'First Round'}]},
+      {label:'Round 2',days:[{key:'r2g1',label:'Game 1',long:'Round 2 Game 1',round:'Second Round'}]},
+    ]
+  },
+  { id:'masters', icon:'⛳', name:'The Masters', sport:'Golf', status:'upcoming', statusMsg:'The Masters is April 9–12, 2026 at Augusta National', accent:'#4CAF82', tz:'ET', tzFull:'America/New_York', oddsApiSport:'golf_masters_tournament_winner',
+    weeks:[
+      {label:'Tournament',days:[
+        {key:'r1',label:'RD 1',long:'Masters Round 1 Thursday',round:'Round 1'},
+        {key:'r2',label:'RD 2',long:'Masters Round 2 Friday',round:'Round 2'},
+        {key:'r3',label:'RD 3',long:'Masters Round 3 Saturday',round:'Round 3'},
+        {key:'r4',label:'RD 4',long:'Masters Round 4 Sunday',round:'Final Round'},
+      ]}
+    ]
+  },
+  { id:'ufc', icon:'🥊', name:'UFC Event', sport:'UFC/MMA', status:'active', statusMsg:'UFC events run year-round — live odds update when cards are posted', accent:'#FF3860', tz:'PT · Las Vegas', tzFull:'America/Los_Angeles', oddsApiSport:'mma_mixed_martial_arts',
+    weeks:[
+      {label:'Fight Card',days:[
+        {key:'early',label:'Early Prelims',long:'UFC Early Prelims',round:'Early Prelims'},
+        {key:'prelim',label:'Prelims',long:'UFC Prelims',round:'Prelims'},
+        {key:'main',label:'Main Card',long:'UFC Main Card',round:'Main Card'},
+      ]}
+    ]
+  },
+
+  // ── TENNIS GRAND SLAMS ──────────────────────────────────────
+  { id:'wimbledon', icon:'🎾', name:'Wimbledon', sport:'Tennis', status:'upcoming', statusMsg:'Wimbledon runs late June through July 2026', accent:'#4C9A52', tz:'ET', tzFull:'America/New_York', oddsApiSport:'tennis_atp_wimbledon',
+    weeks:[
+      {label:'Wk 1 — R128/R64', days:[
+        {key:'mon',label:'MON',long:'Wimbledon Monday Round 1',round:'Round of 128'},
+        {key:'tue',label:'TUE',long:'Wimbledon Tuesday Round 1',round:'Round of 128'},
+        {key:'wed',label:'WED',long:'Wimbledon Wednesday Round 2',round:'Round of 64'},
+        {key:'thu',label:'THU',long:'Wimbledon Thursday Round 2',round:'Round of 64'},
+      ]},
+      {label:'Wk 1 — R32/R16', days:[
+        {key:'fri',label:'FRI',long:'Wimbledon Friday Round 3',round:'Round of 32'},
+        {key:'sat',label:'SAT',long:'Wimbledon Saturday Round 3',round:'Round of 32'},
+        {key:'mon2',label:'MON',long:'Wimbledon Monday Round 4',round:'Round of 16'},
+        {key:'tue2',label:'TUE',long:'Wimbledon Tuesday Round 4',round:'Round of 16'},
+      ]},
+      {label:'Wk 2 — QF/SF/F', days:[
+        {key:'wed2',label:'WED',long:'Wimbledon Wednesday Quarterfinals',round:'Quarterfinals'},
+        {key:'thu2',label:'THU',long:'Wimbledon Thursday Quarterfinals',round:'Quarterfinals'},
+        {key:'fri2',label:'FRI',long:'Wimbledon Friday Semifinals',round:'Semifinals'},
+        {key:'sat2',label:'SAT',long:'Wimbledon Saturday Mens Final',round:'Final'},
+        {key:'sun2',label:'SUN',long:'Wimbledon Sunday Womens Final',round:'Final'},
+      ]},
+    ]
+  },
+  { id:'usopen-tennis', icon:'🎾', name:'US Open Tennis', sport:'Tennis', status:'upcoming', statusMsg:'US Open Tennis runs August–September 2026', accent:'#003580', tz:'ET', tzFull:'America/New_York', oddsApiSport:'tennis_atp_us_open',
+    weeks:[
+      {label:'Wk 1 — R128/R64', days:[
+        {key:'mon',label:'MON',long:'US Open Monday Round 1',round:'Round of 128'},
+        {key:'tue',label:'TUE',long:'US Open Tuesday Round 1',round:'Round of 128'},
+        {key:'wed',label:'WED',long:'US Open Wednesday Round 2',round:'Round of 64'},
+        {key:'thu',label:'THU',long:'US Open Thursday Round 2',round:'Round of 64'},
+      ]},
+      {label:'Wk 1 — R32/R16', days:[
+        {key:'fri',label:'FRI',long:'US Open Friday Round 3',round:'Round of 32'},
+        {key:'sat',label:'SAT',long:'US Open Saturday Round 3',round:'Round of 32'},
+        {key:'mon2',label:'MON',long:'US Open Monday Round 4',round:'Round of 16'},
+        {key:'tue2',label:'TUE',long:'US Open Tuesday Round 4',round:'Round of 16'},
+      ]},
+      {label:'Wk 2 — QF/SF/F', days:[
+        {key:'wed2',label:'WED',long:'US Open Wednesday Quarterfinals',round:'Quarterfinals'},
+        {key:'thu2',label:'THU',long:'US Open Thursday Quarterfinals',round:'Quarterfinals'},
+        {key:'fri2',label:'FRI',long:'US Open Friday Semifinals',round:'Semifinals'},
+        {key:'sat2',label:'SAT',long:'US Open Saturday Womens Final',round:'Final'},
+        {key:'sun2',label:'SUN',long:'US Open Sunday Mens Final',round:'Final'},
+      ]},
+    ]
+  },
+  { id:'french-open', icon:'🎾', name:'French Open', sport:'Tennis', status:'upcoming', statusMsg:'Roland Garros runs May 24 – June 7, 2026', accent:'#C8440A', tz:'ET', tzFull:'America/New_York', oddsApiSport:'tennis_atp_french_open',
+    weeks:[
+      {label:'Wk 1 — R128/R64', days:[
+        {key:'mon',label:'MON',long:'Roland Garros Monday Round 1',round:'Round of 128'},
+        {key:'tue',label:'TUE',long:'Roland Garros Tuesday Round 1',round:'Round of 128'},
+        {key:'wed',label:'WED',long:'Roland Garros Wednesday Round 2',round:'Round of 64'},
+        {key:'thu',label:'THU',long:'Roland Garros Thursday Round 2',round:'Round of 64'},
+      ]},
+      {label:'Wk 2 — QF/SF/F', days:[
+        {key:'wed2',label:'WED',long:'Roland Garros Wednesday Quarterfinals',round:'Quarterfinals'},
+        {key:'thu2',label:'THU',long:'Roland Garros Thursday Quarterfinals',round:'Quarterfinals'},
+        {key:'fri2',label:'FRI',long:'Roland Garros Friday Semifinals',round:'Semifinals'},
+        {key:'sat2',label:'SAT',long:'Roland Garros Saturday Final',round:'Final'},
+        {key:'sun2',label:'SUN',long:'Roland Garros Sunday Final',round:'Final'},
+      ]},
+    ]
+  },
+  { id:'aus-open', icon:'🎾', name:'Australian Open', sport:'Tennis', status:'ended', statusMsg:'Australian Open concluded January 2026. Next edition January 2027', accent:'#0052A5', tz:'ET', tzFull:'America/New_York', oddsApiSport:'tennis_atp_aus_open',
+    weeks:[
+      {label:'Wk 1 — R128/R64', days:[
+        {key:'mon',label:'MON',long:'Australian Open Monday Round 1',round:'Round of 128'},
+        {key:'tue',label:'TUE',long:'Australian Open Tuesday Round 1',round:'Round of 128'},
+        {key:'wed',label:'WED',long:'Australian Open Wednesday Round 2',round:'Round of 64'},
+        {key:'thu',label:'THU',long:'Australian Open Thursday Round 2',round:'Round of 64'},
+      ]},
+      {label:'Wk 2 — QF/SF/F', days:[
+        {key:'wed2',label:'WED',long:'Australian Open Wednesday Quarterfinals',round:'Quarterfinals'},
+        {key:'thu2',label:'THU',long:'Australian Open Thursday Quarterfinals',round:'Quarterfinals'},
+        {key:'fri2',label:'FRI',long:'Australian Open Friday Semifinals',round:'Semifinals'},
+        {key:'sat2',label:'SAT',long:'Australian Open Saturday Final',round:'Final'},
+        {key:'sun2',label:'SUN',long:'Australian Open Sunday Final',round:'Final'},
+      ]},
+    ]
+  },
+
+  // ── SOCCER / FOOTBALL ────────────────────────────────────────
+  { id:'world-cup', icon:'⚽', name:'FIFA World Cup', sport:'Soccer', status:'upcoming', statusMsg:'FIFA World Cup 2026 opens June 11 across USA, Canada & Mexico', accent:'#1A6B3C', tz:'ET', tzFull:'America/New_York', oddsApiSport:'soccer_fifa_world_cup',
+    weeks:[
+      {label:'Group Stage', days:[
+        {key:'g1',label:'DAY 1',long:'World Cup Group Stage Day 1',round:'Group Stage'},
+        {key:'g2',label:'DAY 2',long:'World Cup Group Stage Day 2',round:'Group Stage'},
+        {key:'g3',label:'DAY 3',long:'World Cup Group Stage Day 3',round:'Group Stage'},
+        {key:'g4',label:'DAY 4',long:'World Cup Group Stage Day 4',round:'Group Stage'},
+      ]},
+      {label:'Round of 16', days:[
+        {key:'r16a',label:'DAY 1',long:'World Cup Round of 16 Day 1',round:'Round of 16'},
+        {key:'r16b',label:'DAY 2',long:'World Cup Round of 16 Day 2',round:'Round of 16'},
+        {key:'r16c',label:'DAY 3',long:'World Cup Round of 16 Day 3',round:'Round of 16'},
+        {key:'r16d',label:'DAY 4',long:'World Cup Round of 16 Day 4',round:'Round of 16'},
+      ]},
+      {label:'QF / SF / F', days:[
+        {key:'qf1',label:'QF Day 1',long:'World Cup Quarterfinals Day 1',round:'Quarterfinals'},
+        {key:'qf2',label:'QF Day 2',long:'World Cup Quarterfinals Day 2',round:'Quarterfinals'},
+        {key:'sf1',label:'SF Day 1',long:'World Cup Semifinal 1',round:'Semifinals'},
+        {key:'sf2',label:'SF Day 2',long:'World Cup Semifinal 2',round:'Semifinals'},
+        {key:'fin',label:'FINAL',long:'World Cup Final',round:'Final'},
+      ]},
+    ]
+  },
+  { id:'champions-league', icon:'⚽', name:'UEFA Champions League', sport:'Soccer', status:'active', statusMsg:'Champions League quarterfinals in April 2026', accent:'#1B3A8C', tz:'ET', tzFull:'America/New_York', oddsApiSport:'soccer_uefa_champs_league',
+    weeks:[
+      {label:'Round of 16', days:[
+        {key:'r16a',label:'LEG 1A',long:'Champions League Round of 16 Leg 1 Day 1',round:'Round of 16 — Leg 1'},
+        {key:'r16b',label:'LEG 1B',long:'Champions League Round of 16 Leg 1 Day 2',round:'Round of 16 — Leg 1'},
+        {key:'r16c',label:'LEG 2A',long:'Champions League Round of 16 Leg 2 Day 1',round:'Round of 16 — Leg 2'},
+        {key:'r16d',label:'LEG 2B',long:'Champions League Round of 16 Leg 2 Day 2',round:'Round of 16 — Leg 2'},
+      ]},
+      {label:'QF / SF', days:[
+        {key:'qf1',label:'QF L1A',long:'Champions League Quarterfinals Leg 1 Day 1',round:'Quarterfinals — Leg 1'},
+        {key:'qf2',label:'QF L1B',long:'Champions League Quarterfinals Leg 1 Day 2',round:'Quarterfinals — Leg 1'},
+        {key:'sf1',label:'SF L1A',long:'Champions League Semifinals Leg 1 Day 1',round:'Semifinals — Leg 1'},
+        {key:'sf2',label:'SF L1B',long:'Champions League Semifinals Leg 1 Day 2',round:'Semifinals — Leg 1'},
+      ]},
+      {label:'Final', days:[
+        {key:'fin',label:'FINAL',long:'Champions League Final',round:'Final'},
+      ]},
+    ]
+  },
+  { id:'euro', icon:'⚽', name:'UEFA Euro', sport:'Soccer', status:'upcoming', statusMsg:'UEFA Euro 2028 — not until summer 2028', accent:'#003399', tz:'ET', tzFull:'America/New_York', oddsApiSport:'soccer_uefa_european_championship',
+    weeks:[
+      {label:'Group Stage', days:[
+        {key:'g1',label:'DAY 1',long:'Euro Group Stage Day 1',round:'Group Stage'},
+        {key:'g2',label:'DAY 2',long:'Euro Group Stage Day 2',round:'Group Stage'},
+        {key:'g3',label:'DAY 3',long:'Euro Group Stage Day 3',round:'Group Stage'},
+      ]},
+      {label:'Knockout', days:[
+        {key:'r16',label:'R16',long:'Euro Round of 16',round:'Round of 16'},
+        {key:'qf',label:'QF',long:'Euro Quarterfinals',round:'Quarterfinals'},
+        {key:'sf',label:'SF',long:'Euro Semifinals',round:'Semifinals'},
+        {key:'fin',label:'FINAL',long:'Euro Final',round:'Final'},
+      ]},
+    ]
+  },
+
+  // ── GOLF MAJORS ──────────────────────────────────────────────
+  { id:'pga-championship', icon:'⛳', name:'PGA Championship', sport:'Golf', status:'upcoming', statusMsg:'PGA Championship is May 14–17, 2026 at Quail Hollow Club', accent:'#1B4D8E', tz:'ET', tzFull:'America/New_York', oddsApiSport:'golf_pga_championship_winner',
+    weeks:[
+      {label:'Tournament', days:[
+        {key:'r1',label:'RD 1 THU',long:'PGA Championship Round 1 Thursday',round:'Round 1'},
+        {key:'r2',label:'RD 2 FRI',long:'PGA Championship Round 2 Friday',round:'Round 2'},
+        {key:'r3',label:'RD 3 SAT',long:'PGA Championship Round 3 Saturday',round:'Round 3'},
+        {key:'r4',label:'RD 4 SUN',long:'PGA Championship Round 4 Sunday',round:'Final Round'},
+      ]}
+    ]
+  },
+  { id:'us-open-golf', icon:'⛳', name:'US Open Golf', sport:'Golf', status:'upcoming', statusMsg:'US Open Golf is June 18–21, 2026 at Shinnecock Hills', accent:'#002868', tz:'ET', tzFull:'America/New_York', oddsApiSport:'golf_us_open_winner',
+    weeks:[
+      {label:'Tournament', days:[
+        {key:'r1',label:'RD 1 THU',long:'US Open Golf Round 1 Thursday',round:'Round 1'},
+        {key:'r2',label:'RD 2 FRI',long:'US Open Golf Round 2 Friday',round:'Round 2'},
+        {key:'r3',label:'RD 3 SAT',long:'US Open Golf Round 3 Saturday',round:'Round 3'},
+        {key:'r4',label:'RD 4 SUN',long:'US Open Golf Round 4 Sunday',round:'Final Round'},
+      ]}
+    ]
+  },
+  { id:'the-open', icon:'⛳', name:'The Open Championship', sport:'Golf', accent:'#00539B', tz:'ET', tzFull:'America/New_York', oddsApiSport:'golf_the_open_championship_winner',
+    weeks:[
+      {label:'Tournament', days:[
+        {key:'r1',label:'RD 1 THU',long:'The Open Championship Round 1 Thursday',round:'Round 1'},
+        {key:'r2',label:'RD 2 FRI',long:'The Open Championship Round 2 Friday',round:'Round 2'},
+        {key:'r3',label:'RD 3 SAT',long:'The Open Championship Round 3 Saturday',round:'Round 3'},
+        {key:'r4',label:'RD 4 SUN',long:'The Open Championship Round 4 Sunday',round:'Final Round'},
+      ]}
+    ]
+  },
+
+  // ── OTHER SPORTS ─────────────────────────────────────────────
+  { id:'nhl-playoffs', icon:'🏒', name:'NHL Playoffs', sport:'NHL', accent:'#002654', tz:'ET', tzFull:'America/New_York', oddsApiSport:'icehockey_nhl',
+    weeks:[
+      {label:'Round 1', days:[
+        {key:'g1',label:'Game 1',long:'NHL Playoffs Round 1 Game 1',round:'First Round'},
+        {key:'g2',label:'Game 2',long:'NHL Playoffs Round 1 Game 2',round:'First Round'},
+        {key:'g3',label:'Game 3',long:'NHL Playoffs Round 1 Game 3',round:'First Round'},
+        {key:'g4',label:'Game 4',long:'NHL Playoffs Round 1 Game 4',round:'First Round'},
+        {key:'g5',label:'Game 5',long:'NHL Playoffs Round 1 Game 5',round:'First Round'},
+        {key:'g6',label:'Game 6',long:'NHL Playoffs Round 1 Game 6',round:'First Round'},
+        {key:'g7',label:'Game 7',long:'NHL Playoffs Round 1 Game 7',round:'First Round'},
+      ]},
+      {label:'Round 2', days:[
+        {key:'r2g1',label:'Game 1',long:'NHL Playoffs Round 2 Game 1',round:'Second Round'},
+        {key:'r2g2',label:'Game 2',long:'NHL Playoffs Round 2 Game 2',round:'Second Round'},
+        {key:'r2g3',label:'Game 3',long:'NHL Playoffs Round 2 Game 3',round:'Second Round'},
+        {key:'r2g4',label:'Game 4',long:'NHL Playoffs Round 2 Game 4',round:'Second Round'},
+      ]},
+      {label:'Conf Finals', days:[
+        {key:'cf1',label:'Game 1',long:'NHL Conference Finals Game 1',round:'Conference Finals'},
+        {key:'cf2',label:'Game 2',long:'NHL Conference Finals Game 2',round:'Conference Finals'},
+        {key:'cf3',label:'Game 3',long:'NHL Conference Finals Game 3',round:'Conference Finals'},
+      ]},
+      {label:'Stanley Cup', days:[
+        {key:'sc1',label:'Game 1',long:'Stanley Cup Finals Game 1',round:'Stanley Cup Finals'},
+        {key:'sc2',label:'Game 2',long:'Stanley Cup Finals Game 2',round:'Stanley Cup Finals'},
+        {key:'sc3',label:'Game 3',long:'Stanley Cup Finals Game 3',round:'Stanley Cup Finals'},
+        {key:'sc4',label:'Game 4',long:'Stanley Cup Finals Game 4',round:'Stanley Cup Finals'},
+        {key:'sc5',label:'Game 5',long:'Stanley Cup Finals Game 5',round:'Stanley Cup Finals'},
+        {key:'sc6',label:'Game 6',long:'Stanley Cup Finals Game 6',round:'Stanley Cup Finals'},
+        {key:'sc7',label:'Game 7',long:'Stanley Cup Finals Game 7',round:'Stanley Cup Finals'},
+      ]},
+    ]
+  },
+  { id:'f1', icon:'🏎️', name:'Formula 1', sport:'F1 Grand Prix', accent:'#E8002D', tz:'ET', tzFull:'America/New_York', oddsApiSport:'motorsport_formula_one_winner',
+    weeks:[
+      {label:'Race Weekend', days:[
+        {key:'fp1',label:'FP1/FP2',long:'F1 Practice 1 and 2',round:'Free Practice'},
+        {key:'fp3',label:'FP3/QUAL',long:'F1 Practice 3 and Qualifying',round:'Qualifying'},
+        {key:'race',label:'RACE',long:'F1 Grand Prix Race Day',round:'Race'},
+      ]},
+      {label:'Sprint Weekend', days:[
+        {key:'fp1s',label:'FP1',long:'F1 Sprint Weekend Practice 1',round:'Free Practice'},
+        {key:'squal',label:'S.QUAL',long:'F1 Sprint Qualifying',round:'Sprint Qualifying'},
+        {key:'sprint',label:'SPRINT',long:'F1 Sprint Race',round:'Sprint Race'},
+        {key:'qual',label:'QUAL',long:'F1 Grand Prix Qualifying',round:'Qualifying'},
+        {key:'race',label:'RACE',long:'F1 Grand Prix Race Day',round:'Race'},
+      ]},
+    ]
+  },
+  { id:'ncaaw', icon:'🏀', name:"Women's Madness", sport:"NCAA Women's Tournament", accent:'#E040FB', tz:'PT', tzFull:'America/Los_Angeles', oddsApiSport:'basketball_ncaaw',
+    weeks:[
+      {label:'Wk 1 — R64/R32', days:[
+        {key:'fri',label:'FRI 3/20',long:'Friday March 20 2026',round:'First Round'},
+        {key:'sat',label:'SAT 3/21',long:'Saturday March 21 2026',round:'First Round'},
+        {key:'sun',label:'SUN 3/22',long:'Sunday March 22 2026',round:'Second Round'},
+        {key:'mon',label:'MON 3/23',long:'Monday March 23 2026',round:'Second Round'},
+      ]},
+      {label:'Wk 2 — S16/E8', days:[
+        {key:'fri2',label:'FRI 3/27',long:'Friday March 27 2026',round:'Sweet 16'},
+        {key:'sat2',label:'SAT 3/28',long:'Saturday March 28 2026',round:'Sweet 16'},
+        {key:'sun2',label:'SUN 3/29',long:'Sunday March 29 2026',round:'Elite Eight'},
+        {key:'mon2',label:'MON 3/30',long:'Monday March 30 2026',round:'Elite Eight'},
+      ]},
+      {label:'Wk 3 — F4/Champ', days:[
+        {key:'fri3',label:'FRI 4/3',long:'Friday April 3 2026',round:'Final Four'},
+        {key:'sun3',label:'SUN 4/5',long:'Sunday April 5 2026',round:'National Championship'},
+      ]},
+    ]
+  },
+  { id:'copa-america', icon:'⚽', name:'Copa America', sport:'Soccer', accent:'#D4AF37', tz:'ET', tzFull:'America/New_York', oddsApiSport:'soccer_conmebol_copa_america',
+    weeks:[
+      {label:'Group Stage', days:[
+        {key:'g1',label:'DAY 1',long:'Copa America Group Stage Day 1',round:'Group Stage'},
+        {key:'g2',label:'DAY 2',long:'Copa America Group Stage Day 2',round:'Group Stage'},
+        {key:'g3',label:'DAY 3',long:'Copa America Group Stage Day 3',round:'Group Stage'},
+      ]},
+      {label:'Knockout', days:[
+        {key:'qf',label:'QF',long:'Copa America Quarterfinals',round:'Quarterfinals'},
+        {key:'sf',label:'SF',long:'Copa America Semifinals',round:'Semifinals'},
+        {key:'fin',label:'FINAL',long:'Copa America Final',round:'Final'},
+      ]},
+    ]
+  },
+  { id:'rugby-wc', icon:'🏉', name:'Rugby World Cup', sport:'Rugby', accent:'#8B4513', tz:'ET', tzFull:'America/New_York', oddsApiSport:'rugbyunion_world_cup',
+    weeks:[
+      {label:'Pool Stage', days:[
+        {key:'p1',label:'WK 1',long:'Rugby World Cup Pool Stage Week 1',round:'Pool Stage'},
+        {key:'p2',label:'WK 2',long:'Rugby World Cup Pool Stage Week 2',round:'Pool Stage'},
+        {key:'p3',label:'WK 3',long:'Rugby World Cup Pool Stage Week 3',round:'Pool Stage'},
+        {key:'p4',label:'WK 4',long:'Rugby World Cup Pool Stage Week 4',round:'Pool Stage'},
+      ]},
+      {label:'Knockout', days:[
+        {key:'qf',label:'QF',long:'Rugby World Cup Quarterfinals',round:'Quarterfinals'},
+        {key:'sf',label:'SF',long:'Rugby World Cup Semifinals',round:'Semifinals'},
+        {key:'fin',label:'FINAL',long:'Rugby World Cup Final',round:'Final'},
+      ]},
+    ]
+  },
+  { id:'nba-playoffs', icon:'🏀', name:'NBA Playoffs', sport:'NBA Playoffs', accent:'#C9553A', tz:'PT', tzFull:'America/Los_Angeles', oddsApiSport:'basketball_nba',
+    weeks:[
+      {label:'First Round', days:[
+        {key:'r1e',label:'R1 EAST',long:'First Round — Eastern Conference',round:'First Round'},
+        {key:'r1w',label:'R1 WEST',long:'First Round — Western Conference',round:'First Round'},
+      ]},
+      {label:'Conf Semis', days:[
+        {key:'cse',label:'SEMI E',long:'Conference Semifinals — East',round:'Conf. Semifinals'},
+        {key:'csw',label:'SEMI W',long:'Conference Semifinals — West',round:'Conf. Semifinals'},
+      ]},
+      {label:'Conf Finals', days:[
+        {key:'cfe',label:'CONF E',long:'Conference Finals — East',round:'Conf. Finals'},
+        {key:'cfw',label:'CONF F',long:'Conference Finals — West',round:'Conf. Finals'},
+      ]},
+      {label:'NBA Finals', days:[
+        {key:'fin',label:'FINALS',long:'NBA Finals',round:'NBA Finals'},
+      ]},
+    ]
+  },
+  { id:'nhl-playoffs', icon:'🏒', name:'NHL Playoffs', sport:'NHL Playoffs', accent:'#60AAEE', tz:'PT', tzFull:'America/Los_Angeles', oddsApiSport:'icehockey_nhl',
+    weeks:[
+      {label:'First Round', days:[
+        {key:'r1e',label:'R1 EAST',long:'First Round — Eastern Conference',round:'First Round'},
+        {key:'r1w',label:'R1 WEST',long:'First Round — Western Conference',round:'First Round'},
+      ]},
+      {label:'Second Round', days:[
+        {key:'r2e',label:'R2 EAST',long:'Second Round — Eastern Conference',round:'Second Round'},
+        {key:'r2w',label:'R2 WEST',long:'Second Round — Western Conference',round:'Second Round'},
+      ]},
+      {label:'Conf Finals', days:[
+        {key:'cfe',label:'CONF E',long:'Conference Finals — East',round:'Conf. Finals'},
+        {key:'cfw',label:'CONF W',long:'Conference Finals — West',round:'Conf. Finals'},
+      ]},
+      {label:'Stanley Cup', days:[
+        {key:'fin',label:'CUP FINALS',long:'Stanley Cup Finals',round:'Stanley Cup Finals'},
+      ]},
+    ]
+  },
+];
+
+// ═══════════════════════════════════════════
+// STATE & PREFS (persisted)
+// ═══════════════════════════════════════════
+let prefs = JSON.parse(localStorage.getItem('betsPrefs') || '{}');
+// defaults
+if (!prefs.prefBook)    prefs.prefBook    = 'consensus';
+if (!prefs.activeEvent) prefs.activeEvent = 'ncaam-w1';
+if (prefs.useOddsApi  === undefined) prefs.useOddsApi  = false;
+if (prefs.useKalshi   === undefined) prefs.useKalshi   = false;
+
+function savePrefs() { localStorage.setItem('betsPrefs', JSON.stringify(prefs)); }
+
+let activeWeekIdx = 0;
+let currentDayKey = null;
+const cache = {};
+let openGame = null;
+
+// ═══════════════════════════════════════════
+// SETTINGS MODAL
+// ═══════════════════════════════════════════
+function openSettings() {
+  renderSportGrid();
+  syncSettingsUI();
+  document.getElementById('settingsModal').classList.remove('hidden');
+}
+function closeSettings() { document.getElementById('settingsModal').classList.add('hidden'); }
+document.getElementById('settingsModal').addEventListener('click', e => { if (e.target === document.getElementById('settingsModal')) closeSettings(); });
+
+function syncSettingsUI() {
+  document.getElementById('src-tile-oddsapi').classList.toggle('active', prefs.useOddsApi);
+  document.getElementById('src-tile-kalshi').classList.toggle('active', prefs.useKalshi);
+  document.getElementById('oddsApiSection').style.display = prefs.useOddsApi ? '' : 'none';
+  document.getElementById('oddsApiKeyInput').value = prefs.oddsApiKey || '';
+  document.getElementById('prefBookSelect').value = prefs.prefBook;
+}
+
+function toggleSourceTile(src) {
+  if (src === 'oddsapi') {
+    prefs.useOddsApi = !prefs.useOddsApi;
+    document.getElementById('oddsApiSection').style.display = prefs.useOddsApi ? '' : 'none';
+  }
+  if (src === 'kalshi') prefs.useKalshi = !prefs.useKalshi;
+  savePrefs(); syncSettingsUI(); updateSourcePills(); renderSourcePopover && renderSourcePopover();
+}
+
+function saveOddsApiKey() {
+  const val = document.getElementById('oddsApiKeyInput').value.trim();
+  if (!val) return;
+  prefs.oddsApiKey = val;
+  savePrefs();
+  const s = document.getElementById('oddsApiStatus');
+  s.className = 'api-status ok';
+  s.textContent = '✓ Key saved — will be used on next refresh';
+}
+
+function savePrefBook() {
+  prefs.prefBook = document.getElementById('prefBookSelect').value;
+  savePrefs();
+  updateSourcePills();
+}
+
+function renderSportGrid() {
+  const now = new Date();
+  const eventMeta = {
+    'ncaam-w1':     { start: new Date(2026,2,17), end: new Date(2026,3,6),  label:'Mar 17–Apr 6' },
+    'nba-playoffs': { start: new Date(2026,3,19), end: new Date(2026,5,20), label:'Apr 19' },
+    'nhl-playoffs': { start: new Date(2026,3,19), end: new Date(2026,5,15), label:'Apr ~19' },
+    'nfl-playoffs': { start: new Date(2027,0,1),  end: new Date(2027,1,15), label:'Jan 2027' },
+  };
+  function getStatus(id) {
+    const m = eventMeta[id];
+    if (!m) return 'future';
+    if (now >= m.start && now <= m.end) return 'live';
+    if (now < m.start) return 'upcoming';
+    return 'past';
+  }
+  const sorted = [...EVENTS].sort((a,b) => {
+    const order = {live:0,upcoming:1,past:2,future:3};
+    const sa = getStatus(a.id), sb = getStatus(b.id);
+    if (order[sa] !== order[sb]) return order[sa]-order[sb];
+    const ma = eventMeta[a.id], mb = eventMeta[b.id];
+    if (ma && mb) return ma.start-mb.start;
+    return 0;
+  });
+  function tile(ev) {
+    const status = getStatus(ev.id);
+    const meta = eventMeta[ev.id];
+    const isActive = ev.id === prefs.activeEvent;
+    const tag = status==='live'
+      ? `<span style="font-family:var(--mono);font-size:8px;color:var(--green);background:var(--green-d);border:1px solid #00E88225;border-radius:4px;padding:1px 5px">● NOW</span>`
+      : status==='upcoming' && meta
+      ? `<span style="font-family:var(--mono);font-size:8px;color:var(--amber);background:var(--amber-d);border:1px solid #FFC23025;border-radius:4px;padding:1px 5px">${meta.label}</span>`
+      : '';
+    return `<div class="sport-tile ${isActive?'active':''}" onclick="selectEvent('${ev.id}')">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">
+        <div class="sport-icon" style="font-size:22px">${ev.icon}</div>${tag}
+      </div>
+      <div class="source-tile-name">${ev.name}</div>
+      <div class="source-tile-desc">${ev.sport}</div>
+    </div>`;
+  }
+  function section(title, evs) {
+    if (!evs.length) return '';
+    return '<div style="font-family:var(--mono);font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin:12px 0 6px;width:100%;display:block">' + title + '</div><div class="sport-grid">' + evs.map(tile).join('') + '</div>';
+  }
+  const current  = sorted.filter(e=>getStatus(e.id)==='live');
+  const upcoming = sorted.filter(e=>getStatus(e.id)==='upcoming');
+  const other    = sorted.filter(e=>!['live','upcoming'].includes(getStatus(e.id)));
+  document.getElementById('sportGrid').innerHTML =
+    section('🔴 Active Now', current) +
+    section('📅 Coming Up', upcoming) +
+    (other.length ? section('More Sports', other) : '');
+}
+function selectEvent(id) {
+  prefs.activeEvent = id; savePrefs();
+  activeWeekIdx = 0; currentDayKey = null;
+  closeSettings(); bootApp();
+}
+
+// ═══════════════════════════════════════════
+// SOURCE POPOVER
+// ═══════════════════════════════════════════
+function toggleSourcePopover() {
+  const pop = document.getElementById('sourcePopover');
+  if (pop.classList.contains('hidden')) {
+    renderSourcePopover();
+    pop.classList.remove('hidden');
+    // close on outside click
+    setTimeout(() => document.addEventListener('click', closeSourcePopoverOutside, {once:true}), 0);
+  } else {
+    pop.classList.add('hidden');
+  }
+}
+
+function closeSourcePopoverOutside(e) {
+  const btn = document.getElementById('sourceBtn');
+  const pop = document.getElementById('sourcePopover');
+  if (!btn.contains(e.target) && !pop.contains(e.target)) {
+    pop.classList.add('hidden');
+  } else if (!pop.classList.contains('hidden')) {
+    setTimeout(() => document.addEventListener('click', closeSourcePopoverOutside, {once:true}), 0);
+  }
+}
+
+const SOURCE_OPTIONS = [
+  { value:'consensus', label:'Consensus', desc:'Best line across all sources', dot:'#FFC230' },
+  { value:'DraftKings', label:'DraftKings', desc:'', dot:'#00D04B' },
+  { value:'FanDuel', label:'FanDuel', desc:'', dot:'#1493FF' },
+  { value:'BetMGM', label:'BetMGM', desc:'', dot:'#C9A84C' },
+  { value:'Caesars', label:'Caesars', desc:'', dot:'#0068FF' },
+  { value:'PointsBet', label:'PointsBet', desc:'', dot:'#FF3B3B' },
+  { value:'BetUS', label:'BetUS', desc:'', dot:'#FF6B00' },
+  { value:'bet365', label:'bet365', desc:'', dot:'#027B5B' },
+];
+
+function renderSourcePopover() {
+  const opts = document.getElementById('sourcePopoverOptions');
+  opts.innerHTML = SOURCE_OPTIONS.map(o => {
+    const isDisabled = o.value !== 'consensus' && !prefs.useOddsApi && !prefs.oddsApiKey;
+    const isSelected = prefs.prefBook === o.value;
+    return `<div class="src-opt ${isSelected?'selected':''} ${isDisabled?'disabled-opt':''}"
+      onclick="selectSourceOption('${o.value}')">
+      <div class="src-opt-dot" style="background:${o.dot}"></div>
+      <div class="src-opt-info">
+        <div class="src-opt-name">${o.label}</div>
+        ${o.desc ? `<div class="src-opt-desc">${o.desc}</div>` : ''}
+      </div>
+      <span class="src-opt-check">✓</span>
+    </div>`;
+  }).join('') + (prefs.useOddsApi ? '' : '<div class="src-hint" style="margin-top:4px">Enable Odds API in ⚙ for individual books</div>');
+}
+
+function selectSourceOption(val) {
+  prefs.prefBook = val;
+  savePrefs();
+  updateSourcePills();
+  document.getElementById('sourcePopover').classList.add('hidden');
+  // Re-render open game if any
+  if (openGame) {
+    const cacheKey = prefs.activeEvent + '_' + currentDayKey;
+    if (cache[cacheKey]) renderPanel(currentDayKey, cache[cacheKey]);
+  }
+}
+
+function updateSourcePills() {
+  const label = prefs.prefBook === 'consensus' ? 'CONSENSUS' : prefs.prefBook.toUpperCase();
+  document.getElementById('sourceBtnLabel').textContent = label;
+  const prefBookEl = document.getElementById('prefBookLabel');
+  if (prefBookEl) prefBookEl.textContent = label;
+  // sync settings modal selects if open
+  const sel = document.getElementById('prefBookSelect');
+  if (sel) sel.value = prefs.prefBook;
+}
+
+// ═══════════════════════════════════════════
+// APP BOOT
+// ═══════════════════════════════════════════
+function getActiveEvent() { return EVENTS.find(e=>e.id===prefs.activeEvent) || EVENTS[0]; }
+function getActiveWeek()  { const ev=getActiveEvent(); return ev.weeks[activeWeekIdx]||ev.weeks[0]; }
+
+function setAccent(c) {
+  document.documentElement.style.setProperty('--accent', c);
+  document.documentElement.style.setProperty('--accent-d', c+'18');
+}
+
+// Detect user's local timezone abbreviation for display
+function getLocalTzAbbr() {
+  try {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    // Get the short abbreviation (e.g. "PT", "MT", "CT", "ET")
+    const abbr = new Date().toLocaleTimeString('en-US', {timeZone: tz, timeZoneName:'short'})
+      .split(' ').pop();
+    return abbr || tz;
+  } catch(e) { return 'Local'; }
+}
+
+// Convert "2:50 PM ET" to user local time — clean reliable version
+function convertToLocalTime(timeStr) {
+  if (!timeStr || timeStr === 'TBD') return timeStr;
+  try {
+    // Strip timezone label — all times stored as ET
+    const cleaned = timeStr.replace(/\s*(ET|EST|EDT|CT|MT|PT|PDT|PST|MDT|CDT)$/i, '').trim();
+    const m = cleaned.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+    if (!m) return timeStr;
+    let h = parseInt(m[1]), min = parseInt(m[2]);
+    const ampm = m[3].toUpperCase();
+    if (ampm === 'PM' && h !== 12) h += 12;
+    if (ampm === 'AM' && h === 12) h = 0;
+    // Use a fixed tournament date: March 19 2026 (EDT = UTC-4)
+    // Build UTC time by adding 4 hours (EDT offset)
+    const utcH = h + 4;
+    const utcDate = new Date(Date.UTC(2026, 2, 19, utcH, min, 0));
+    // Format in user local timezone
+    return utcDate.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+    });
+  } catch(e) { return timeStr; }
+}
+
+// ═══════════════════════════════════════════
+// THEME TOGGLE
+// ═══════════════════════════════════════════
+function toggleTheme() {
+  const isLight = document.body.classList.toggle('light');
+  localStorage.setItem('theme', isLight ? 'light' : 'dark');
+  document.getElementById('themeBtn').textContent = isLight ? '☀️' : '🌙';
+  // Update accent for light mode
+  const ev = getActiveEvent();
+  if (isLight) {
+    // Darken accent slightly for light mode readability
+    document.documentElement.style.setProperty('--accent', ev.accent);
+    document.documentElement.style.setProperty('--accent-d', ev.accent + '22');
+  } else {
+    setAccent(ev.accent);
+  }
+}
+
+function initTheme() {
+  const saved = localStorage.getItem('theme');
+  if (saved === 'light') {
+    document.body.classList.add('light');
+    document.getElementById('themeBtn').textContent = '☀️';
+  }
+}
+
+function bootApp() {
+  const ev = getActiveEvent();
+  setAccent(ev.accent);
+  document.getElementById('appLogo').innerHTML = `G-Money <span>Bets</span>`;
+  document.getElementById('eventSubtitle').textContent = ev.sport;
+  updateSourcePills();
+  updateParlayFab();
+  buildWeekBar();
+  renderWeek();
+
+  // Check sport status — don't load blank data for non-active sports
+  if (ev.status && ev.status !== 'active') {
+    showSportStatusScreen(ev);
+    return;
+  }
+
+  showHomePanel();
+  autoSelectToday();
+}
+
+function showSportStatusScreen(ev) {
+  const statusIcons = { upcoming:'📅', offseason:'🏖️', ended:'✅', check:'🔍' };
+  const statusColors = { upcoming:'var(--accent)', offseason:'var(--text3)', ended:'var(--green)', check:'var(--amber)' };
+  const icon  = statusIcons[ev.status]  || '📅';
+  const color = statusColors[ev.status] || 'var(--text3)';
+
+  // Show home panel with status message
+  document.getElementById('homePanel').style.display = '';
+  document.getElementById('bracketPanel').style.display = 'none';
+  document.getElementById('mainPanels').style.display = 'none';
+  document.getElementById('picksPanel').style.display = 'none';
+
+  document.getElementById('homePanel').innerHTML = `
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 24px;text-align:center;min-height:60vh;">
+      <div style="font-size:48px;margin-bottom:16px">${ev.icon}</div>
+      <div style="font-family:var(--mono);font-size:22px;font-weight:800;color:var(--text);margin-bottom:8px">${ev.name}</div>
+      <div style="display:inline-flex;align-items:center;gap:6px;background:var(--card2);border:1px solid var(--border);border-radius:20px;padding:4px 14px;margin-bottom:20px">
+        <span style="font-size:14px">${icon}</span>
+        <span style="font-family:var(--mono);font-size:11px;font-weight:700;color:${color};letter-spacing:.08em">${ev.status.toUpperCase()}</span>
+      </div>
+      <div style="font-size:15px;color:var(--text2);line-height:1.6;max-width:300px;margin-bottom:32px">${ev.statusMsg}</div>
+      ${ev.status === 'upcoming' ? `
+      <div style="background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:16px 20px;width:100%;max-width:320px;margin-bottom:16px">
+        <div style="font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:.1em;margin-bottom:10px">WHEN IT STARTS, YOU'LL GET</div>
+        <div style="display:flex;flex-direction:column;gap:8px;font-size:13px;color:var(--text2);text-align:left">
+          <div>📊 Live odds · spread · O/U from The Odds API</div>
+          <div>📺 Real-time scores from ESPN</div>
+          <div>🎰 Parlay builder with all games</div>
+          <div>💰 G-Money picks & bankroll tracker</div>
+          ${ev.sport === 'NBA' || ev.sport === 'NHL' ? '<div>🏆 Playoff bracket with series tracker</div>' : ''}
+        </div>
+      </div>` : ''}
+      <button onclick="selectEvent('ncaam-w1')" style="font-family:var(--mono);font-size:11px;font-weight:700;padding:10px 20px;border-radius:8px;border:1px solid var(--border2);background:var(--card2);color:var(--text3);cursor:pointer;">
+        ← Back to NCAA Tournament
+      </button>
+    </div>`;
+}
+
+
+function buildWeekBar() {
+  const ev = getActiveEvent();
+  const bar = document.getElementById('weekBar');
+  // Keep the WEEK label span, replace only the chips
+  const chips = ev.weeks.map((w,i)=>
+    `<button class="week-chip ${i===activeWeekIdx?'active':''}" onclick="selectWeek(${i})">${w.label}</button>`
+  ).join('');
+  bar.innerHTML = `<span class="week-label" style="flex-shrink:0;min-width:44px;text-align:right">WEEK</span>${chips}`;
+}
+
+function renderWeek() {
+  const days = getActiveWeek().days;
+  document.getElementById('dayTabs').innerHTML = days.map((d,i)=>
+    `<button class="day-tab ${i===0?'active':''}" id="tab-${d.key}" onclick="switchDay('${d.key}',this)">${d.label}</button>`).join('');
+  document.getElementById('mainPanels').innerHTML = days.map((d,i)=>
+    `<div id="panel-${d.key}" class="panel ${i===0?'active':''}"></div>`).join('');
+  currentDayKey = days[0].key;
+  openGame = null;
+  loadDay(currentDayKey);
+}
+
+function selectWeek(idx) { activeWeekIdx=idx; openGame=null; buildWeekBar(); renderWeek(); }
+
+function switchDay(key, el) {
+  showGamesPanel();
+  currentDayKey=key; openGame=null;
+  document.querySelectorAll('.day-tab').forEach(t=>t.classList.remove('active'));
+  if(el) el.classList.add('active');
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+key)?.classList.add('active');
+  if (!cache[prefs.activeEvent+'_'+key]) loadDay(key);
+  // Change SELECT → DAY once user taps a tab
+  const lbl = document.getElementById('dayLabel');
+  if (lbl) lbl.textContent = 'DAY';
+}
+
+function refreshCurrentTab() { delete cache[prefs.activeEvent+'_'+currentDayKey]; openGame=null; loadDay(currentDayKey); }
+
+function autoSelectToday() {
+  if (prefs.activeEvent !== 'ncaam-w1') return;
+  const t=new Date(), m=t.getMonth(), d=t.getDate();
+  // m is 0-indexed: March = 2, April = 3
+  const dm={
+    '2-17':'tue','2-18':'wed',                          // First Four
+    '2-19':'thu','2-20':'fri','2-21':'sat','2-22':'sun', // Week 1
+    '2-23':'thu2','2-24':'thu2','2-25':'thu2',           // Off days — pre-load Sweet 16
+    '2-26':'thu2','2-27':'fri2','2-28':'sat2','2-29':'sun2', // Week 2
+    '3-4':'sat3','3-6':'mon3'                            // Week 3
+  };
+  const wm={tue:0,wed:0,thu:0,fri:0,sat:0,sun:0,thu2:1,fri2:1,sat2:1,sun2:1,sat3:2,mon3:2};
+  const k=`${m}-${d}`;
+  const dk = dm[k] || 'thu2'; // default to Sweet 16 if date not found
+  const wi = wm[dk] ?? 1;
+  if (wi !== activeWeekIdx) { activeWeekIdx=wi; buildWeekBar(); renderWeek(); }
+  currentDayKey = dk;
+  if (!cache[prefs.activeEvent+'_'+dk]) loadDay(dk);
+}
+
+// ═══════════════════════════════════════════
+// STATIC GAME DATA — loads instantly, no API needed
+// Refresh button fetches live updates on top via proxy
+// ═══════════════════════════════════════════
+const STATIC_GAMES = {
+  'ncaam-w1_tue': {
+    day:'Tuesday, March 17, 2026', round:'First Four — Dayton, OH',
+    games:[
+      {id:'t1',timeET:'6:40 PM ET',network:'truTV',region:'Midwest',
+       away:{name:'UMBC Retrievers',abbr:'UMBC',seed:16,record:'24-8'},
+       home:{name:'Howard Bison',abbr:'HOW',seed:16,record:'23-10'},
+       moneyline:{away:'-145',home:'+125'},
+       spread:{line:-2.5,favTeam:'UMBC Retrievers',juice:'-110'},
+       total:{line:134.5,overJuice:'-110',underJuice:'-110'},
+       firstHalf:{moneyline:{away:'-130',home:'+110'},spread:{line:-1.5,favTeam:'UMBC Retrievers'},total:{line:66.5}},
+       books:[
+         {book:'DraftKings',awayML:'-145',homeML:'+125',spread:'-2.5',total:'134.5'},
+         {book:'FanDuel',awayML:'-142',homeML:'+120',spread:'-2.5',total:'134.5'},
+         {book:'BetMGM',awayML:'-150',homeML:'+130',spread:'-3.0',total:'135.0'},
+         {book:'Caesars',awayML:'-145',homeML:'+125',spread:'-2.5',total:'134.0'},
+         {book:'BetUS',awayML:'-140',homeML:'+120',spread:'-2.5',total:'134.5'}
+       ],
+       playerProps:[
+         {player:'LJ Owens',team:'UMBC',market:'Points',line:14.5,overOdds:'-112',underOdds:'-108'},
+         {player:'Shy Odom',team:'Howard',market:'Points',line:13.5,overOdds:'-108',underOdds:'-112'}
+       ],
+       sharpAngle:'Winner faces Michigan in the First Round. UMBC is on a 12-game win streak and has the better 3-point shooting — take UMBC -2.5. The winner plays a brutal draw against the title favorite.',result:{winner:'HOW',awayScore:83,homeScore:86,status:'final'}},
+      {id:'t2',timeET:'9:15 PM ET',network:'truTV',region:'West',
+       away:{name:'Texas Longhorns',abbr:'TEX',seed:11,record:'18-14'},
+       home:{name:'NC State Wolfpack',abbr:'NCSU',seed:11,record:'20-13'},
+       moneyline:{away:'+105',home:'-125'},
+       spread:{line:1.5,favTeam:'NC State Wolfpack',juice:'-110'},
+       total:{line:137.5,overJuice:'-110',underJuice:'-110'},
+       firstHalf:{moneyline:{away:'+110',home:'-130'},spread:{line:1.0,favTeam:'NC State Wolfpack'},total:{line:67.5}},
+       books:[
+         {book:'DraftKings',awayML:'+105',homeML:'-125',spread:'+1.5',total:'137.5'},
+         {book:'FanDuel',awayML:'+108',homeML:'-128',spread:'+1.5',total:'137.5'},
+         {book:'BetMGM',awayML:'+110',homeML:'-130',spread:'+2.0',total:'138.0'},
+         {book:'Caesars',awayML:'+105',homeML:'-125',spread:'+1.5',total:'137.0'},
+         {book:'BetUS',awayML:'+110',homeML:'-130',spread:'+1.5',total:'137.5'}
+       ],
+       playerProps:[
+         {player:'Arterio Morris',team:'Texas',market:'Points',line:15.5,overOdds:'-110',underOdds:'-110'},
+         {player:'Michael OConnell',team:'NC State',market:'Points',line:14.5,overOdds:'-108',underOdds:'-112'}
+       ],
+       sharpAngle:'Winner faces BYU in the West Region. NC State is the slight favorite but Texas has tournament experience. Take Texas +1.5 for value — the Longhorns are a dangerous 11-seed with size.',result:{winner:'TEX',awayScore:68,homeScore:66,status:'final'}}
+    ]
+  },
+  'ncaam-w1_wed': {
+    day:'Wednesday, March 18, 2026', round:'First Four — Dayton, OH',
+    games:[
+      {id:'w1',timeET:'6:40 PM ET',network:'truTV',region:'South',
+       away:{name:'Prairie View A&M Panthers',abbr:'PV',seed:16,record:'18-17'},
+       home:{name:'Lehigh Mountain Hawks',abbr:'PV',seed:16,record:'18-16'},
+       moneyline:{away:'-130',home:'+110'},
+       spread:{line:-2.0,favTeam:'Prairie View A&M Panthers',juice:'-110'},
+       total:{line:131.5,overJuice:'-110',underJuice:'-110'},
+       firstHalf:{moneyline:{away:'-118',home:'-102'},spread:{line:-1.0,favTeam:'Prairie View A&M Panthers'},total:{line:64.5}},
+       books:[
+         {book:'DraftKings',awayML:'-130',homeML:'+110',spread:'-2.0',total:'131.5'},
+         {book:'FanDuel',awayML:'-128',homeML:'+108',spread:'-2.0',total:'131.5'},
+         {book:'BetMGM',awayML:'-135',homeML:'+115',spread:'-2.5',total:'132.0'},
+         {book:'Caesars',awayML:'-130',homeML:'+110',spread:'-2.0',total:'131.0'},
+         {book:'BetUS',awayML:'-125',homeML:'+105',spread:'-2.0',total:'131.5'}
+       ],
+       playerProps:[
+         {player:'Nasir Whitlock',team:'Lehigh',market:'Points',line:20.5,overOdds:'-115',underOdds:'-105'},
+         {player:'Kordell Charles',team:'Prairie View',market:'Points',line:13.5,overOdds:'-108',underOdds:'-112'}
+       ],
+       sharpAngle:'Lehigh has the best player in the game in Nasir Whitlock (21.1 PPG, 45% from 3). Lehigh has lost just one game since Feb — take Lehigh +2.0 and Whitlock OVER 20.5 points. Winner faces Florida.',result:{winner:'LEH',awayScore:58,homeScore:74,status:'final'}},
+      {id:'w2',timeET:'9:15 PM ET',network:'truTV',region:'Midwest',
+       away:{name:'Miami OH RedHawks',abbr:'M-OH',seed:11,record:'31-1'},
+       home:{name:'SMU Mustangs',abbr:'SMU',seed:11,record:'20-13'},
+       moneyline:{away:'-200',home:'+168'},
+       spread:{line:-4.0,favTeam:'Miami OH RedHawks',juice:'-110'},
+       total:{line:138.5,overJuice:'-110',underJuice:'-110'},
+       firstHalf:{moneyline:{away:'-155',home:'+130'},spread:{line:-2.0,favTeam:'Miami OH RedHawks'},total:{line:68.5}},
+       books:[
+         {book:'DraftKings',awayML:'-200',homeML:'+168',spread:'-4.0',total:'138.5'},
+         {book:'FanDuel',awayML:'-195',homeML:'+162',spread:'-4.0',total:'138.5'},
+         {book:'BetMGM',awayML:'-200',homeML:'+170',spread:'-4.5',total:'139.0'},
+         {book:'Caesars',awayML:'-200',homeML:'+168',spread:'-4.0',total:'138.0'},
+         {book:'BetUS',awayML:'-195',homeML:'+165',spread:'-4.0',total:'138.5'}
+       ],
+       playerProps:[
+         {player:'Boopie Miller',team:'SMU',market:'Points',line:18.5,overOdds:'-115',underOdds:'-105'},
+         {player:'AJ Clayton',team:'Miami OH',market:'Points',line:15.5,overOdds:'-110',underOdds:'-110'}
+       ],
+       sharpAngle:'Miami OH is 31-1 — the best record in the country. They lost their perfect season in the MAC tourney but are still elite. Take Miami OH -4.0 — they are heavily motivated after that heartbreak loss. Winner faces Tennessee.',result:{winner:'M-OH',awayScore:72,homeScore:68,status:'final'}}
+    ]
+  },
+  'ncaam-w1_thu': {
+    day:'Thursday, March 19, 2026', round:'First Round — Round of 64',
+    games:[
+      {id:'g1',timeET:'2:50 PM ET',network:'CBS',region:'East',
+       away:{name:'Duke Blue Devils',abbr:'DUKE',seed:1,record:'32-2'},
+       home:{name:'Siena Saints',abbr:'SIE',seed:16,record:'23-11'},
+       moneyline:{away:'-5000',home:'+2200'},
+       spread:{line:-22.5,favTeam:'Duke Blue Devils',juice:'-110'},
+       total:{line:142.5,overJuice:'-110',underJuice:'-110'},
+       firstHalf:{moneyline:{away:'-900',home:'+600'},spread:{line:-11.5,favTeam:'Duke Blue Devils'},total:{line:70.5}},
+       books:[{book:'DraftKings',awayML:'-5000',homeML:'+2200',spread:'-22.5',total:'142.5'},{book:'FanDuel',awayML:'-4500',homeML:'+2000',spread:'-22.5',total:'142.5'},{book:'BetMGM',awayML:'-5000',homeML:'+2500',spread:'-23.0',total:'143.0'},{book:'Caesars',awayML:'-5000',homeML:'+2200',spread:'-22.5',total:'142.0'},{book:'BetUS',awayML:'-4800',homeML:'+2300',spread:'-22.5',total:'143.0'}],
+       playerProps:[{player:'Cameron Boozer',team:'Duke',market:'Points',line:19.5,overOdds:'-115',underOdds:'-105'},{player:'Cameron Boozer',team:'Duke',market:'Rebounds',line:9.5,overOdds:'+100',underOdds:'-120'},{player:'Tyrese Proctor',team:'Duke',market:'Points',line:14.5,overOdds:'-110',underOdds:'-110'}],
+       sharpAngle:'Duke -22.5 is inflated with public money. The UNDER 142.5 is the value play — Duke controls pace and Siena will struggle to score. Cameron Boozer OVER 19.5 points is a strong prop play.',result:{winner:'DUKE',awayScore:71,homeScore:65,status:'final'}},
+      {id:'g2',timeET:'12:15 PM ET',network:'CBS',region:'East',
+       away:{name:'Ohio State Buckeyes',abbr:'OSU',seed:8,record:'21-12'},
+       home:{name:'TCU Horned Frogs',abbr:'TCU',seed:9,record:'22-11'},
+       moneyline:{away:'-120',home:'+100'},
+       spread:{line:-1.5,favTeam:'Ohio State Buckeyes',juice:'-110'},
+       total:{line:139.5,overJuice:'-110',underJuice:'-110'},
+       firstHalf:{moneyline:{away:'-115',home:'-105'},spread:{line:-1.0,favTeam:'Ohio State Buckeyes'},total:{line:68.5}},
+       books:[{book:'DraftKings',awayML:'-120',homeML:'+100',spread:'-1.5',total:'139.5'},{book:'FanDuel',awayML:'-118',homeML:'-102',spread:'-1.5',total:'139.5'},{book:'BetMGM',awayML:'-125',homeML:'+105',spread:'-1.5',total:'140.0'},{book:'Caesars',awayML:'-120',homeML:'+100',spread:'-1.5',total:'139.0'},{book:'BetUS',awayML:'-115',homeML:'-105',spread:'-1.0',total:'139.5'}],
+       playerProps:[{player:'Bruce Thornton',team:'Ohio State',market:'Points',line:16.5,overOdds:'-112',underOdds:'-108'},{player:'Micah Robinson',team:'TCU',market:'Points',line:14.5,overOdds:'-108',underOdds:'-112'}],
+       sharpAngle:'Classic 8-9 toss-up. TCU covers tight games at 58% — take TCU +1.5. Line varies 0.5 pts across books so shop for the best number.',result:{winner:'TCU',awayScore:64,homeScore:66,status:'final'}},
+      {id:'g3',timeET:'1:30 PM ET',network:'TBS',region:'East',
+       away:{name:'Louisville Cardinals',abbr:'LOU',seed:6,record:'23-10'},
+       home:{name:'South Florida Bulls',abbr:'USF',seed:11,record:'25-8'},
+       moneyline:{away:'-175',home:'+148'},
+       spread:{line:-3.5,favTeam:'Louisville Cardinals',juice:'-110'},
+       total:{line:141.5,overJuice:'-110',underJuice:'-110'},
+       firstHalf:{moneyline:{away:'-140',home:'+118'},spread:{line:-2.0,favTeam:'Louisville Cardinals'},total:{line:69.5}},
+       books:[{book:'DraftKings',awayML:'-175',homeML:'+148',spread:'-3.5',total:'141.5'},{book:'FanDuel',awayML:'-172',homeML:'+144',spread:'-3.5',total:'141.5'},{book:'BetMGM',awayML:'-180',homeML:'+155',spread:'-4.0',total:'142.0'},{book:'Caesars',awayML:'-175',homeML:'+150',spread:'-3.5',total:'141.0'},{book:'BetUS',awayML:'-170',homeML:'+145',spread:'-3.5',total:'141.5'}],
+       playerProps:[{player:'Chucky Hepburn',team:'Louisville',market:'Points',line:15.5,overOdds:'-110',underOdds:'-110'},{player:'Selton Miguel',team:'South Florida',market:'Points',line:17.5,overOdds:'-108',underOdds:'-112'}],
+       sharpAngle:'11-seeds are 8-4 ATS last 3 years. USF won the American title and is battle-tested. Take South Florida +3.5 — they have pace and shooting to keep it close.',result:{winner:'LOU',awayScore:83,homeScore:79,status:'final'}},
+      {id:'g4',timeET:'4:05 PM ET',network:'TBS',region:'East',
+       away:{name:'Michigan State Spartans',abbr:'MSU',seed:3,record:'25-7'},
+       home:{name:'North Dakota State Bison',abbr:'NDSU',seed:14,record:'27-7'},
+       moneyline:{away:'-900',home:'+580'},
+       spread:{line:-14.5,favTeam:'Michigan State Spartans',juice:'-110'},
+       total:{line:136.5,overJuice:'-110',underJuice:'-110'},
+       firstHalf:{moneyline:{away:'-450',home:'+340'},spread:{line:-7.5,favTeam:'Michigan State Spartans'},total:{line:66.5}},
+       books:[{book:'DraftKings',awayML:'-900',homeML:'+580',spread:'-14.5',total:'136.5'},{book:'FanDuel',awayML:'-850',homeML:'+560',spread:'-14.5',total:'136.5'},{book:'BetMGM',awayML:'-900',homeML:'+600',spread:'-15.0',total:'137.0'},{book:'Caesars',awayML:'-900',homeML:'+580',spread:'-14.5',total:'136.0'},{book:'BetUS',awayML:'-880',homeML:'+570',spread:'-14.5',total:'137.0'}],
+       playerProps:[{player:'Tre Holloman',team:'Michigan State',market:'Points',line:13.5,overOdds:'-112',underOdds:'-108'},{player:'Jaxon Kohler',team:'Michigan State',market:'Rebounds',line:7.5,overOdds:'-115',underOdds:'-105'}],
+       sharpAngle:'14-seeds cover at 52% since 2019. NDSU +14.5 has value in a slower-paced game. MSU will win but struggle to blow out a tough Summit League squad.',result:{winner:'MSU',awayScore:92,homeScore:67,status:'final'}},
+      {id:'g5',timeET:'7:25 PM ET',network:'TNT',region:'Midwest',
+       away:{name:'Michigan Wolverines',abbr:'MICH',seed:1,record:'31-3'},
+       home:{name:'UMBC Retrievers',abbr:'UMBC',seed:16,record:'24-8'},
+       moneyline:{away:'-4500',home:'+2000'},
+       spread:{line:-20.5,favTeam:'Michigan Wolverines',juice:'-110'},
+       total:{line:144.5,overJuice:'-110',underJuice:'-110'},
+       firstHalf:{moneyline:{away:'-800',home:'+550'},spread:{line:-10.5,favTeam:'Michigan Wolverines'},total:{line:71.5}},
+       books:[{book:'DraftKings',awayML:'-4500',homeML:'+2000',spread:'-20.5',total:'144.5'},{book:'FanDuel',awayML:'-4200',homeML:'+1900',spread:'-20.5',total:'144.5'},{book:'BetMGM',awayML:'-5000',homeML:'+2200',spread:'-21.0',total:'145.0'},{book:'Caesars',awayML:'-4500',homeML:'+2000',spread:'-20.5',total:'144.0'},{book:'BetUS',awayML:'-4400',homeML:'+1950',spread:'-20.5',total:'144.5'}],
+       playerProps:[{player:'Tre Donaldson',team:'Michigan',market:'Points',line:17.5,overOdds:'-115',underOdds:'-105'},{player:'Danny Wolf',team:'Michigan',market:'Rebounds',line:9.5,overOdds:'-110',underOdds:'-110'},{player:'Elliot Cadeau',team:'Michigan',market:'Assists',line:5.5,overOdds:'-108',underOdds:'-112'}],
+       sharpAngle:'Michigan lost key reserve LJ Cason to injury. UMBC is on a 12-game win streak and made 38% of 3s — same profile as the 2018 team that upset Virginia. Take UMBC +20.5 for cover value.'},
+      {id:'g6',timeET:'9:45 PM ET',network:'TNT',region:'Midwest',
+       away:{name:'Georgia Bulldogs',abbr:'UGA',seed:8,record:'22-10'},
+       home:{name:'Saint Louis Billikens',abbr:'SLU',seed:9,record:'28-5'},
+       moneyline:{away:'+105',home:'-125'},
+       spread:{line:1.5,favTeam:'Saint Louis Billikens',juice:'-110'},
+       total:{line:138.5,overJuice:'-110',underJuice:'-110'},
+       firstHalf:{moneyline:{away:'+110',home:'-130'},spread:{line:1.0,favTeam:'Saint Louis Billikens'},total:{line:67.5}},
+       books:[{book:'DraftKings',awayML:'+105',homeML:'-125',spread:'+1.5',total:'138.5'},{book:'FanDuel',awayML:'+108',homeML:'-128',spread:'+1.5',total:'138.5'},{book:'BetMGM',awayML:'+110',homeML:'-130',spread:'+2.0',total:'139.0'},{book:'Caesars',awayML:'+105',homeML:'-125',spread:'+1.5',total:'138.0'},{book:'BetUS',awayML:'+110',homeML:'-130',spread:'+1.5',total:'138.5'}],
+       playerProps:[{player:'RJ Melendez',team:'Georgia',market:'Points',line:14.5,overOdds:'-110',underOdds:'-110'},{player:"JaVonte Smart",team:'Saint Louis',market:'Points',line:16.5,overOdds:'-112',underOdds:'-108'}],
+       sharpAngle:'Saint Louis is 28-5 and A-10 Champion — one of the most underrated teams in the field. SLU -1.5 at home is worth a play. Elite ball security and turnover differential.',result:{winner:'SLU',awayScore:77,homeScore:102,status:'final'}},
+      {id:'g7',timeET:'7:10 PM ET',network:'truTV',region:'Midwest',
+       away:{name:'Texas Tech Red Raiders',abbr:'TTU',seed:5,record:'22-10'},
+       home:{name:'Akron Zips',abbr:'AKR',seed:12,record:'29-5'},
+       moneyline:{away:'-220',home:'+182'},
+       spread:{line:-4.5,favTeam:'Texas Tech Red Raiders',juice:'-110'},
+       total:{line:132.5,overJuice:'-110',underJuice:'-110'},
+       firstHalf:{moneyline:{away:'-170',home:'+142'},spread:{line:-2.5,favTeam:'Texas Tech Red Raiders'},total:{line:64.5}},
+       books:[{book:'DraftKings',awayML:'-220',homeML:'+182',spread:'-4.5',total:'132.5'},{book:'FanDuel',awayML:'-215',homeML:'+178',spread:'-4.5',total:'132.5'},{book:'BetMGM',awayML:'-225',homeML:'+185',spread:'-5.0',total:'133.0'},{book:'Caesars',awayML:'-220',homeML:'+182',spread:'-4.5',total:'132.0'},{book:'BetUS',awayML:'-215',homeML:'+180',spread:'-4.5',total:'133.0'}],
+       playerProps:[{player:'Darrion Williams',team:'Texas Tech',market:'Points',line:15.5,overOdds:'-110',underOdds:'-110'},{player:'Ali Ali',team:'Akron',market:'Points',line:17.5,overOdds:'-112',underOdds:'-108'}],
+       sharpAngle:'12-seeds are 8-4 ATS vs 5-seeds last 3 years. Akron is 29-5 and MAC champ — perfect mid-major profile to cover. Take Akron +4.5 and hammer the UNDER 132.5.'},
+      {id:'g8',timeET:'9:40 PM ET',network:'truTV',region:'Midwest',
+       away:{name:'Virginia Cavaliers',abbr:'UVA',seed:3,record:'29-5'},
+       home:{name:'Wright State Raiders',abbr:'WRST',seed:14,record:'23-11'},
+       moneyline:{away:'-750',home:'+500'},
+       spread:{line:-13.5,favTeam:'Virginia Cavaliers',juice:'-110'},
+       total:{line:128.5,overJuice:'-110',underJuice:'-110'},
+       firstHalf:{moneyline:{away:'-380',home:'+300'},spread:{line:-7.0,favTeam:'Virginia Cavaliers'},total:{line:62.5}},
+       books:[{book:'DraftKings',awayML:'-750',homeML:'+500',spread:'-13.5',total:'128.5'},{book:'FanDuel',awayML:'-720',homeML:'+480',spread:'-13.5',total:'128.5'},{book:'BetMGM',awayML:'-750',homeML:'+520',spread:'-14.0',total:'129.0'},{book:'Caesars',awayML:'-750',homeML:'+500',spread:'-13.5',total:'128.0'},{book:'BetUS',awayML:'-730',homeML:'+490',spread:'-13.5',total:'129.0'}],
+       playerProps:[{player:'Isaac McKneely',team:'Virginia',market:'Points',line:13.5,overOdds:'-108',underOdds:'-112'},{player:'Blake Buchanan',team:'Virginia',market:'Rebounds',line:6.5,overOdds:'-115',underOdds:'-105'}],
+       sharpAngle:'Lowest total of the day at 128.5. Virginia Pack Line holds opponents under 60 — UNDER is the strongest lean on the board. UVA wins but pace kills the OVER.'},
+      {id:'g9',timeET:'12:40 PM ET',network:'CBS',region:'South',
+       away:{name:'Nebraska Cornhuskers',abbr:'NEB',seed:4,record:'26-6'},
+       home:{name:'Troy Trojans',abbr:'TROY',seed:13,record:'22-11'},
+       moneyline:{away:'-500',home:'+390'},spread:{line:-10.5,favTeam:'Nebraska Cornhuskers',juice:'-110'},total:{line:143.5,overJuice:'-110',underJuice:'-110'},
+       firstHalf:{moneyline:{away:'-250',home:'+205'},spread:{line:-5.5,favTeam:'Nebraska Cornhuskers'},total:{line:71.5}},
+       books:[{book:'DraftKings',awayML:'-500',homeML:'+390',spread:'-10.5',total:'143.5'},{book:'FanDuel',awayML:'-490',homeML:'+380',spread:'-10.5',total:'143.5'},{book:'BetMGM',awayML:'-500',homeML:'+400',spread:'-11.0',total:'144.0'},{book:'Caesars',awayML:'-500',homeML:'+390',spread:'-10.5',total:'143.0'}],
+       playerProps:[{player:'Brice Williams',team:'Nebraska',market:'Points',line:18.5,overOdds:'-115',underOdds:'-105'},{player:'Dwayne Cofield Jr.',team:'Troy',market:'Points',line:15.5,overOdds:'-108',underOdds:'-112'}],
+       sharpAngle:'Nebraska seeks first NCAA Tournament win ever — motivation is real. Troy +10.5 has cover value — 13-seeds cover 48% of the time.',result:{winner:'NEB',awayScore:76,homeScore:47,status:'final'}},
+      {id:'g10',timeET:'11:50 AM ET',network:'CBS',region:'Midwest',
+       away:{name:'Wisconsin Badgers',abbr:'WIS',seed:7,record:'23-9'},
+       home:{name:'High Point Panthers',abbr:'HPU',seed:10,record:'26-7'},
+       moneyline:{away:'-185',home:'+155'},spread:{line:-3.5,favTeam:'Wisconsin Badgers',juice:'-110'},total:{line:138.5,overJuice:'-110',underJuice:'-110'},
+       firstHalf:{moneyline:{away:'-145',home:'+122'},spread:{line:-2.0,favTeam:'Wisconsin Badgers'},total:{line:67.5}},
+       books:[{book:'DraftKings',awayML:'-185',homeML:'+155',spread:'-3.5',total:'138.5'},{book:'FanDuel',awayML:'-182',homeML:'+152',spread:'-3.5',total:'138.5'},{book:'BetMGM',awayML:'-190',homeML:'+160',spread:'-4.0',total:'139.0'},{book:'Caesars',awayML:'-185',homeML:'+155',spread:'-3.5',total:'138.0'}],
+       playerProps:[{player:'John Blackwell',team:'Wisconsin',market:'Points',line:14.5,overOdds:'-110',underOdds:'-110'},{player:'Zymicah Culpepper',team:'High Point',market:'Points',line:18.5,overOdds:'-108',underOdds:'-112'}],
+       sharpAngle:'High Point is 26-7 and Big South champ — peaking at the right time. Wisconsin -3.5 is a tad high for a 7-10 matchup. HP +3.5 has cover value.',result:{winner:'HP',awayScore:82,homeScore:83,status:'final'}},
+      {id:'g11',timeET:'1:15 PM ET',network:'CBS',region:'Midwest',
+       away:{name:'Vanderbilt Commodores',abbr:'VAN',seed:5,record:'24-8'},
+       home:{name:'McNeese Cowboys',abbr:'MCN',seed:12,record:'27-6'},
+       moneyline:{away:'-200',home:'+168'},spread:{line:-4.5,favTeam:'Vanderbilt Commodores',juice:'-110'},total:{line:139.5,overJuice:'-110',underJuice:'-110'},
+       firstHalf:{moneyline:{away:'-155',home:'+130'},spread:{line:-2.5,favTeam:'Vanderbilt Commodores'},total:{line:68.5}},
+       books:[{book:'DraftKings',awayML:'-200',homeML:'+168',spread:'-4.5',total:'139.5'},{book:'FanDuel',awayML:'-195',homeML:'+162',spread:'-4.5',total:'139.5'},{book:'BetMGM',awayML:'-205',homeML:'+172',spread:'-5.0',total:'140.0'},{book:'Caesars',awayML:'-200',homeML:'+168',spread:'-4.5',total:'139.0'}],
+       playerProps:[{player:'Jason Edwards',team:'Vanderbilt',market:'Points',line:17.5,overOdds:'-112',underOdds:'-108'},{player:'Harlan Beverly',team:'McNeese',market:'Points',line:16.5,overOdds:'-108',underOdds:'-112'}],
+       sharpAngle:'Vanderbilt beat Florida in the SEC Tourney — this team is peaking. McNeese is a dangerous 12-seed but Vandy has the talent edge. VAN -4.5 is the play.',result:{winner:'VAN',awayScore:78,homeScore:68,status:'final'}},
+      {id:'g12',timeET:'1:25 PM ET',network:'TBS',region:'Midwest',
+       away:{name:'Arkansas Razorbacks',abbr:'ARK',seed:4,record:'26-8'},
+       home:{name:"Hawaii Rainbow Warriors",abbr:'HAW',seed:13,record:'24-8'},
+       moneyline:{away:'-420',home:'+335'},spread:{line:-8.5,favTeam:'Arkansas Razorbacks',juice:'-110'},total:{line:148.5,overJuice:'-110',underJuice:'-110'},
+       firstHalf:{moneyline:{away:'-210',home:'+175'},spread:{line:-4.5,favTeam:'Arkansas Razorbacks'},total:{line:74.5}},
+       books:[{book:'DraftKings',awayML:'-420',homeML:'+335',spread:'-8.5',total:'148.5'},{book:'FanDuel',awayML:'-410',homeML:'+325',spread:'-8.5',total:'148.5'},{book:'BetMGM',awayML:'-425',homeML:'+340',spread:'-9.0',total:'149.0'},{book:'Caesars',awayML:'-420',homeML:'+335',spread:'-8.5',total:'148.0'}],
+       playerProps:[{player:'Adou Thiero',team:'Arkansas',market:'Points',line:16.5,overOdds:'-112',underOdds:'-108'},{player:'Johnn Nijssen',team:"Hawaii",market:'Points',line:14.5,overOdds:'-108',underOdds:'-112'}],
+       sharpAngle:"Arkansas is hot — won the SEC Tournament. Hawaii +8.5 has cover value in a high-scoring game. Both teams shoot well from 3."},
+      {id:'g13',timeET:'3:50 PM ET',network:'TBS',region:'East',
+       away:{name:'North Carolina Tar Heels',abbr:'UNC',seed:2,record:'28-7'},
+       home:{name:'VCU Rams',abbr:'VCU',seed:15,record:'24-10'},
+       moneyline:{away:'-1800',home:'+950'},spread:{line:-17.0,favTeam:'North Carolina Tar Heels',juice:'-110'},total:{line:146.5,overJuice:'-110',underJuice:'-110'},
+       firstHalf:{moneyline:{away:'-700',home:'+500'},spread:{line:-9.0,favTeam:'North Carolina Tar Heels'},total:{line:73.0}},
+       books:[{book:'DraftKings',awayML:'-1800',homeML:'+950',spread:'-17.0',total:'146.5'},{book:'FanDuel',awayML:'-1700',homeML:'+900',spread:'-17.0',total:'146.5'},{book:'BetMGM',awayML:'-1800',homeML:'+1000',spread:'-17.5',total:'147.0'},{book:'Caesars',awayML:'-1800',homeML:'+950',spread:'-17.0',total:'146.0'}],
+       playerProps:[{player:'RJ Davis',team:'UNC',market:'Points',line:18.5,overOdds:'-115',underOdds:'-105'},{player:'Adrian Baldwin',team:'VCU',market:'Points',line:14.5,overOdds:'-108',underOdds:'-112'}],
+       sharpAngle:'UNC -17.0 is reasonable but the OVER 146.5 is the sharper play. UNC runs fast and VCU will push pace trying to keep up. OVER has strong value.',result:{winner:'VCU',awayScore:78,homeScore:82,status:'final'},result:{winner:'ARK',awayScore:97,homeScore:78,status:'final'}},
+      {id:'g14',timeET:'4:10 PM ET',network:'TBS',region:'Midwest',
+       away:{name:'Michigan Wolverines',abbr:'MICH',seed:1,record:'31-3'},
+       home:{name:'Howard Bison',abbr:'HOW',seed:16,record:'23-10'},
+       moneyline:{away:'-4500',home:'+2000'},spread:{line:-20.5,favTeam:'Michigan Wolverines',juice:'-110'},total:{line:144.5,overJuice:'-110',underJuice:'-110'},
+       firstHalf:{moneyline:{away:'-800',home:'+550'},spread:{line:-10.5,favTeam:'Michigan Wolverines'},total:{line:71.5}},
+       books:[{book:'DraftKings',awayML:'-4500',homeML:'+2000',spread:'-20.5',total:'144.5'},{book:'FanDuel',awayML:'-4200',homeML:'+1900',spread:'-20.5',total:'144.5'},{book:'BetMGM',awayML:'-5000',homeML:'+2200',spread:'-21.0',total:'145.0'},{book:'Caesars',awayML:'-4500',homeML:'+2000',spread:'-20.5',total:'144.0'}],
+       playerProps:[{player:'Tre Donaldson',team:'Michigan',market:'Points',line:17.5,overOdds:'-115',underOdds:'-105'},{player:'Danny Wolf',team:'Michigan',market:'Rebounds',line:9.5,overOdds:'-110',underOdds:'-110'},{player:'Elliot Cadeau',team:'Michigan',market:'Assists',line:5.5,overOdds:'-108',underOdds:'-112'}],
+       sharpAngle:'Howard won the First Four and is riding momentum. Michigan lost key reserve LJ Cason to injury. HOW +20.5 has cover value — same profile as 2018 UMBC team.',result:{winner:'MICH',awayScore:101,homeScore:80,status:'final'}},
+      {id:'g15',timeET:'4:25 PM ET',network:'TNT',region:'West',
+       away:{name:'BYU Cougars',abbr:'BYU',seed:5,record:'24-9'},
+       home:{name:'Texas Longhorns',abbr:'TEX',seed:11,record:'18-15'},
+       moneyline:{away:'-175',home:'+148'},spread:{line:-3.5,favTeam:'BYU Cougars',juice:'-110'},total:{line:138.5,overJuice:'-110',underJuice:'-110'},
+       firstHalf:{moneyline:{away:'-140',home:'+118'},spread:{line:-2.0,favTeam:'BYU Cougars'},total:{line:68.5}},
+       books:[{book:'DraftKings',awayML:'-175',homeML:'+148',spread:'-3.5',total:'138.5'},{book:'FanDuel',awayML:'-172',homeML:'+144',spread:'-3.5',total:'138.5'},{book:'BetMGM',awayML:'-180',homeML:'+155',spread:'-4.0',total:'139.0'},{book:'Caesars',awayML:'-175',homeML:'+148',spread:'-3.5',total:'138.0'}],
+       playerProps:[{player:'Trevin Knell',team:'BYU',market:'Points',line:16.5,overOdds:'-110',underOdds:'-110'},{player:'Arterio Morris',team:'Texas',market:'Points',line:15.5,overOdds:'-108',underOdds:'-112'}],
+       sharpAngle:'Texas won the First Four and is a dangerous 11-seed. BYU -3.5 is the safe play but Texas +3.5 has cover value — motivated team riding momentum.'},
+      {id:'g16',timeET:'4:35 PM ET',network:'TNT',region:'West',
+       away:{name:"Saint Mary's Gaels",abbr:'SMC',seed:4,record:'28-5'},
+       home:{name:'Texas A&M Aggies',abbr:'TAM',seed:13,record:'21-13'},
+       moneyline:{away:'-320',home:'+260'},spread:{line:-7.5,favTeam:"Saint Mary's Gaels",juice:'-110'},total:{line:142.5,overJuice:'-110',underJuice:'-110'},
+       firstHalf:{moneyline:{away:'-155',home:'+130'},spread:{line:-4.0,favTeam:"Saint Mary's Gaels"},total:{line:70.5}},
+       books:[{book:'DraftKings',awayML:'-320',homeML:'+260',spread:'-7.5',total:'142.5'},{book:'FanDuel',awayML:'-315',homeML:'+255',spread:'-7.5',total:'142.5'},{book:'BetMGM',awayML:'-325',homeML:'+270',spread:'-8.0',total:'143.0'},{book:'Caesars',awayML:'-320',homeML:'+260',spread:'-7.5',total:'142.0'}],
+       playerProps:[{player:'Augustas Marciulionis',team:"Saint Mary's",market:'Points',line:15.5,overOdds:'-112',underOdds:'-108'},{player:'Wade Taylor IV',team:'Texas A&M',market:'Points',line:17.5,overOdds:'-108',underOdds:'-112'}],
+       sharpAngle:"Saint Mary's is one of the most efficient offenses in the country. TXAM struggled down the stretch. SMC -7.5 covers comfortably."},
+      {id:'g17',timeET:'6:25 PM ET',network:'TNT',region:'South',
+       away:{name:'Illinois Fighting Illini',abbr:'ILL',seed:6,record:'22-11'},
+       home:{name:'Penn Quakers',abbr:'PENN',seed:11,record:'21-10'},
+       moneyline:{away:'-220',home:'+182'},spread:{line:-4.5,favTeam:'Illinois Fighting Illini',juice:'-110'},total:{line:136.5,overJuice:'-110',underJuice:'-110'},
+       firstHalf:{moneyline:{away:'-165',home:'+138'},spread:{line:-2.5,favTeam:'Illinois Fighting Illini'},total:{line:66.5}},
+       books:[{book:'DraftKings',awayML:'-220',homeML:'+182',spread:'-4.5',total:'136.5'},{book:'FanDuel',awayML:'-215',homeML:'+178',spread:'-4.5',total:'136.5'},{book:'BetMGM',awayML:'-225',homeML:'+185',spread:'-5.0',total:'137.0'},{book:'Caesars',awayML:'-220',homeML:'+182',spread:'-4.5',total:'136.0'}],
+       playerProps:[{player:'Kasparas Jakucionis',team:'Illinois',market:'Points',line:15.5,overOdds:'-112',underOdds:'-108'},{player:'Nick Spinosa',team:'Penn',market:'Points',line:13.5,overOdds:'-108',underOdds:'-112'}],
+       sharpAngle:'Illinois has the athleticism and depth edge. Penn is a dangerous Ivy team but ILL controls the pace. ILL -4.5 is the solid play.',result:{winner:'ILL',awayScore:105,homeScore:70,status:'final'}},
+      {id:'g18',timeET:'6:45 PM ET',network:'TNT',region:'Midwest',
+       away:{name:'Georgia Bulldogs',abbr:'UGA',seed:8,record:'22-10'},
+       home:{name:'Saint Louis Billikens',abbr:'SLU',seed:9,record:'28-5'},
+       moneyline:{away:'+105',home:'-125'},spread:{line:1.5,favTeam:'Saint Louis Billikens',juice:'-110'},total:{line:138.5,overJuice:'-110',underJuice:'-110'},
+       firstHalf:{moneyline:{away:'+110',home:'-130'},spread:{line:1.0,favTeam:'Saint Louis Billikens'},total:{line:67.5}},
+       books:[{book:'DraftKings',awayML:'+105',homeML:'-125',spread:'+1.5',total:'138.5'},{book:'FanDuel',awayML:'+108',homeML:'-128',spread:'+1.5',total:'138.5'},{book:'BetMGM',awayML:'+110',homeML:'-130',spread:'+2.0',total:'139.0'},{book:'Caesars',awayML:'+105',homeML:'-125',spread:'+1.5',total:'138.0'}],
+       playerProps:[{player:'RJ Melendez',team:'Georgia',market:'Points',line:14.5,overOdds:'-110',underOdds:'-110'},{player:"JaVonte Smart",team:'Saint Louis',market:'Points',line:16.5,overOdds:'-112',underOdds:'-108'}],
+       sharpAngle:'Saint Louis is 28-5 and A-10 Champion — one of the most underrated teams in the field. SLU -1.5 at home is a strong value play.',result:{winner:'SLU',awayScore:77,homeScore:102,status:'final'}},
+      {id:'g19',timeET:'7:00 PM ET',network:'truTV',region:'West',
+       away:{name:'Gonzaga Bulldogs',abbr:'GONZ',seed:3,record:'30-3'},
+       home:{name:'Kennesaw State Owls',abbr:'KENN',seed:14,record:'21-13'},
+       moneyline:{away:'-1100',home:'+650'},spread:{line:-16.5,favTeam:'Gonzaga Bulldogs',juice:'-110'},total:{line:153.5,overJuice:'-110',underJuice:'-110'},
+       firstHalf:{moneyline:{away:'-550',home:'+400'},spread:{line:-8.5,favTeam:'Gonzaga Bulldogs'},total:{line:77.5}},
+       books:[{book:'DraftKings',awayML:'-1100',homeML:'+650',spread:'-16.5',total:'153.5'},{book:'FanDuel',awayML:'-1050',homeML:'+620',spread:'-16.5',total:'153.5'},{book:'BetMGM',awayML:'-1100',homeML:'+700',spread:'-17.0',total:'154.0'},{book:'Caesars',awayML:'-1100',homeML:'+650',spread:'-16.5',total:'153.0'}],
+       playerProps:[{player:'Ryan Nembhard',team:'Gonzaga',market:'Points',line:17.5,overOdds:'-110',underOdds:'-110'},{player:'Graham Ike',team:'Gonzaga',market:'Rebounds',line:9.5,overOdds:'-108',underOdds:'-112'}],
+       sharpAngle:'Gonzaga runs one of the fastest paces in the country — OVER 153.5 is live. Ryan Nembhard OVER 17.5 points is a strong prop. Gonzaga covers easily.',result:{winner:'GONZ',awayScore:73,homeScore:64,status:'final'}},
+      {id:'g20',timeET:'7:10 PM ET',network:'truTV',region:'South',
+       away:{name:'Houston Cougars',abbr:'HOU',seed:2,record:'28-6'},
+       home:{name:'Idaho Vandals',abbr:'IDHO',seed:15,record:'21-14'},
+       moneyline:{away:'-2200',home:'+1100'},spread:{line:-17.5,favTeam:'Houston Cougars',juice:'-110'},total:{line:136.5,overJuice:'-110',underJuice:'-110'},
+       firstHalf:{moneyline:{away:'-650',home:'+460'},spread:{line:-9.0,favTeam:'Houston Cougars'},total:{line:66.5}},
+       books:[{book:'DraftKings',awayML:'-2200',homeML:'+1100',spread:'-17.5',total:'136.5'},{book:'FanDuel',awayML:'-2000',homeML:'+1050',spread:'-17.5',total:'136.5'},{book:'BetMGM',awayML:'-2200',homeML:'+1200',spread:'-18.0',total:'137.0'},{book:'Caesars',awayML:'-2200',homeML:'+1100',spread:'-17.5',total:'136.0'}],
+       playerProps:[{player:'Milos Uzan',team:'Houston',market:'Points',line:15.5,overOdds:'-112',underOdds:'-108'},{player:'JWan Roberts',team:'Houston',market:'Rebounds',line:8.5,overOdds:'-115',underOdds:'-105'}],
+       sharpAngle:"Houston's pack defense limits opponents to 58 pts. Lowest total on the slate. Idaho can't score against elite defenses. Houston -17.5 and UNDER 136.5."}
+    ]
+  },
+  'ncaam-w1_fri': {
+    day:'Friday, March 20, 2026', round:'First Round — Round of 64',
+    games:[
+      {id:'f1',timeET:'1:35 PM ET',network:'TNT',region:'West',
+       away:{name:'Arizona Wildcats',abbr:'ARIZ',seed:1,record:'32-2'},
+       home:{name:'Long Island Sharks',abbr:'LIU',seed:16,record:'24-10'},
+       moneyline:{away:'-4500',home:'+1900'},
+       spread:{line:-21.5,favTeam:'Arizona Wildcats',juice:'-110'},
+       total:{line:151.5,overJuice:'-110',underJuice:'-110'},
+       firstHalf:{moneyline:{away:'-850',home:'+580'},spread:{line:-11.0,favTeam:'Arizona Wildcats'},total:{line:75.5}},
+       books:[{book:'DraftKings',awayML:'-4500',homeML:'+1900',spread:'-21.5',total:'151.5'},{book:'FanDuel',awayML:'-4200',homeML:'+1800',spread:'-21.5',total:'151.5'},{book:'BetMGM',awayML:'-4800',homeML:'+2000',spread:'-22.0',total:'152.0'},{book:'Caesars',awayML:'-4500',homeML:'+1900',spread:'-21.5',total:'151.0'},{book:'BetUS',awayML:'-4400',homeML:'+1950',spread:'-21.5',total:'151.5'}],
+       playerProps:[{player:'Brayden Burries',team:'Arizona',market:'Points',line:18.5,overOdds:'-115',underOdds:'-105'},{player:'Koa Peat',team:'Arizona',market:'Points',line:16.5,overOdds:'-110',underOdds:'-110'}],
+       sharpAngle:'Arizona is the class of the West. Burries and Peat are elite freshmen. ARIZ -21.5 and OVER 151.5 both have value — Arizona plays at the fastest tempo of any 1-seed.'},
+      {id:'f2',timeET:'1:50 PM ET',network:'TBS',region:'East',
+       away:{name:'Virginia Cavaliers',abbr:'UVA',seed:3,record:'27-6'},
+       home:{name:'Wright State Raiders',abbr:'WRST',seed:14,record:'25-9'},
+       moneyline:{away:'-900',home:'+590'},
+       spread:{line:-14.5,favTeam:'Virginia Cavaliers',juice:'-110'},
+       total:{line:132.5,overJuice:'-110',underJuice:'-110'},
+       firstHalf:{moneyline:{away:'-400',home:'+320'},spread:{line:-7.5,favTeam:'Virginia Cavaliers'},total:{line:65.5}},
+       books:[{book:'DraftKings',awayML:'-900',homeML:'+590',spread:'-14.5',total:'132.5'},{book:'FanDuel',awayML:'-880',homeML:'+570',spread:'-14.5',total:'132.5'},{book:'BetMGM',awayML:'-950',homeML:'+610',spread:'-15.0',total:'133.0'},{book:'Caesars',awayML:'-900',homeML:'+590',spread:'-14.5',total:'132.0'},{book:'BetUS',awayML:'-880',homeML:'+575',spread:'-14.5',total:'133.0'}],
+       playerProps:[{player:'TJ Power',team:'Virginia',market:'Points',line:16.5,overOdds:'-112',underOdds:'-108'}],
+       sharpAngle:'Virginia controls tempo and limits possessions. UNDER 132.5 is the play — Bennett defense will strangle Wright State. UVA -14.5 is steep but justified given the pace mismatch.'},
+      {id:'f3',timeET:'12:15 PM ET',network:'CBS',region:'South',
+       away:{name:'Santa Clara Broncos',abbr:'SCU',seed:10,record:'24-10'},
+       home:{name:'Kentucky Wildcats',abbr:'UK',seed:7,record:'22-11'},
+       moneyline:{away:'+240',home:'-290'},
+       spread:{line:6.5,favTeam:'Kentucky Wildcats',juice:'-110'},
+       total:{line:144.5,overJuice:'-110',underJuice:'-110'},
+       firstHalf:{moneyline:{away:'+185',home:'-220'},spread:{line:3.5,favTeam:'Kentucky Wildcats'},total:{line:71.5}},
+       books:[{book:'DraftKings',awayML:'+240',homeML:'-290',spread:'+6.5',total:'144.5'},{book:'FanDuel',awayML:'+238',homeML:'-285',spread:'+6.5',total:'144.5'},{book:'BetMGM',awayML:'+245',homeML:'-300',spread:'+7.0',total:'145.0'},{book:'Caesars',awayML:'+240',homeML:'-290',spread:'+6.5',total:'144.0'},{book:'BetUS',awayML:'+245',homeML:'-295',spread:'+6.5',total:'144.5'}],
+       playerProps:[{player:'Koby Brea',team:'Kentucky',market:'Points',line:14.5,overOdds:'-110',underOdds:'-110'}],
+       sharpAngle:'Kentucky is inconsistent but talented. Santa Clara covers against big programs at a 54% rate. Take SCU +6.5 — Kentucky wins but struggles to cover double digits vs athletic mid-majors.'},
+      {id:'f4',timeET:'12:40 PM ET',network:'truTV',region:'Midwest',
+       away:{name:'Texas Tech Red Raiders',abbr:'TTU',seed:5,record:'24-9'},
+       home:{name:'Akron Zips',abbr:'AKR',seed:12,record:'27-8'},
+       moneyline:{away:'-320',home:'+265'},
+       spread:{line:-7.0,favTeam:'Texas Tech Red Raiders',juice:'-110'},
+       total:{line:138.5,overJuice:'-110',underJuice:'-110'},
+       firstHalf:{moneyline:{away:'-155',home:'+132'},spread:{line:-3.5,favTeam:'Texas Tech Red Raiders'},total:{line:68.5}},
+       books:[{book:'DraftKings',awayML:'-320',homeML:'+265',spread:'-7.0',total:'138.5'},{book:'FanDuel',awayML:'-315',homeML:'+260',spread:'-7.0',total:'138.5'},{book:'BetMGM',awayML:'-330',homeML:'+275',spread:'-7.5',total:'139.0'},{book:'Caesars',awayML:'-320',homeML:'+265',spread:'-7.0',total:'138.0'},{book:'BetUS',awayML:'-315',homeML:'+260',spread:'-7.0',total:'138.5'}],
+       playerProps:[{player:'Darrion Williams',team:'Texas Tech',market:'Points',line:15.5,overOdds:'-110',underOdds:'-110'}],
+       sharpAngle:'12-seeds are 13-7 ATS in the last 5 tournaments. Akron has the best defense in the MAC. Take AKR +7.0 — this is a classic upset spot and TTU is inconsistent on offense.'},
+      {id:'f5',timeET:'9:25 PM ET',network:'TNT',region:'South',
+       away:{name:'Florida Gators',abbr:'FLA',seed:1,record:'28-5'},
+       home:{name:'Lehigh Mountain Hawks',abbr:'PV',seed:16,record:'19-16'},
+       moneyline:{away:'-4000',home:'+1800'},
+       spread:{line:-19.5,favTeam:'Florida Gators',juice:'-110'},
+       total:{line:143.5,overJuice:'-110',underJuice:'-110'},
+       firstHalf:{moneyline:{away:'-800',home:'+560'},spread:{line:-10.0,favTeam:'Florida Gators'},total:{line:71.5}},
+       books:[{book:'DraftKings',awayML:'-4000',homeML:'+1800',spread:'-19.5',total:'143.5'},{book:'FanDuel',awayML:'-3800',homeML:'+1700',spread:'-19.5',total:'143.5'},{book:'BetMGM',awayML:'-4200',homeML:'+1900',spread:'-20.0',total:'144.0'},{book:'Caesars',awayML:'-4000',homeML:'+1800',spread:'-19.5',total:'143.0'},{book:'BetUS',awayML:'-3900',homeML:'+1750',spread:'-19.5',total:'143.5'}],
+       playerProps:[{player:'Walter Clayton Jr',team:'Florida',market:'Points',line:19.5,overOdds:'-112',underOdds:'-108'},{player:'Alijah Martin',team:'Florida',market:'Points',line:16.5,overOdds:'-110',underOdds:'-110'}],
+       sharpAngle:'Florida is the defending champion and motivated. Lehigh won First Four but faces elite SEC defense. FLA -19.5 is justified — Clayton and Martin will run up the score. Also take the OVER.'},
+      {id:'f6',timeET:'6:50 PM ET',network:'TNT',region:'South',
+       away:{name:'Clemson Tigers',abbr:'CLEM',seed:8,record:'23-10'},
+       home:{name:'Iowa Hawkeyes',abbr:'IOWA',seed:9,record:'22-11'},
+       moneyline:{away:'-110',home:'-110'},
+       spread:{line:-0.5,favTeam:'Iowa Hawkeyes',juice:'-110'},
+       total:{line:146.5,overJuice:'-110',underJuice:'-110'},
+       firstHalf:{moneyline:{away:'-108',home:'-112'},spread:{line:0.5,favTeam:'Clemson Tigers'},total:{line:72.5}},
+       books:[{book:'DraftKings',awayML:'-110',homeML:'-110',spread:'PK',total:'146.5'},{book:'FanDuel',awayML:'-112',homeML:'-108',spread:'-0.5',total:'146.5'},{book:'BetMGM',awayML:'+100',homeML:'-120',spread:'+0.5',total:'147.0'},{book:'Caesars',awayML:'-110',homeML:'-110',spread:'PK',total:'146.0'},{book:'BetUS',awayML:'-108',homeML:'-112',spread:'-0.5',total:'146.5'}],
+       playerProps:[{player:'Chase Hunter',team:'Clemson',market:'Points',line:14.5,overOdds:'-108',underOdds:'-112'}],
+       sharpAngle:'Perfect coin-flip 8-9 game. Iowa shoots elite 3s and Clemson plays elite defense — the UNDER 146.5 is the value play. Lean Iowa ML at -110 for the home-state advantage feel in St. Louis.'},
+      {id:'f7',timeET:'7:10 PM ET',network:'CBS',region:'West',
+       away:{name:"St. John's Red Storm",abbr:'SJU',seed:5,record:'25-8'},
+       home:{name:'Northern Iowa Panthers',abbr:'UNI',seed:12,record:'26-8'},
+       moneyline:{away:'-260',home:'+215'},
+       spread:{line:-6.0,favTeam:"St. John's Red Storm",juice:'-110'},
+       total:{line:141.5,overJuice:'-110',underJuice:'-110'},
+       firstHalf:{moneyline:{away:'-135',home:'+115'},spread:{line:-3.0,favTeam:"St. John's Red Storm"},total:{line:69.5}},
+       books:[{book:'DraftKings',awayML:'-260',homeML:'+215',spread:'-6.0',total:'141.5'},{book:'FanDuel',awayML:'-258',homeML:'+210',spread:'-6.0',total:'141.5'},{book:'BetMGM',awayML:'-270',homeML:'+225',spread:'-6.5',total:'142.0'},{book:'Caesars',awayML:'-260',homeML:'+215',spread:'-6.0',total:'141.0'},{book:'BetUS',awayML:'-255',homeML:'+210',spread:'-6.0',total:'141.5'}],
+       playerProps:[{player:'RJ Luis Jr',team:"St. John's",market:'Points',line:18.5,overOdds:'-112',underOdds:'-108'}],
+       sharpAngle:"12-seeds with winning records cover at a high rate. UNI is 26-8 and battle-tested in the MVC. Take UNI +6.0 — St. John's is talented but inconsistent on the road (neutral site)."},
+      {id:'f8',timeET:'2:50 PM ET',network:'CBS',region:'East',
+       away:{name:'Tennessee State Tigers',abbr:'TNST',seed:15,record:'22-13'},
+       home:{name:'Iowa State Cyclones',abbr:'ISU',seed:2,record:'26-7'},
+       moneyline:{away:'+1400',home:'-2000'},
+       spread:{line:-18.0,favTeam:'Iowa State Cyclones',juice:'-110'},
+       total:{line:136.5,overJuice:'-110',underJuice:'-110'},
+       firstHalf:{moneyline:{away:'+620',home:'-900'},spread:{line:-9.5,favTeam:'Iowa State Cyclones'},total:{line:67.5}},
+       books:[{book:'DraftKings',awayML:'+1400',homeML:'-2000',spread:'-18.0',total:'136.5'},{book:'FanDuel',awayML:'+1350',homeML:'-1900',spread:'-18.0',total:'136.5'},{book:'BetMGM',awayML:'+1500',homeML:'-2200',spread:'-18.5',total:'137.0'},{book:'Caesars',awayML:'+1400',homeML:'-2000',spread:'-18.0',total:'136.0'},{book:'BetUS',awayML:'+1380',homeML:'-1950',spread:'-18.0',total:'136.5'}],
+       playerProps:[{player:'Tre Jackson',team:'Iowa State',market:'Points',line:18.5,overOdds:'-110',underOdds:'-110'}],
+       sharpAngle:'Iowa State is an elite 2-seed with championship aspirations. Tennessee State is overmatched. ISU -18.0 and UNDER 136.5 are both solid plays — Cyclone defense will control the pace completely.'},
+      {id:'f9',timeET:'7:35 PM ET',network:'truTV',region:'Midwest',
+       away:{name:'Purdue Boilermakers',abbr:'PUR',seed:2,record:'27-6'},
+       home:{name:'Queens Royals',abbr:'QUC',seed:15,record:'21-14'},
+       moneyline:{away:'-2500',home:'+1400'},
+       spread:{line:-17.5,favTeam:'Purdue Boilermakers',juice:'-110'},
+       total:{line:140.5,overJuice:'-110',underJuice:'-110'},
+       firstHalf:{moneyline:{away:'-900',home:'+580'},spread:{line:-9.0,favTeam:'Purdue Boilermakers'},total:{line:69.5}},
+       books:[{book:'DraftKings',awayML:'-2500',homeML:'+1400',spread:'-17.5',total:'140.5'},{book:'FanDuel',awayML:'-2400',homeML:'+1350',spread:'-17.5',total:'140.5'},{book:'BetMGM',awayML:'-2600',homeML:'+1500',spread:'-18.0',total:'141.0'},{book:'Caesars',awayML:'-2500',homeML:'+1400',spread:'-17.5',total:'140.0'},{book:'BetUS',awayML:'-2400',homeML:'+1380',spread:'-17.5',total:'140.5'}],
+       playerProps:[{player:'Braden Smith',team:'Purdue',market:'Assists',line:6.5,overOdds:'-108',underOdds:'-112'},{player:'Trey Kaufman-Renn',team:'Purdue',market:'Points',line:17.5,overOdds:'-110',underOdds:'-110'}],
+       sharpAngle:'Purdue is a title contender with Kaufman-Renn and Smith. Queens is a first-time tourney team. PUR -17.5 and OVER 140.5 are both value plays — the Boilermakers will run the score up.'},
+      {id:'f10',timeET:'9:45 PM ET',network:'CBS',region:'West',
+       away:{name:'Kansas Jayhawks',abbr:'KU',seed:4,record:'25-8'},
+       home:{name:'Cal Baptist Lancers',abbr:'CBU',seed:13,record:'28-6'},
+       moneyline:{away:'-650',home:'+490'},
+       spread:{line:-12.5,favTeam:'Kansas Jayhawks',juice:'-110'},
+       total:{line:142.5,overJuice:'-110',underJuice:'-110'},
+       firstHalf:{moneyline:{away:'-280',home:'+230'},spread:{line:-6.5,favTeam:'Kansas Jayhawks'},total:{line:70.5}},
+       books:[{book:'DraftKings',awayML:'-650',homeML:'+490',spread:'-12.5',total:'142.5'},{book:'FanDuel',awayML:'-630',homeML:'+475',spread:'-12.5',total:'142.5'},{book:'BetMGM',awayML:'-675',homeML:'+510',spread:'-13.0',total:'143.0'},{book:'Caesars',awayML:'-650',homeML:'+490',spread:'-12.5',total:'142.0'},{book:'BetUS',awayML:'-640',homeML:'+480',spread:'-12.5',total:'142.5'}],
+       playerProps:[{player:'Hunter Dickinson',team:'Kansas',market:'Points',line:17.5,overOdds:'-112',underOdds:'-108'},{player:'Hunter Dickinson',team:'Kansas',market:'Rebounds',line:8.5,overOdds:'-108',underOdds:'-112'}],
+       sharpAngle:'Kansas covers big spreads vs low-major programs at a high rate. CBU is a WAC champion but outgunned athletically. KAN -12.5 with Dickinson dominating inside is the play.'},
+      {id:'f11',timeET:'10:10 PM ET',network:'truTV',region:'South',
+       away:{name:'Miami (FL) Hurricanes',abbr:'MIA',seed:7,record:'21-12'},
+       home:{name:'Missouri Tigers',abbr:'MIZ',seed:10,record:'22-11'},
+       moneyline:{away:'-140',home:'+120'},
+       spread:{line:-2.5,favTeam:'Miami (FL) Hurricanes',juice:'-110'},
+       total:{line:147.5,overJuice:'-110',underJuice:'-110'},
+       firstHalf:{moneyline:{away:'-118',home:'-102'},spread:{line:-1.5,favTeam:'Miami (FL) Hurricanes'},total:{line:73.5}},
+       books:[{book:'DraftKings',awayML:'-140',homeML:'+120',spread:'-2.5',total:'147.5'},{book:'FanDuel',awayML:'-138',homeML:'+118',spread:'-2.5',total:'147.5'},{book:'BetMGM',awayML:'-145',homeML:'+125',spread:'-3.0',total:'148.0'},{book:'Caesars',awayML:'-140',homeML:'+120',spread:'-2.5',total:'147.0'},{book:'BetUS',awayML:'-138',homeML:'+118',spread:'-2.5',total:'147.5'}],
+       playerProps:[{player:'Matthew Cleveland',team:'Miami',market:'Points',line:16.5,overOdds:'-110',underOdds:'-110'}],
+       sharpAngle:'Missouri is playing their best basketball of the season. 10-seeds beat 7-seeds 40% of the time. Take MIZ +2.5 — the Tigers can score and Miami is not playing elite defense.'},
+      {id:'f12',timeET:'3:15 PM ET',network:'truTV',region:'South',
+       away:{name:'Alabama Crimson Tide',abbr:'ALA',seed:4,record:'24-9'},
+       home:{name:'Hofstra Pride',abbr:'HOF',seed:13,record:'27-7'},
+       moneyline:{away:'-550',home:'+420'},
+       spread:{line:-11.0,favTeam:'Alabama Crimson Tide',juice:'-110'},
+       total:{line:152.5,overJuice:'-110',underJuice:'-110'},
+       firstHalf:{moneyline:{away:'-260',home:'+215'},spread:{line:-5.5,favTeam:'Alabama Crimson Tide'},total:{line:75.5}},
+       books:[{book:'DraftKings',awayML:'-550',homeML:'+420',spread:'-11.0',total:'152.5'},{book:'FanDuel',awayML:'-540',homeML:'+410',spread:'-11.0',total:'152.5'},{book:'BetMGM',awayML:'-575',homeML:'+440',spread:'-11.5',total:'153.0'},{book:'Caesars',awayML:'-550',homeML:'+420',spread:'-11.0',total:'152.0'}],
+       playerProps:[{player:'Mark Sears',team:'Alabama',market:'Points',line:18.5,overOdds:'-112',underOdds:'-108'}],
+       sharpAngle:'Alabama without Aden Holloway creates uncertainty. Hofstra is 27-7 and CAA champs. Take HOF +11.0 — shorthanded Alabama struggles to cover big spreads vs motivated mid-majors.'},
+      {id:'f13',timeET:'5:00 PM ET',network:'CBS',region:'East',
+       away:{name:'UCF Knights',abbr:'UCF',seed:6,record:'23-10'},
+       home:{name:'UCLA Bruins',abbr:'UCLA',seed:11,record:'20-13'},
+       moneyline:{away:'-165',home:'+140'},
+       spread:{line:-3.0,favTeam:'UCF Knights',juice:'-110'},
+       total:{line:148.5,overJuice:'-110',underJuice:'-110'},
+       firstHalf:{moneyline:{away:'-130',home:'+110'},spread:{line:-1.5,favTeam:'UCF Knights'},total:{line:73.5}},
+       books:[{book:'DraftKings',awayML:'-165',homeML:'+140',spread:'-3.0',total:'148.5'},{book:'FanDuel',awayML:'-162',homeML:'+136',spread:'-3.0',total:'148.5'},{book:'BetMGM',awayML:'-170',homeML:'+145',spread:'-3.5',total:'149.0'},{book:'Caesars',awayML:'-165',homeML:'+140',spread:'-3.0',total:'148.0'}],
+       playerProps:[{player:'Darius Johnson',team:'UCF',market:'Points',line:16.5,overOdds:'-110',underOdds:'-110'}],
+       sharpAngle:'UCLA as an 11-seed is dangerous — they beat everyone close. UCF is inconsistent on defense. Take UCLA +3.0 — the Bruins cover tight games at a high rate in March.'},
+      {id:'f14',timeET:'8:30 PM ET',network:'TBS',region:'West',
+       away:{name:'Furman Paladins',abbr:'FUR',seed:15,record:'22-12'},
+       home:{name:'Connecticut Huskies',abbr:'CONN',seed:2,record:'25-8'},
+       moneyline:{away:'+1100',home:'-1600'},
+       spread:{line:-16.5,favTeam:'Connecticut Huskies',juice:'-110'},
+       total:{line:137.5,overJuice:'-110',underJuice:'-110'},
+       firstHalf:{moneyline:{away:'+480',home:'-700'},spread:{line:-9.0,favTeam:'Connecticut Huskies'},total:{line:67.5}},
+       books:[{book:'DraftKings',awayML:'+1100',homeML:'-1600',spread:'-16.5',total:'137.5'},{book:'FanDuel',awayML:'+1050',homeML:'-1550',spread:'-16.5',total:'137.5'},{book:'BetMGM',awayML:'+1200',homeML:'-1700',spread:'-17.0',total:'138.0'},{book:'Caesars',awayML:'+1100',homeML:'-1600',spread:'-16.5',total:'137.0'}],
+       playerProps:[{player:'Liam McNeeley',team:'Connecticut',market:'Points',line:17.5,overOdds:'-110',underOdds:'-110'}],
+       sharpAngle:'UConn is a two-time champion and motivated to prove last year was no fluke. Furman is overmatched. CONN -16.5 and UNDER 137.5 — Hurley will control pace and tempo completely.'},
+      {id:'f15',timeET:'6:10 PM ET',network:'TNT',region:'Midwest',
+       away:{name:'Miami (OH) RedHawks',abbr:'M-OH',seed:11,record:'32-2'},
+       home:{name:'Tennessee Volunteers',abbr:'TENN',seed:6,record:'23-10'},
+       moneyline:{away:'+185',home:'-220'},
+       spread:{line:5.0,favTeam:'Tennessee Volunteers',juice:'-110'},
+       total:{line:136.5,overJuice:'-110',underJuice:'-110'},
+       firstHalf:{moneyline:{away:'+150',home:'-175'},spread:{line:2.5,favTeam:'Tennessee Volunteers'},total:{line:66.5}},
+       books:[{book:'DraftKings',awayML:'+185',homeML:'-220',spread:'+5.0',total:'136.5'},{book:'FanDuel',awayML:'+182',homeML:'-215',spread:'+5.0',total:'136.5'},{book:'BetMGM',awayML:'+190',homeML:'-230',spread:'+5.5',total:'137.0'},{book:'Caesars',awayML:'+185',homeML:'-220',spread:'+5.0',total:'136.0'}],
+       playerProps:[{player:'Chucky Hepburn',team:'Miami OH',market:'Points',line:16.5,overOdds:'-108',underOdds:'-112'}],
+       sharpAngle:'Miami OH is 32-2 — best record in the country. They are motivated, battle-tested and peaking. Take M-OH +5.0 — 11-seeds with this resume cover at an 60%+ rate in March.'}
+    ]
+  },
+  'ncaam-w1_sat': {
+    day:'Saturday, March 21, 2026', round:'Second Round — Round of 32',
+    games:[
+      {id:'s1',timeET:'12:10 PM ET',network:'TBS',region:'Midwest',
+       away:{name:'Saint Louis Billikens',abbr:'SLU',seed:9,record:'28-6'},
+       home:{name:'Michigan Wolverines',abbr:'MICH',seed:1,record:'32-3'},
+       moneyline:{away:'+550',home:'-800'},
+       spread:{line:-12.5,favTeam:'Michigan Wolverines',juice:'-110'},
+       total:{line:161.5,overJuice:'-110',underJuice:'-110'},
+       books:[{book:'DraftKings',awayML:'+550',homeML:'-800',spread:'-12.5',total:'161.5'},{book:'FanDuel',awayML:'+530',homeML:'-780',spread:'-12.5',total:'161.5'},{book:'BetMGM',awayML:'+575',homeML:'-825',spread:'-12.5',total:'161.5'},{book:'Caesars',awayML:'+550',homeML:'-800',spread:'-13.0',total:'162.0'}],
+       sharpAngle:'Both teams scored 100+ in R1. Michigan is the class of the Midwest but SLU is on a 21-0 first-half run form. OVER 161.5 is the best bet — this pace favors both teams scoring in the 80s.',result:{winner:'MICH',awayScore:77,homeScore:95,status:'final'}},
+      {id:'s2',timeET:'12:40 PM ET',network:'CBS',region:'East',
+       away:{name:'Louisville Cardinals',abbr:'LOU',seed:6,record:'23-11'},
+       home:{name:'Michigan State Spartans',abbr:'MSU',seed:3,record:'25-8'},
+       moneyline:{away:'+170',home:'-205'},
+       spread:{line:-4.5,favTeam:'Michigan State Spartans',juice:'-110'},
+       total:{line:150.5,overJuice:'-110',underJuice:'-110'},
+       books:[{book:'DraftKings',awayML:'+170',homeML:'-205',spread:'-4.5',total:'150.5'},{book:'FanDuel',awayML:'+168',homeML:'-200',spread:'-4.5',total:'150.5'},{book:'BetMGM',awayML:'+175',homeML:'-210',spread:'-4.5',total:'150.5'},{book:'Caesars',awayML:'+170',homeML:'-205',spread:'-5.0',total:'151.0'}],
+       sharpAngle:'Louisville without Mikel Brown Jr is a different team. MSU is healthy and rolling after blowing out NDSU. Take MSU -4.5 — the Spartans are the better team and Brown Jr absence is huge.',result:{winner:'MSU',awayScore:71,homeScore:82,status:'final'}},
+      {id:'s3',timeET:'2:45 PM ET',network:'TNT',region:'East',
+       away:{name:'TCU Horned Frogs',abbr:'TCU',seed:9,record:'23-11'},
+       home:{name:'Duke Blue Devils',abbr:'DUKE',seed:1,record:'33-2'},
+       moneyline:{away:'+525',home:'-750'},
+       spread:{line:-10.5,favTeam:'Duke Blue Devils',juice:'-110'},
+       total:{line:140.5,overJuice:'-110',underJuice:'-110'},
+       books:[{book:'DraftKings',awayML:'+525',homeML:'-750',spread:'-10.5',total:'140.5'},{book:'FanDuel',awayML:'+510',homeML:'-730',spread:'-10.5',total:'140.5'},{book:'BetMGM',awayML:'+540',homeML:'-775',spread:'-10.5',total:'140.5'},{book:'Caesars',awayML:'+525',homeML:'-750',spread:'-11.0',total:'141.0'}],
+       sharpAngle:'Duke barely escaped Siena trailing at halftime. TCU covered +1.5 vs OSU. Take TCU +10.5 — Duke without Ngongba and Foster is vulnerable inside. TCU covers the big spread in a close game.',result:{winner:'DUKE',awayScore:58,homeScore:81,status:'final'}},
+      {id:'s4',timeET:'6:10 PM ET',network:'TBS',region:'South',
+       away:{name:'Texas A&M Aggies',abbr:'TAM',seed:10,record:'21-11'},
+       home:{name:'Houston Cougars',abbr:'HOU',seed:2,record:'28-6'},
+       moneyline:{away:'+400',home:'-535'},
+       spread:{line:-10.5,favTeam:'Houston Cougars',juice:'-110'},
+       total:{line:142.5,overJuice:'-110',underJuice:'-110'},
+       books:[{book:'DraftKings',awayML:'+400',homeML:'-535',spread:'-10.5',total:'142.5'},{book:'FanDuel',awayML:'+395',homeML:'-520',spread:'-10.5',total:'142.5'},{book:'BetMGM',awayML:'+410',homeML:'-550',spread:'-10.5',total:'142.5'},{book:'Caesars',awayML:'+400',homeML:'-535',spread:'-11.0',total:'143.0'}],
+       sharpAngle:'Houston is a Final Four contender with elite defense and depth. TAM is an upset-minded Cinderella but Bucky Ball is not enough here. Take HOU -10.5 and the UNDER — Cougars control tempo.',result:{winner:'HOU',awayScore:62,homeScore:79,status:'final'}},
+      {id:'s5',timeET:'7:10 PM ET',network:'CBS',region:'West',
+       away:{name:'Texas Longhorns',abbr:'TEX',seed:11,record:'18-14'},
+       home:{name:'Gonzaga Bulldogs',abbr:'GONZ',seed:3,record:'30-3'},
+       moneyline:{away:'+205',home:'-250'},
+       spread:{line:-6.5,favTeam:'Gonzaga Bulldogs',juice:'-110'},
+       total:{line:147.5,overJuice:'-110',underJuice:'-110'},
+       books:[{book:'DraftKings',awayML:'+205',homeML:'-250',spread:'-6.5',total:'147.5'},{book:'FanDuel',awayML:'+200',homeML:'-245',spread:'-6.5',total:'147.5'},{book:'BetMGM',awayML:'+210',homeML:'-260',spread:'-6.5',total:'147.5'},{book:'Caesars',awayML:'+205',homeML:'-250',spread:'-7.0',total:'148.0'}],
+       sharpAngle:'Texas beat BYU but Gonzaga is a different challenge. Gonzaga top-10 defense by KenPom suffocates Texas offense. Take GONZ -6.5 — but Texas keeps it closer than people think. OVER has value.',result:{winner:'TEX',awayScore:74,homeScore:68,status:'final'}},
+      {id:'s6',timeET:'8:45 PM ET',network:'TNT',region:'Midwest',
+       away:{name:'Vanderbilt Commodores',abbr:'VAN',seed:5,record:'23-9'},
+       home:{name:'Nebraska Cornhuskers',abbr:'NEB',seed:4,record:'25-9'},
+       moneyline:{away:'-162',home:'+136'},
+       spread:{line:-1.5,favTeam:'Vanderbilt Commodores',juice:'-110'},
+       total:{line:147.5,overJuice:'-110',underJuice:'-110'},
+       books:[{book:'DraftKings',awayML:'-162',homeML:'+136',spread:'-1.5',total:'147.5'},{book:'FanDuel',awayML:'-160',homeML:'+134',spread:'-1.5',total:'147.5'},{book:'BetMGM',awayML:'-165',homeML:'+140',spread:'-2.5',total:'147.5'},{book:'Caesars',awayML:'-162',homeML:'+136',spread:'-2.0',total:'148.0'}],
+       sharpAngle:'VAN is underseeded and motivated. Nebraska got their first NCAA win but can they back it up? Take VAN -1.5 — Commodores are the better team seeding be damned. Tanner is elite in March.',result:{winner:'NEB',awayScore:68,homeScore:74,status:'final'}},
+      {id:'s7',timeET:'7:50 PM ET',network:'truTV',region:'East',
+       away:{name:'VCU Rams',abbr:'VCU',seed:11,record:'26-8'},
+       home:{name:'Illinois Fighting Illini',abbr:'ILL',seed:3,record:'24-8'},
+       moneyline:{away:'+425',home:'-575'},
+       spread:{line:-11.5,favTeam:'Illinois Fighting Illini',juice:'-110'},
+       total:{line:151.5,overJuice:'-110',underJuice:'-110'},
+       books:[{book:'DraftKings',awayML:'+425',homeML:'-575',spread:'-11.5',total:'151.5'},{book:'FanDuel',awayML:'+415',homeML:'-560',spread:'-11.5',total:'151.5'},{book:'BetMGM',awayML:'+440',homeML:'-600',spread:'-11.5',total:'151.5'},{book:'Caesars',awayML:'+425',homeML:'-575',spread:'-12.0',total:'152.0'}],
+       sharpAngle:'VCU just came back from 19 down in OT. Illinois blew out Penn by 35. Take ILL -11.5 — Mirkovic and 5 double-digit scorers are too much for VCU. Underwood is 4-0 ATS as double-digit fav in NCAA.',result:{winner:'ILL',awayScore:61,homeScore:84,status:'final'}},
+      {id:'s8',timeET:'9:45 PM ET',network:'truTV',region:'Midwest',
+       away:{name:'High Point Panthers',abbr:'HPU',seed:12,record:'27-8'},
+       home:{name:'Arkansas Razorbacks',abbr:'ARK',seed:4,record:'25-9'},
+       moneyline:{away:'+425',home:'-575'},
+       spread:{line:-11.5,favTeam:'Arkansas Razorbacks',juice:'-110'},
+       total:{line:168.5,overJuice:'-110',underJuice:'-110'},
+       books:[{book:'DraftKings',awayML:'+425',homeML:'-575',spread:'-11.5',total:'168.5'},{book:'FanDuel',awayML:'+415',homeML:'-560',spread:'-11.5',total:'168.5'},{book:'BetMGM',awayML:'+440',homeML:'-600',spread:'-11.5',total:'168.5'},{book:'Caesars',awayML:'+425',homeML:'-575',spread:'-12.0',total:'169.0'}],
+       sharpAngle:'HPU beat Wisconsin and is for real. But Arkansas freshman Darius Acuff is the best player in this game. Take HPU +11.5 — 12-seeds are 10-2 ATS following upset wins. And the OVER 168.5 is a lock — HPU averages 90 points.',result:{winner:'ARK',awayScore:78,homeScore:91,status:'final'}}
+    ]
+  },
+  'ncaam-w1_sun': {
+    day:'Sunday, March 22, 2026', round:'Second Round — Round of 32',
+    games:[
+      {id:'u1',timeET:'12:10 PM ET',network:'CBS',region:'South',
+       away:{name:'Santa Clara Broncos',abbr:'SCU',seed:10,record:'24-11'},
+       home:{name:'Iowa State Cyclones',abbr:'ISU',seed:2,record:'27-7'},
+       moneyline:{away:'+218',home:'-270'},
+       spread:{line:-5.5,favTeam:'Iowa State Cyclones',juice:'-110'},
+       total:{line:145.5,overJuice:'-110',underJuice:'-110'},
+       books:[{book:'DraftKings',awayML:'+218',homeML:'-270',spread:'-5.5',total:'145.5'},{book:'FanDuel',awayML:'+215',homeML:'-265',spread:'-5.5',total:'145.5'},{book:'BetMGM',awayML:'+225',homeML:'-280',spread:'-5.5',total:'145.5'},{book:'Caesars',awayML:'+218',homeML:'-270',spread:'-6.0',total:'146.0'}],
+       sharpAngle:'SCU is a 3-point shooting team that upsets good teams. Iowa State is a Final Four contender. Take ISU -5.5 — Cyclones are too deep and athletic. But keep an eye on SCU +6 — they covered all year.',result:{winner:'ISU',awayScore:61,homeScore:79,status:'final'}},
+      {id:'u2',timeET:'2:50 PM ET',network:'CBS',region:'South',
+       away:{name:'Kentucky Wildcats',abbr:'UK',seed:7,record:'21-13'},
+       home:{name:'Iowa State Cyclones',abbr:'ISU',seed:2,record:'27-7'},
+       moneyline:{away:'+180',home:'-218'},
+       spread:{line:-4.5,favTeam:'Iowa State Cyclones',juice:'-110'},
+       total:{line:145.5,overJuice:'-110',underJuice:'-110'},
+       books:[{book:'DraftKings',awayML:'+180',homeML:'-218',spread:'+4.5',total:'145.5'},{book:'FanDuel',awayML:'+178',homeML:'-215',spread:'+4.5',total:'145.5'},{book:'BetMGM',awayML:'+185',homeML:'-225',spread:'+5.0',total:'146.0'},{book:'Caesars',awayML:'+180',homeML:'-218',spread:'+4.5',total:'145.0'}],
+       sharpAngle:'Iowa State without Joshua Jefferson showed elite defense — held Kentucky to 0.91 PPG. Cyclones forced 20 turnovers in a dominant 82-63 win.',result:{winner:'ISU',awayScore:82,homeScore:63,status:'final'}},
+      {id:'u3',timeET:'5:15 PM ET',network:'CBS',region:'West',
+       away:{name:"St. John's Red Storm",abbr:'SJU',seed:5,record:'28-6'},
+       home:{name:'Kansas Jayhawks',abbr:'KU',seed:4,record:'23-10'},
+       moneyline:{away:'-162',home:'+136'},
+       spread:{line:-3.5,favTeam:"St. John's Red Storm",juice:'-110'},
+       total:{line:144.5,overJuice:'-110',underJuice:'-110'},
+       books:[{book:'DraftKings',awayML:'-162',homeML:'+136',spread:'-3.5',total:'144.5'},{book:'FanDuel',awayML:'-160',homeML:'+134',spread:'-3.5',total:'144.5'},{book:'BetMGM',awayML:'-165',homeML:'+140',spread:'-3.5',total:'144.5'},{book:'Caesars',awayML:'-162',homeML:'+136',spread:'-4.0',total:'145.0'}],
+       sharpAngle:"St. John's RJ Luis Jr is one of the best players in the East. Kansas Dickinson is a beast inside. Take SJU -3.5 — Big East grind-it-out style beats Big 12 finesse. SJU won 18 straight heading into March.",result:{winner:'SJU',awayScore:67,homeScore:65,status:'final'}},
+      {id:'u4',timeET:'6:10 PM ET',network:'TNT',region:'South',
+       away:{name:'Tennessee Volunteers',abbr:'TENN',seed:6,record:'22-11'},
+       home:{name:'Virginia Cavaliers',abbr:'UVA',seed:3,record:'29-5'},
+       moneyline:{away:'-118',home:'-102'},
+       spread:{line:-1.5,favTeam:'Tennessee Volunteers',juice:'-110'},
+       total:{line:137.5,overJuice:'-110',underJuice:'-110'},
+       books:[{book:'DraftKings',awayML:'-118',homeML:'-102',spread:'-1.5',total:'137.5'},{book:'FanDuel',awayML:'-115',homeML:'-105',spread:'-1.5',total:'137.5'},{book:'BetMGM',awayML:'-120',homeML:'+100',spread:'-2.0',total:'137.5'},{book:'Caesars',awayML:'-118',homeML:'-102',spread:'-1.5',total:'138.0'}],
+       sharpAngle:'Essentially a pick-em. Virginia slow-it-down vs Tennessee transition offense. UNDER 137.5 is the play — Bennett does not allow fast tempo. Take UVA -1 or +1.5 value — home-state advantage feel in Philly.',result:{winner:'TENN',awayScore:79,homeScore:72,status:'final'}},
+      {id:'u5',timeET:'7:10 PM ET',network:'TBS',region:'South',
+       away:{name:'Iowa Hawkeyes',abbr:'IOWA',seed:9,record:'21-12'},
+       home:{name:'Florida Gators',abbr:'FLA',seed:1,record:'26-7'},
+       moneyline:{away:'+440',home:'-600'},
+       spread:{line:-10.5,favTeam:'Florida Gators',juice:'-110'},
+       total:{line:144.5,overJuice:'-110',underJuice:'-110'},
+       books:[{book:'DraftKings',awayML:'+440',homeML:'-600',spread:'-10.5',total:'144.5'},{book:'FanDuel',awayML:'+430',homeML:'-580',spread:'-10.5',total:'144.5'},{book:'BetMGM',awayML:'+450',homeML:'-625',spread:'-10.5',total:'144.5'},{book:'Caesars',awayML:'+440',homeML:'-600',spread:'-11.0',total:'145.0'}],
+       sharpAngle:'Florida is the defending champion and rolled PV. Iowa shoots 3s but Florida guards are elite. Take FLA -10.5 — Clayton and Martin take over. 1-seeds beat 9-seeds by double digits 70% of the time.',result:{winner:'IOWA',awayScore:73,homeScore:72,status:'final'}},
+      {id:'u6',timeET:'7:50 PM ET',network:'TNT',region:'West',
+       away:{name:'Utah State Aggies',abbr:'USU',seed:9,record:'28-6'},
+       home:{name:'Arizona Wildcats',abbr:'ARIZ',seed:1,record:'32-2'},
+       moneyline:{away:'+550',home:'-800'},
+       spread:{line:-11.5,favTeam:'Arizona Wildcats',juice:'-110'},
+       total:{line:155.5,overJuice:'-110',underJuice:'-110'},
+       books:[{book:'DraftKings',awayML:'+550',homeML:'-800',spread:'-11.5',total:'155.5'},{book:'FanDuel',awayML:'+530',homeML:'-780',spread:'-11.5',total:'155.5'},{book:'BetMGM',awayML:'+575',homeML:'-825',spread:'-12.0',total:'156.0'},{book:'Caesars',awayML:'+550',homeML:'-800',spread:'-11.5',total:'155.0'}],
+       sharpAngle:'Arizona demolished LIU and is the West favorite. Utah State is 28-6 but Mountain West teams wilt vs elite competition. Take ARIZ -11.5 — Burries and Peat are unstoppable. OVER 155.5 has value.',result:{winner:'ARIZ',awayScore:66,homeScore:78,status:'final'}},
+      {id:'u7',timeET:'8:45 PM ET',network:'TBS',region:'East',
+       away:{name:'UCLA Bruins',abbr:'UCLA',seed:7,record:'23-11'},
+       home:{name:'Connecticut Huskies',abbr:'CONN',seed:2,record:'29-5'},
+       moneyline:{away:'+154',home:'-185'},
+       spread:{line:-4.5,favTeam:'Connecticut Huskies',juice:'-110'},
+       total:{line:136.5,overJuice:'-110',underJuice:'-110'},
+       books:[{book:'DraftKings',awayML:'+154',homeML:'-185',spread:'-4.5',total:'136.5'},{book:'FanDuel',awayML:'+150',homeML:'-180',spread:'-4.5',total:'136.5'},{book:'BetMGM',awayML:'+158',homeML:'-190',spread:'-4.5',total:'136.5'},{book:'Caesars',awayML:'+154',homeML:'-185',spread:'-5.0',total:'137.0'}],
+       sharpAngle:'UCLA failed to cover vs UCF. UConn is battle-tested and Hurley knows March. Take CONN -4.5 — two-time champion mentality takes over. UNDER 136.5 — both teams play elite defense.',result:{winner:'CONN',awayScore:57,homeScore:73,status:'final'}},
+      {id:'u8',timeET:'9:45 PM ET',network:'truTV',region:'South',
+       away:{name:'Texas Tech Red Raiders',abbr:'TTU',seed:5,record:'22-10'},
+       home:{name:'Alabama Crimson Tide',abbr:'ALA',seed:4,record:'23-9'},
+       moneyline:{away:'-108',home:'-112'},
+       spread:{line:-1.5,favTeam:'Alabama Crimson Tide',juice:'-110'},
+       total:{line:164.5,overJuice:'-110',underJuice:'-110'},
+       books:[{book:'DraftKings',awayML:'-108',homeML:'-112',spread:'-1.5',total:'164.5'},{book:'FanDuel',awayML:'-105',homeML:'-115',spread:'-1.5',total:'164.5'},{book:'BetMGM',awayML:'-110',homeML:'-110',spread:'-2.0',total:'165.0'},{book:'Caesars',awayML:'-108',homeML:'-112',spread:'-1.5',total:'164.0'}],
+       sharpAngle:'Total of 164.5 is insane — both teams can score. Alabama without Holloway is still potent. TTU without Toppin is limited. Take the OVER 164.5 — this is a track meet. Coin flip on the side — lean ALA -1.5 home state.',result:{winner:'ALA',awayScore:65,homeScore:90,status:'final'}}
+    ]
+  },
+  'ncaam-w1_thu2': {
+    day:'Thursday, March 26, 2026', round:'Sweet 16 — Regional Semifinals',
+    games:[
+      {id:'s16-1',timeET:'7:10 PM ET',network:'CBS',region:'West',venue:'SAP Center, San Jose CA',
+       away:{name:'Purdue Boilermakers',abbr:'PUR',seed:2,record:'29-8'},
+       home:{name:'Texas Longhorns',abbr:'TEX',seed:11,record:'21-14'},
+       moneyline:{away:'-450',home:'+350'},
+       spread:{line:-9.5,favTeam:'Purdue Boilermakers',juice:'-110'},
+       total:{line:134.5,overJuice:'-110',underJuice:'-110'},
+       books:[
+         {book:'DraftKings',awayML:'-450',homeML:'+350',spread:'-9.5',total:'134.5'},
+         {book:'FanDuel',awayML:'-440',homeML:'+340',spread:'-9.5',total:'134.0'},
+         {book:'BetMGM',awayML:'-460',homeML:'+360',spread:'-10.0',total:'135.0'},
+       ],
+       playerProps:[
+         {player:'Fletcher Loyer',team:'Purdue',market:'Points',line:18.5,overOdds:'-112',underOdds:'-108'},
+         {player:'Chendall Weaver',team:'Texas',market:'Points',line:14.5,overOdds:'-108',underOdds:'-112'},
+       ],
+       sharpAngle:'Texas is a massive underdog but they knocked off Gonzaga — do not sleep on the Longhorns. However Purdue is 3x Sweet 16 in 5 years and Loyer is ice cold in March. Take PUR -9.5 but sprinkle TEX ML for the upset value.'},
+      {id:'s16-2',timeET:'7:30 PM ET',network:'TBS',region:'Midwest',venue:'Toyota Center, Houston TX',
+       away:{name:'Nebraska Cornhuskers',abbr:'NEB',seed:4,record:'25-9'},
+       home:{name:'Iowa Hawkeyes',abbr:'IOWA',seed:9,record:'21-12'},
+       moneyline:{away:'-185',home:'+155'},
+       spread:{line:-4.5,favTeam:'Nebraska Cornhuskers',juice:'-110'},
+       total:{line:141.5,overJuice:'-110',underJuice:'-110'},
+       books:[
+         {book:'DraftKings',awayML:'-185',homeML:'+155',spread:'-4.5',total:'141.5'},
+         {book:'FanDuel',awayML:'-180',homeML:'+150',spread:'-4.5',total:'141.0'},
+         {book:'BetMGM',awayML:'-190',homeML:'+160',spread:'-5.0',total:'142.0'},
+       ],
+       playerProps:[
+         {player:'Brice Williams',team:'Nebraska',market:'Points',line:17.5,overOdds:'-112',underOdds:'-108'},
+         {player:'Alvaro Folgueiras',team:'Iowa',market:'Points',line:15.5,overOdds:'-110',underOdds:'-110'},
+       ],
+       sharpAngle:'Iowa just pulled the biggest upset of the tournament — beat #1 Florida on a buzzer 3. Folgueiras is red hot. Take IOWA +4.5 — teams coming off miracle wins cover 68% next game. The energy is real. Ben McCollum vs veteran Nebraska squad is a toss-up.'},
+      {id:'s16-3',timeET:'9:45 PM ET',network:'CBS',region:'West',venue:'SAP Center, San Jose CA',
+       away:{name:'Arizona Wildcats',abbr:'ARIZ',seed:1,record:'32-2'},
+       home:{name:'Alabama Crimson Tide',abbr:'ALA',seed:4,record:'25-9'},
+       moneyline:{away:'-220',home:'+182'},
+       spread:{line:-4.5,favTeam:'Arizona Wildcats',juice:'-110'},
+       total:{line:157.5,overJuice:'-108',underJuice:'-112'},
+       books:[
+         {book:'DraftKings',awayML:'-220',homeML:'+182',spread:'-4.5',total:'157.5'},
+         {book:'FanDuel',awayML:'-215',homeML:'+178',spread:'-4.5',total:'157.0'},
+         {book:'BetMGM',awayML:'-225',homeML:'+185',spread:'-5.0',total:'158.0'},
+       ],
+       playerProps:[
+         {player:'Jaden Bradley',team:'Arizona',market:'Points',line:17.5,overOdds:'-112',underOdds:'-108'},
+         {player:'Latrell Wrightsell Jr',team:'Alabama',market:'Points',line:21.5,overOdds:'-110',underOdds:'-110'},
+       ],
+       sharpAngle:'GAME OF THE TOURNAMENT. Alabama went 19-42 from 3 against TTU — that is historic shooting. But Arizona is the most complete team in the country. Take the OVER 157.5 — Alabama loves to run and shoot. ALA +4.5 has huge value — Tide covered 12 of last 15 as a dog.'},
+      {id:'s16-4',timeET:'10:05 PM ET',network:'TBS',region:'Midwest',venue:'Toyota Center, Houston TX',
+       away:{name:'Houston Cougars',abbr:'HOU',seed:2,record:'28-6'},
+       home:{name:'Illinois Fighting Illini',abbr:'ILL',seed:3,record:'24-8'},
+       moneyline:{away:'-165',home:'+140'},
+       spread:{line:-3.5,favTeam:'Houston Cougars',juice:'-110'},
+       total:{line:139.5,overJuice:'-110',underJuice:'-110'},
+       books:[
+         {book:'DraftKings',awayML:'-165',homeML:'+140',spread:'-3.5',total:'139.5'},
+         {book:'FanDuel',awayML:'-160',homeML:'+135',spread:'-3.5',total:'139.0'},
+         {book:'BetMGM',awayML:'-170',homeML:'+145',spread:'-4.0',total:'140.0'},
+       ],
+       playerProps:[
+         {player:'LJ Cryer',team:'Houston',market:'Points',line:15.5,overOdds:'-110',underOdds:'-110'},
+         {player:'Kasparas Jakucionis',team:'Illinois',market:'Points',line:17.5,overOdds:'-112',underOdds:'-108'},
+       ],
+       sharpAngle:'Elite defense vs elite offense. Houston KenPom #1 defense vs Illinois led by Jakucionis. UNDER 139.5 is the strongest play of the night — both coaches hate giving up easy baskets. Take HOU -3.5 — Kelvin Sampson has never lost a Sweet 16 game at Houston.'}
+    ]
+  },
+  'ncaam-w1_fri2': {
+    day:'Friday, March 27, 2026', round:'Sweet 16 — Regional Semifinals',
+    games:[
+      {id:'s16-5',timeET:'7:10 PM ET',network:'CBS',region:'East',venue:'Capital One Arena, Washington DC',
+       away:{name:'Duke Blue Devils',abbr:'DUKE',seed:1,record:'34-2'},
+       home:{name:"St. John's Red Storm",abbr:'SJU',seed:5,record:'30-6'},
+       moneyline:{away:'-280',home:'+230'},
+       spread:{line:-6.5,favTeam:'Duke Blue Devils',juice:'-110'},
+       total:{line:143.5,overJuice:'-110',underJuice:'-110'},
+       books:[
+         {book:'DraftKings',awayML:'-280',homeML:'+230',spread:'-6.5',total:'143.5'},
+         {book:'FanDuel',awayML:'-275',homeML:'+225',spread:'-6.5',total:'143.0'},
+         {book:'BetMGM',awayML:'-290',homeML:'+240',spread:'-7.0',total:'144.0'},
+       ],
+       playerProps:[
+         {player:'Cameron Boozer',team:'Duke',market:'Points',line:20.5,overOdds:'-115',underOdds:'-105'},
+         {player:'RJ Luis Jr',team:"St. John's",market:'Points',line:18.5,overOdds:'-110',underOdds:'-110'},
+       ],
+       sharpAngle:"BUZZER BEATER MAGIC. SJU beat Kansas on Dylan Darling's only bucket of the game. The Johnnies are playing with house money. Take SJU +6.5 — teams riding buzzer beaters cover 71% of next game. Duke is the best team left but SJU's Big East defense makes this a dogfight. DC feels like home for the New York Johnnies."},
+      {id:'s16-6',timeET:'7:35 PM ET',network:'TBS',region:'Midwest',venue:'United Center, Chicago IL',
+       away:{name:'Michigan Wolverines',abbr:'MICH',seed:1,record:'31-6'},
+       home:{name:'Iowa State Cyclones',abbr:'ISU',seed:2,record:'29-7'},
+       moneyline:{away:'-145',home:'+122'},
+       spread:{line:-2.5,favTeam:'Michigan Wolverines',juice:'-110'},
+       total:{line:138.5,overJuice:'-110',underJuice:'-110'},
+       books:[
+         {book:'DraftKings',awayML:'-145',homeML:'+122',spread:'-2.5',total:'138.5'},
+         {book:'FanDuel',awayML:'-142',homeML:'+118',spread:'-2.5',total:'138.0'},
+         {book:'BetMGM',awayML:'-150',homeML:'+128',spread:'-3.0',total:'139.0'},
+       ],
+       playerProps:[
+         {player:'Yaxel Lendeborg',team:'Michigan',market:'Points',line:16.5,overOdds:'-112',underOdds:'-108'},
+         {player:'Tamin Lipsey',team:'Iowa State',market:'Points',line:13.5,overOdds:'-110',underOdds:'-110'},
+       ],
+       sharpAngle:"1 vs 2 in the Midwest! Michigan has won by 22 points per game in tournament. Iowa State won without Joshua Jefferson — if he's back healthy this is a different game. Take ISU +2.5 — the Cyclones' defense is elite and this game will be decided in final 2 minutes. UNDER 138.5 is the best play."},
+      {id:'s16-7',timeET:'9:40 PM ET',network:'CBS',region:'East',venue:'Capital One Arena, Washington DC',
+       away:{name:'Iowa State Cyclones',abbr:'ISU',seed:2,record:'29-7'},
+       home:{name:'Tennessee Volunteers',abbr:'TENN',seed:6,record:'22-11'},
+       moneyline:{away:'-175',home:'+148'},
+       spread:{line:-3.5,favTeam:'Iowa State Cyclones',juice:'-110'},
+       total:{line:135.5,overJuice:'-110',underJuice:'-110'},
+       books:[
+         {book:'DraftKings',awayML:'-175',homeML:'+148',spread:'-3.5',total:'135.5'},
+         {book:'FanDuel',awayML:'-170',homeML:'+144',spread:'-3.5',total:'135.0'},
+         {book:'BetMGM',awayML:'-180',homeML:'+152',spread:'-4.0',total:'136.0'},
+       ],
+       playerProps:[
+         {player:'Tamin Lipsey',team:'Iowa State',market:'Points',line:13.5,overOdds:'-110',underOdds:'-110'},
+         {player:'JaKobi Gillespie',team:'Tennessee',market:'Points',line:18.5,overOdds:'-112',underOdds:'-108'},
+       ],
+       sharpAngle:"Tennessee is a 6-seed that beat Virginia — Rick Barnes is 4 Sweet 16s straight. ISU without Jefferson is vulnerable. Take TENN +3.5 — Felix Okpara and Gillespie are tournament tested. UNDER 135.5 is also strong — both teams play grind-it-out defense."},
+      {id:'s16-8',timeET:'10:05 PM ET',network:'TBS',region:'East',venue:'United Center, Chicago IL',
+       away:{name:'UConn Huskies',abbr:'CONN',seed:2,record:'31-5'},
+       home:{name:'Michigan State Spartans',abbr:'MSU',seed:3,record:'25-8'},
+       moneyline:{away:'-162',home:'+136'},
+       spread:{line:-3.5,favTeam:'UConn Huskies',juice:'-110'},
+       total:{line:137.5,overJuice:'-110',underJuice:'-110'},
+       books:[
+         {book:'DraftKings',awayML:'-162',homeML:'+136',spread:'-3.5',total:'137.5'},
+         {book:'FanDuel',awayML:'-158',homeML:'+132',spread:'-3.5',total:'137.0'},
+         {book:'BetMGM',awayML:'-165',homeML:'+140',spread:'-4.0',total:'138.0'},
+       ],
+       playerProps:[
+         {player:'Alex Karaban',team:'UConn',market:'Points',line:20.5,overOdds:'-115',underOdds:'-105'},
+         {player:'Jase Richardson',team:'Michigan State',market:'Points',line:16.5,overOdds:'-110',underOdds:'-110'},
+       ],
+       sharpAngle:"Two-time champion UConn against Tom Izzo's tournament machine — 8 Final Fours. Karaban dropped 27 on UCLA. Take MSU +3.5 — Izzo never gets bounced before Elite Eight when healthy. UNDER 137.5 is the lock — both teams play 68-possession games."}
+    ]
+  },
+  'ncaam-w1_sat2': {
+    day:'Saturday, March 28, 2026', round:'Elite Eight — Regional Finals',
+    games:[
+      {id:'e8-1',timeET:'TBD',network:'CBS',region:'East',
+       away:{name:'TBD',abbr:'TBD',seed:'?',record:'TBD'},home:{name:'TBD',abbr:'TBD',seed:'?',record:'TBD'},
+       moneyline:{away:'TBD',home:'TBD'},spread:{line:0,favTeam:'TBD',juice:'-110'},total:{line:0,overJuice:'-110',underJuice:'-110'},
+       books:[],playerProps:[],sharpAngle:'Elite Eight matchup TBD — check back once Sweet 16 results are in.'},
+      {id:'e8-2',timeET:'TBD',network:'TBS',region:'South',
+       away:{name:'TBD',abbr:'TBD',seed:'?',record:'TBD'},home:{name:'TBD',abbr:'TBD',seed:'?',record:'TBD'},
+       moneyline:{away:'TBD',home:'TBD'},spread:{line:0,favTeam:'TBD',juice:'-110'},total:{line:0,overJuice:'-110',underJuice:'-110'},
+       books:[],playerProps:[],sharpAngle:'Elite Eight matchup TBD — check back once Sweet 16 results are in.'}
+    ]
+  },
+  'ncaam-w1_sun2': {
+    day:'Sunday, March 29, 2026', round:'Elite Eight — Regional Finals',
+    games:[
+      {id:'e8-3',timeET:'TBD',network:'CBS',region:'West',
+       away:{name:'TBD',abbr:'TBD',seed:'?',record:'TBD'},home:{name:'TBD',abbr:'TBD',seed:'?',record:'TBD'},
+       moneyline:{away:'TBD',home:'TBD'},spread:{line:0,favTeam:'TBD',juice:'-110'},total:{line:0,overJuice:'-110',underJuice:'-110'},
+       books:[],playerProps:[],sharpAngle:'Elite Eight matchup TBD — check back once Sweet 16 results are in.'},
+      {id:'e8-4',timeET:'TBD',network:'TBS',region:'Midwest',
+       away:{name:'TBD',abbr:'TBD',seed:'?',record:'TBD'},home:{name:'TBD',abbr:'TBD',seed:'?',record:'TBD'},
+       moneyline:{away:'TBD',home:'TBD'},spread:{line:0,favTeam:'TBD',juice:'-110'},total:{line:0,overJuice:'-110',underJuice:'-110'},
+       books:[],playerProps:[],sharpAngle:'Elite Eight matchup TBD — check back once Sweet 16 results are in.'}
+    ]
+  },
+  'ncaam-w1_sat3': {
+    day:'Saturday, April 4, 2026', round:'Final Four — San Antonio, TX',
+    games:[
+      {id:'ff-1',timeET:'TBD',network:'CBS',region:'East vs West',
+       away:{name:'TBD',abbr:'TBD',seed:'?',record:'TBD'},home:{name:'TBD',abbr:'TBD',seed:'?',record:'TBD'},
+       moneyline:{away:'TBD',home:'TBD'},spread:{line:0,favTeam:'TBD',juice:'-110'},total:{line:0,overJuice:'-110',underJuice:'-110'},
+       books:[],playerProps:[],sharpAngle:'Final Four matchup TBD — check back once Elite Eight results are in.'},
+      {id:'ff-2',timeET:'TBD',network:'CBS',region:'South vs Midwest',
+       away:{name:'TBD',abbr:'TBD',seed:'?',record:'TBD'},home:{name:'TBD',abbr:'TBD',seed:'?',record:'TBD'},
+       moneyline:{away:'TBD',home:'TBD'},spread:{line:0,favTeam:'TBD',juice:'-110'},total:{line:0,overJuice:'-110',underJuice:'-110'},
+       books:[],playerProps:[],sharpAngle:'Final Four matchup TBD — check back once Elite Eight results are in.'}
+    ]
+  },
+  'ncaam-w1_mon3': {
+    day:'Monday, April 6, 2026', round:'National Championship — San Antonio, TX',
+    games:[
+      {id:'champ',timeET:'TBD',network:'CBS',region:'Championship',
+       away:{name:'TBD',abbr:'TBD',seed:'?',record:'TBD'},home:{name:'TBD',abbr:'TBD',seed:'?',record:'TBD'},
+       moneyline:{away:'TBD',home:'TBD'},spread:{line:0,favTeam:'TBD',juice:'-110'},total:{line:0,overJuice:'-110',underJuice:'-110'},
+       books:[],playerProps:[],sharpAngle:'National Championship matchup TBD — check back once Final Four results are in.'}
+    ]
+  }
+};
+
+// ═══════════════════════════════════════════
+// LOAD DAY — orchestrates all sources
+// ═══════════════════════════════════════════
+// Build game data dynamically from ESPN live scores when no static data exists
+// Used for Second Round, Sweet 16, Elite Eight etc.
+function buildDynamicDayData(dayKey, dayInfo) {
+  if (!dayInfo) return null;
+  const ev = getActiveEvent();
+
+  // Filter liveScores to games that are scheduled/live/final for this day
+  const games = [];
+  const seen = new Set();
+  for (const g of Object.values(liveScores)) {
+    if (!g || seen.has(g.id||g.away+'-'+g.home)) continue;
+    seen.add(g.id||g.away+'-'+g.home);
+    if (g.flipped) continue; // skip duplicates
+
+    // Build a minimal game object compatible with renderPanel
+    games.push({
+      id:       g.id || (g.away + '-' + g.home),
+      timeET:   g.clock || 'TBD',
+      network:  g.network || 'TBS/CBS',
+      region:   '',
+      away: {
+        abbr:   g.away,
+        name:   g.awayFull || g.away,
+        seed:   '',
+        record: ''
+      },
+      home: {
+        abbr:   g.home,
+        name:   g.homeFull || g.home,
+        seed:   '',
+        record: ''
+      },
+      spread:     null,
+      total:      null,
+      moneyline:  null,
+      sharpAngle: '',
+      playerProps: [],
+      books: []
+    });
+  }
+
+  if (!games.length) return null;
+
+  return {
+    day:   dayInfo.long || dayInfo.label,
+    round: dayInfo.round || dayInfo.label,
+    games
+  };
+}
+
+async function loadDay(dayKey) {
+  const ev       = getActiveEvent();
+  // Don't load data for sports that haven't started or have ended
+  if (ev.status && ev.status !== 'active') return;
+  const dayInfo  = getActiveWeek()?.days?.find(d => d.key === dayKey);
+  if (!dayInfo) return;
+  const cacheKey = ev.id + '_' + dayKey;
+  const panel    = document.getElementById('panel-' + dayKey);
+  if (!panel) return;
+
+  document.getElementById('mainRefresh').classList.add('spin');
+
+  // ── Step 1: Always show static data immediately ──────────────
+  const staticData = STATIC_GAMES[cacheKey];
+  if (staticData) {
+    if (!cache[cacheKey]) cache[cacheKey] = staticData;
+    renderPanel(dayKey, cache[cacheKey]);
+  } else if (cache[cacheKey]) {
+    renderPanel(dayKey, cache[cacheKey]);
+  } else {
+    panel.innerHTML = buildLoadingUI(ev);
+  }
+
+  // ── Step 2: Overlay live ESPN tip times on top of static ─────
+  const proxyReady = PROXY_URL && PROXY_URL !== 'YOUR_CLOUD_RUN_URL_HERE';
+  if (!proxyReady) {
+    document.getElementById('mainRefresh').classList.remove('spin');
+    return;
+  }
+
+  try {
+    const dateStr  = dayKeyToDate(dayKey);
+    const schedUrl = `${PROXY_URL}/api/schedule?league=ncaamb&date=${dateStr}`;
+    const schedResp = await fetch(schedUrl);
+    const schedData = await schedResp.json();
+
+    if (schedData.games && schedData.games.length > 0) {
+      // Build ESPN lookup by abbr pair for time/status overlay
+      const espnByAbbr = {};
+      for (const eg of schedData.games) {
+        const ea = eg.away.abbr.toUpperCase();
+        const eh = eg.home.abbr.toUpperCase();
+        espnByAbbr[ea+'-'+eh] = eg;
+        espnByAbbr[eh+'-'+ea] = eg;
+        // Also index by normalized abbr
+        const na = normAbbr(ea), nh = normAbbr(eh);
+        espnByAbbr[na+'-'+nh] = eg;
+        espnByAbbr[nh+'-'+na] = eg;
+      }
+
+      // If we have static data, overlay ESPN tip times on it
+      if (staticData?.games?.length) {
+        const enriched = staticData.games.map(sg => {
+          const sa = (sg.away?.abbr||'').toUpperCase();
+          const sh = (sg.home?.abbr||'').toUpperCase();
+          const eg = espnByAbbr[sa+'-'+sh] || espnByAbbr[sh+'-'+sa];
+          if (!eg) return sg; // no ESPN match — keep static as-is
+
+          // Update tip time from ESPN, keep all static odds
+          return {
+            ...sg,
+            timeET: eg.date
+              ? new Date(eg.date).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'America/New_York'}) + ' ET'
+              : sg.timeET,
+            network: eg.network || sg.network,
+            away: { ...sg.away, record: eg.away.record || sg.away.record },
+            home: { ...sg.home, record: eg.home.record || sg.home.record },
+            // Overlay ESPN odds only if better than static
+            ...(eg.odds ? {
+              moneyline: { away: eg.odds.awayML || sg.moneyline?.away, home: eg.odds.homeML || sg.moneyline?.home },
+              spread:    { ...sg.spread, line: eg.odds.spread ? parseFloat(eg.odds.spread) : sg.spread?.line },
+              total:     { ...sg.total, line: eg.odds.overUnder || sg.total?.line },
+            } : {}),
+          };
+        });
+
+        const enrichedData = { ...staticData, games: enriched };
+        cache[cacheKey] = enrichedData;
+        cache[cacheKey + '_live'] = true;
+        renderPanel(dayKey, enrichedData);
+        console.log(`[LoadDay] ${dayKey}: ${enriched.length} games (static+ESPN overlay)`);
+
+      } else {
+        // No static data — build purely from ESPN (no odds, just schedule)
+        const espnGames = schedData.games.map(g => {
+          const ea = normAbbr(g.away.abbr.toUpperCase());
+          const eh = normAbbr(g.home.abbr.toUpperCase());
+          const liveOdds = getGameOdds({away:{abbr:ea}, home:{abbr:eh}});
+          return {
+            id:       g.id || (ea+'-'+eh),
+            timeET:   g.date ? new Date(g.date).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'America/New_York'}) + ' ET' : 'TBD',
+            network:  g.network || '',
+            region:   g.roundNote || '',
+            away: { abbr:ea, name:g.away.name||ea, seed:g.away.seed||'', record:g.away.record||'' },
+            home: { abbr:eh, name:g.home.name||eh, seed:g.home.seed||'', record:g.home.record||'' },
+            moneyline: liveOdds ? {away:liveOdds.awayML,home:liveOdds.homeML} : null,
+            spread:    liveOdds ? {line:liveOdds.spread,favTeam:ea,juice:'-110'} : null,
+            total:     liveOdds ? {line:liveOdds.total,overJuice:'-110',underJuice:'-110'} : null,
+            books:[], playerProps:[], sharpAngle:'', result:null,
+          };
+        });
+        const liveData = { day:dayInfo.long||dayInfo.label, round:dayInfo.round||dayInfo.label, games:espnGames };
+        cache[cacheKey] = liveData;
+        cache[cacheKey + '_live'] = true;
+        renderPanel(dayKey, liveData);
+        console.log(`[LoadDay] ${dayKey}: ${espnGames.length} games (ESPN only, no static)`);
+      }
+    }
+  } catch(e) {
+    console.warn('[LoadDay] ESPN fetch failed:', e.message);
+  }
+
+  document.getElementById('mainRefresh').classList.remove('spin');
+}
+
+// Normalize ESPN abbreviations to match our static data
+function normAbbr(a) {
+  const map = {
+    'TA&M':'TAM','SMC':'SMC','UK':'UK','KU':'KU','M-OH':'M-OH',
+    'SJU':'SJU','QUC':'QUC','UNI':'UNI','PV':'PV','HPU':'HPU',
+    'MCN':'MCN','VILL':'VILL','CONN':'CONN','FUR':'FUR','TENN':'TENN',
+    'ISU':'ISU','SCU':'SCU','TTU':'TTU','USU':'USU','SLU':'SLU',
+    'VCU':'VCU','TEX':'TEX','HPU':'HPU','ILL':'ILL','ARK':'ARK',
+  };
+  return map[a] || a;
+}
+
+
+
+
+// Convert a day tab key to a YYYYMMDD date string
+function dayKeyToDate(dayKey) {
+  // Map known day keys to dates
+  const keyMap = {
+    'thu':  '20260319', 'fri':  '20260320',
+    'sat':  '20260321', 'sun':  '20260322',
+    'thu2': '20260326', 'fri2': '20260327',
+    'sat2': '20260328', 'sun2': '20260329',
+    'sat3': '20260404', 'mon3': '20260406',
+    // NBA/NHL use different formats - handled separately
+  };
+  if (keyMap[dayKey]) return keyMap[dayKey];
+  // Try to parse from dayInfo
+  const dayInfo = getActiveWeek()?.days?.find(d => d.key === dayKey);
+  if (dayInfo?.long) {
+    const d = new Date(dayInfo.long);
+    if (!isNaN(d)) return d.getFullYear().toString()
+      + String(d.getMonth()+1).padStart(2,'0')
+      + String(d.getDate()).padStart(2,'0');
+  }
+  // Default to today
+  const now = new Date();
+  return now.getFullYear().toString()
+    + String(now.getMonth()+1).padStart(2,'0')
+    + String(now.getDate()).padStart(2,'0');
+}
+
+// Find matching static game by team abbreviations
+function findStaticGame(awayAbbr, homeAbbr) {
+  // Normalize ESPN abbreviations to match our static data
+  const norm = a => {
+    const map = {
+      'TA&M':'TAM', 'SMC':'SMC', 'UK':'UK', 'KU':'KU',
+      'M-OH':'M-OH', 'SJU':'SJU', 'QUC':'QUC', 'UNI':'UNI',
+      'PV':'PV', 'HPU':'HPU', 'MCN':'MCN', 'VILL':'VILL',
+      'CONN':'CONN', 'FUR':'FUR', 'UCLA':'UCLA', 'UCF':'UCF',
+      'TENN':'TENN', 'ISU':'ISU', 'SCU':'SCU', 'TTU':'TTU',
+    };
+    return map[a] || ABBR_MAP[a] || a;
+  };
+  const a = norm((awayAbbr||'').toUpperCase());
+  const h = norm((homeAbbr||'').toUpperCase());
+
+  for (const data of Object.values(STATIC_GAMES)) {
+    for (const g of data.games||[]) {
+      const ga = (g.away?.abbr||'').toUpperCase();
+      const gh = (g.home?.abbr||'').toUpperCase();
+      if ((ga===a&&gh===h)||(ga===h&&gh===a)) return g;
+      // 3-char partial match
+      if (a.length>=3 && h.length>=3 &&
+         ((ga.slice(0,3)===a.slice(0,3)&&gh.slice(0,3)===h.slice(0,3))||
+          (ga.slice(0,3)===h.slice(0,3)&&gh.slice(0,3)===a.slice(0,3)))) return g;
+    }
+  }
+  return null;
+}
+
+
+
+function buildLoadingUI(ev) {
+  return `<div class="loading-wrap">
+    <div class="spinner-ring"></div>
+    <div class="loading-msg">Aggregating odds from ${prefs.useOddsApi?'3':'2'} sources…</div>
+    <div class="source-progress">
+      <div class="sp-row"><div class="sp-dot loading" id="sdot-ai"></div> AI Web Search</div>
+      <div class="sp-row"><div class="sp-dot ${prefs.useOddsApi?'loading':'pending'}" id="sdot-oddsapi"></div> The Odds API ${prefs.useOddsApi?'':'(disabled)'}</div>
+      <div class="sp-row"><div class="sp-dot ${prefs.useKalshi?'loading':'pending'}" id="sdot-kalshi"></div> Kalshi ${prefs.useKalshi?'':'(disabled)'}</div>
+    </div>
+  </div>`;
+}
+
+function updateSourceDot(src, state) {
+  const el = document.getElementById('sdot-'+src);
+  if (el) { el.className = 'sp-dot '+state; }
+}
+
+// ═══════════════════════════════════════════
+// THE ODDS API
+// ═══════════════════════════════════════════
+async function fetchOddsApi(ev, dayInfo) {
+  const sport = ev.oddsApiSport || 'basketball_ncaab';
+  const bookmakers = 'draftkings,fanduel,betmgm,caesars,pointsbet,bet365,betrivers,unibet';
+  const markets = 'h2h,spreads,totals';
+  const url = `https://api.the-odds-api.com/v4/sports/${sport}/odds/?apiKey=${prefs.oddsApiKey}&regions=us&markets=${markets}&bookmakers=${bookmakers}&oddsFormat=american`;
+
+  const resp = await fetch(url);
+  if (!resp.ok) throw new Error(`Odds API ${resp.status}`);
+  const raw = await resp.json();
+  if (!Array.isArray(raw)) throw new Error('Unexpected Odds API response');
+  return raw; // array of game objects
+}
+
+// ═══════════════════════════════════════════
+// KALSHI API
+// ═══════════════════════════════════════════
+async function fetchKalshi(ev, dayInfo) {
+  // Kalshi public REST — search event markets
+  const keyword = encodeURIComponent((ev.kalshiKeyword || ev.sport) + ' ' + dayInfo.round);
+  const url = `https://trading-api.kalshi.com/trade-api/v2/markets?limit=20&status=open&search=${keyword}`;
+
+  const resp = await fetch(url, { headers:{ 'Content-Type':'application/json' } });
+  if (!resp.ok) throw new Error(`Kalshi ${resp.status}`);
+  const data = await resp.json();
+  return data.markets || [];
+}
+
+// ═══════════════════════════════════════════
+// AI SEARCH (Claude API)
+// ═══════════════════════════════════════════
+async function fetchAI(ev, dayInfo) {
+  const sys = `You are a sharp sports betting analyst. Use web_search to find real current 2026 ${ev.sport} betting odds for ${dayInfo.long} from DraftKings, FanDuel, BetMGM, Caesars, BetUS. Always provide game times in Eastern Time (ET) — the app will convert to the user's local time automatically. Return ONLY raw JSON — no markdown, no backticks.`;
+
+  const prompt = `Search for "${ev.sport} ${dayInfo.long} ${dayInfo.round} odds spread moneyline 2026" and "${ev.sport} ${dayInfo.round} DraftKings FanDuel BetMGM lines".
+
+Return ONLY this JSON:
+{
+  "day":"${dayInfo.long}","round":"${dayInfo.round}","sport":"${ev.sport}",
+  "games":[{
+    "id":"g1","timeET":"12:15 PM ET","network":"CBS","region":"East",
+    "away":{"name":"Full Name","abbr":"ABBR","seed":1,"record":"28-4"},
+    "home":{"name":"Full Name","abbr":"ABBR","seed":16,"record":"20-13"},
+    "moneyline":{"away":"-1800","home":"+900"},
+    "spread":{"line":-16.5,"favTeam":"Away Team","juice":"-110"},
+    "total":{"line":142.5,"overJuice":"-110","underJuice":"-110"},
+    "firstHalf":{"moneyline":{"away":"-600","home":"+420"},"spread":{"line":-8.5,"favTeam":"Away"},"total":{"line":70.5}},
+    "books":[
+      {"book":"DraftKings","awayML":"-1800","homeML":"+900","spread":"-16.5","total":"142.5"},
+      {"book":"FanDuel","awayML":"-1700","homeML":"+850","spread":"-16.5","total":"142.5"},
+      {"book":"BetMGM","awayML":"-1800","homeML":"+1000","spread":"-17.0","total":"143.0"},
+      {"book":"Caesars","awayML":"-1750","homeML":"+950","spread":"-16.5","total":"142.5"},
+      {"book":"BetUS","awayML":"-1900","homeML":"+1100","spread":"-17.0","total":"143.0"}
+    ],
+    "playerProps":[
+      {"player":"Name","team":"Team","market":"Points","line":18.5,"overOdds":"-115","underOdds":"-105"},
+      {"player":"Name","team":"Team","market":"Rebounds","line":7.5,"overOdds":"+100","underOdds":"-120"}
+    ],
+    "sharpAngle":"1-2 sentence sharp betting insight specific to this matchup."
+  }]
+}
+Include ALL scheduled games. Real teams, real odds. Unique IDs g1,g2,g3. Always use Eastern Time for timeET field (e.g. "12:15 PM ET").`;
+
+  // Use proxy if configured, otherwise fall back to direct (works in Claude.ai artifacts)
+  const endpoint = (PROXY_URL && PROXY_URL !== 'YOUR_CLOUD_RUN_URL_HERE')
+    ? PROXY_URL + '/api/claude'
+    : 'https://api.anthropic.com/v1/messages';
+
+  const resp = await fetch(endpoint, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({
+      model:'claude-sonnet-4-20250514', max_tokens:1000, system:sys,
+      tools:[{type:'web_search_20250305',name:'web_search'}],
+      messages:[{role:'user',content:prompt}]
+    })
+  });
+  window._lastClaudeFetch = Date.now();
+  if (!resp.ok) {
+    const errBody = await resp.json().catch(()=>({}));
+    console.error('[OddsFetch] API error:', resp.status, JSON.stringify(errBody).substring(0,200));
+    throw new Error('Claude API ' + resp.status + ': ' + (errBody.error?.message || JSON.stringify(errBody)).substring(0,100));
+  }
+  const d = await resp.json();
+  const txt = (d.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n');
+  const clean = txt.trim().replace(/^```json\s*/im,'').replace(/^```\s*/im,'').replace(/```\s*$/m,'').trim();
+  const m = clean.match(/\{[\s\S]*\}/);
+  if (!m) throw new Error('No JSON from AI');
+  return JSON.parse(m[0]);
+}
+
+// ═══════════════════════════════════════════
+// MERGE & AGGREGATE
+// ═══════════════════════════════════════════
+function mergeData(aiData, oddsApiRaw, kalshiMarkets, dayInfo) {
+  // Start with AI data as base
+  const games = aiData?.games || [];
+
+  // If we have Odds API data, enrich each game with cross-book lines
+  if (oddsApiRaw && Array.isArray(oddsApiRaw)) {
+    for (const g of games) {
+      const match = oddsApiRaw.find(og =>
+        og.away_team?.toLowerCase().includes(g.away?.name?.split(' ').pop()?.toLowerCase() || '') ||
+        og.home_team?.toLowerCase().includes(g.home?.name?.split(' ').pop()?.toLowerCase() || '')
+      );
+      if (match) {
+        g.oddsApiBooks = buildBooksFromOddsApi(match, g);
+        g.varianceData = computeVariance(g.oddsApiBooks, g.books);
+      }
+    }
+  } else {
+    // Compute variance from AI books alone
+    for (const g of games) {
+      g.varianceData = computeVariance(g.books);
+    }
+  }
+
+  // Attach Kalshi markets per game
+  if (kalshiMarkets && kalshiMarkets.length > 0) {
+    for (const g of games) {
+      const awayName = g.away?.name || '';
+      const homeName = g.home?.name || '';
+      g.kalshiMarkets = kalshiMarkets.filter(m =>
+        m.title?.toLowerCase().includes(awayName.split(' ').pop()?.toLowerCase() || 'zzz') ||
+        m.title?.toLowerCase().includes(homeName.split(' ').pop()?.toLowerCase() || 'zzz')
+      ).slice(0, 3);
+    }
+  }
+
+  return { day: dayInfo.long, round: dayInfo.round, games };
+}
+
+function buildBooksFromOddsApi(og, g) {
+  const books = [];
+  for (const bm of og.bookmakers || []) {
+    const h2h    = bm.markets?.find(m=>m.key==='h2h');
+    const spread = bm.markets?.find(m=>m.key==='spreads');
+    const total  = bm.markets?.find(m=>m.key==='totals');
+    const awayML = h2h?.outcomes?.find(o=>o.name===og.away_team)?.price;
+    const homeML = h2h?.outcomes?.find(o=>o.name===og.home_team)?.price;
+    const awaySpread = spread?.outcomes?.find(o=>o.name===og.away_team)?.point;
+    const ou    = total?.outcomes?.[0]?.point;
+    books.push({
+      book: bm.title, source: 'oddsapi',
+      awayML: awayML != null ? (awayML>0?'+':'')+awayML : '—',
+      homeML: homeML != null ? (homeML>0?'+':'')+homeML : '—',
+      spread: awaySpread != null ? (awaySpread>0?'+':'')+awaySpread : g.books?.[0]?.spread || '—',
+      total: ou ?? '—',
+    });
+  }
+  return books;
+}
+
+function computeVariance(booksA, booksB) {
+  const allBooks = [...(booksA||[]), ...(booksB||[])].filter(b=>b.spread && b.spread!=='—');
+  if (allBooks.length < 2) return null;
+  const spreads = allBooks.map(b => parseFloat(String(b.spread).replace('+',''))).filter(n=>!isNaN(n));
+  if (spreads.length < 2) return null;
+  const min = Math.min(...spreads), max = Math.max(...spreads), range = Math.abs(max-min);
+  const avg = spreads.reduce((a,b)=>a+b,0)/spreads.length;
+
+  // Best ML for each side
+  const allMLAway = allBooks.map(b=>parseInt(String(b.awayML||'0').replace('+',''))).filter(n=>!isNaN(n)&&n!==0);
+  const allMLHome = allBooks.map(b=>parseInt(String(b.homeML||'0').replace('+',''))).filter(n=>!isNaN(n)&&n!==0);
+  const bestAway = allMLAway.length ? Math.max(...allMLAway) : null; // highest = best for underdogs / least negative for fav
+  const bestHome = allMLHome.length ? Math.max(...allMLHome) : null;
+
+  return { range, avg, min, max, high: range >= 1.5, bestAway, bestHome };
+}
+
+// Get the preferred book's line for quick view
+function getPrefLine(g) {
+  const book = prefs.prefBook;
+  const allBooks = [...(g.oddsApiBooks||[]), ...(g.books||[])];
+  if (book === 'consensus' || !book) return { awayML: g.moneyline?.away||'—', homeML: g.moneyline?.home||'—' };
+  const found = allBooks.find(b=>b.book===book);
+  return found ? { awayML: found.awayML, homeML: found.homeML } : { awayML: g.moneyline?.away||'—', homeML: g.moneyline?.home||'—' };
+}
+
+// ═══════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════
+function timeToMins(t) {
+  if (!t || t==='TBD') return 9999;
+  const c = t.replace(/\s*(ET|EST|EDT|PT|PDT|PST|MT|CT)$/i,'').trim();
+  const m = c.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if (!m) return 9999;
+  let h=parseInt(m[1]), mn=parseInt(m[2]), ap=m[3].toUpperCase();
+  if (ap==='PM'&&h!==12) h+=12;
+  if (ap==='AM'&&h===12) h=0;
+  return h*60+mn;
+}
+
+function renderPanel(dayKey, data) {
+  const panel = document.getElementById('panel-'+dayKey);
+  if (!data.games?.length) {
+    panel.innerHTML = `<div class="empty-wrap"><h3>No Games Yet</h3><p>Try after odds are posted.</p><button class="kick-btn" onclick="refreshCurrentTab()">↻ Retry</button></div>`;
+    return;
+  }
+  // Sort games chronologically by ET tip time
+  const sorted = [...data.games].sort((a,b) =>
+    timeToMins(a.timeET||a.timePT||'') - timeToMins(b.timeET||b.timePT||'')
+  );
+  panel.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 2px 8px">
+      <div class="round-label" style="padding:0">${data.round} · ${data.day}</div>
+    </div>
+    <div id="parlayModeBar" style="background:var(--amber);color:#000;font-family:var(--mono);font-size:10px;font-weight:800;letter-spacing:.1em;padding:6px 12px;margin-bottom:4px;border-radius:6px;display:${_parlayMode ? 'flex' : 'none'};align-items:center;justify-content:space-between;">
+      <span>🎰 PARLAY MODE — TAP ANY HIGHLIGHTED PILL</span>
+      <span id="parlayModeCount">${loadParlayLegs().length} legs</span>
+    </div>
+  ` + sorted.map(buildRow).join('');
+  // Apply parlay mode visual states after render
+  if (typeof applyParlayModeUI === 'function') applyParlayModeUI();
+  if (typeof updatePillHighlights === 'function') setTimeout(updatePillHighlights, 30);
+}
+
+// Global map for parlay leg data — avoids JSON.stringify in onclick attrs
+const _PLEG = {};
+
+// Called by ML and Spread pills
+function _parlayTap(el) {
+  const key = el.getAttribute('data-pleg');
+  if (!key) return;
+  // Try _PLEG map first
+  if (_PLEG[key]) {
+    toggleParlay(_PLEG[key]);
+    return;
+  }
+  // Fallback — build leg directly from data attributes on the element
+  const parts  = key.split('-');
+  const slot   = parts[parts.length - 1]; // 'away', 'home', 'spread'
+  const slot2  = parts[parts.length - 2]; // 'ml' or 'spread'
+  const gameId = parts.slice(0, slot2 === 'ml' ? -2 : -1).join('-');
+  const text   = el.textContent.trim();
+  const type   = slot2 === 'ml' ? 'ML' : 'Spread';
+  const leg = { id: key, gameId, type, label: text, odds: '-110', game: gameId, away: '', home: '' };
+  toggleParlay(leg);
+}
+
+// Called by O/U pill
+function _ouTap(el) {
+  const gKey     = el.getAttribute('data-ou-game');
+  const away     = el.getAttribute('data-ou-away');
+  const home     = el.getAttribute('data-ou-home');
+  const total    = el.getAttribute('data-ou-total');
+  const overOdds = el.getAttribute('data-ou-over');
+  const underOdds= el.getAttribute('data-ou-under');
+  tapOUParlay(gKey, away, home, total, overOdds, underOdds);
+}
+
+function buildRow(g) {
+  const hasVar    = g.varianceData?.high;
+  const hasKalshi = g.kalshiMarkets?.length > 0;
+
+  // Build meta line: network · region
+  const metaLine = [g.network, g.region || ''].filter(Boolean).join(' · ');
+  const schedEntry = getLiveScheduleEntry(g);
+  const rawTime = schedEntry?.date
+    ? new Date(schedEntry.date).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'America/New_York'}) + ' ET'
+    : (g.timeET || g.timePT || 'TBD');
+  const displayTime = convertToLocalTime(rawTime) + ' ' + getLocalTzAbbr();
+
+  // Live odds from The Odds API, fall back to static
+  const liveOdds = getGameOdds(g);
+  const pref     = getPrefLine(g);
+  const awayML   = liveOdds?.awayML   ?? pref.awayML;
+  const homeML   = liveOdds?.homeML   ?? pref.homeML;
+  const sp       = g.spread;
+  const spreadLine = liveOdds?.spread ?? (sp?.line != null ? (sp.line > 0 ? '+' : '') + sp.line : null);
+  const total      = liveOdds?.total  ?? g.total?.line;
+  const overOdds   = liveOdds?.overOdds  ?? g.total?.overJuice  ?? '-110';
+  const underOdds  = liveOdds?.underOdds ?? g.total?.underJuice ?? '-110';
+  const awayAbbrStatic = g.away?.abbr || '';
+  const spreadBadge = spreadLine ? `${awayAbbrStatic} ${spreadLine}`.replace(/^\s+/,'').replace('undefined','') : '—';
+
+  const score = getGameScore(g);
+  const isLive  = score?.status === 'live';
+  const isFinal = score?.status === 'final';
+  const awayWinning = score && score.awayScore > score.homeScore;
+  const homeWinning = score && score.homeScore > score.awayScore;
+
+  // Time block — changes based on state
+  const timeBlock = isLive
+    ? `<div class="live-tag"><div class="live-dot"></div><span class="live-text">LIVE</span></div>
+       <div class="live-period">${score.period||''} ${score.clock||''}</div>
+       <div class="game-meta">${metaLine}</div>`
+    : isFinal
+    ? `<div class="final-text">FINAL</div>
+       <div class="game-meta">${metaLine}</div>`
+    : `<div class="game-time">${displayTime}</div>
+       <div class="game-meta">${metaLine}</div>`;
+
+  // Right column — scores when live/final, odds when pregame
+  const rightCol = (isLive || isFinal)
+    ? `<div class="score-block">
+        <span class="score-badge ${isLive?(awayWinning?'leading':'trailing'):'final-'+(awayWinning?'w':'l')}">${g.away?.abbr??''} ${score.awayScore}</span>
+        <span class="score-badge ${isLive?(homeWinning?'leading':'trailing'):'final-'+(homeWinning?'w':'l')}">${g.home?.abbr??''} ${score.homeScore}</span>
+       </div>`
+    : `<div class="odds-block">${(()=>{
+        const away = (g.away?.abbr || '').toUpperCase();
+        const home = (g.home?.abbr || '').toUpperCase();
+        const gKey = String(g.id || '');
+        _PLEG[gKey+'-ml-away'] = {id:gKey+'-ml-away',gameId:gKey,type:'ML',    label:away+' ML',         odds:String(awayML||'-110'), game:away+'v'+home,away,home};
+        _PLEG[gKey+'-ml-home'] = {id:gKey+'-ml-home',gameId:gKey,type:'ML',    label:home+' ML',         odds:String(homeML||'-110'), game:away+'v'+home,away,home};
+        _PLEG[gKey+'-spread']  = {id:gKey+'-spread', gameId:gKey,type:'Spread',label:String(spreadBadge||''),odds:'-110',             game:away+'v'+home,away,home};
+        const sel_ma = (typeof isParlaySelected==='function') && isParlaySelected(gKey,'ml-away') ? ' parlay-on' : '';
+        const sel_mh = (typeof isParlaySelected==='function') && isParlaySelected(gKey,'ml-home') ? ' parlay-on' : '';
+        const sel_sp = (typeof isParlaySelected==='function') && isParlaySelected(gKey,'spread')  ? ' parlay-on' : '';
+        const sel_ou = (typeof isParlaySelected==='function') && isParlaySelected(gKey,'ou')       ? ' parlay-on' : '';
+        return `
+        <button class="ml-badge ${mlCls(awayML)} parlay-pill${sel_ma}" data-pleg="${gKey}-ml-away" ontouchstart="" onclick="_parlayTap(this);event.stopPropagation();">${away} ${awayML||'—'}</button>
+        <button class="ml-badge ${mlCls(homeML)} parlay-pill${sel_mh}" data-pleg="${gKey}-ml-home" ontouchstart="" onclick="_parlayTap(this);event.stopPropagation();">${home} ${homeML||'—'}</button>
+        <button class="spread-mini parlay-pill${sel_sp}" data-pleg="${gKey}-spread" data-sp-game="${gKey}" data-sp-away="${away}" data-sp-home="${home}" data-sp-line="${spreadLine||''}" data-sp-aodds="-110" data-sp-hodds="-110" ontouchstart="" onclick="_spreadTap(this);event.stopPropagation();">${spreadBadge}</button>
+        ${total ? `<button class="ou-mini parlay-pill${sel_ou}" data-ou-game="${gKey}" data-ou-away="${away}" data-ou-home="${home}" data-ou-total="${total}" data-ou-over="${overOdds}" data-ou-under="${underOdds}" ontouchstart="" onclick="_ouTap(this);event.stopPropagation();">O/U ${total}</button>` : ''}
+        ${hasVar ? '<span class="variance-badge">LINE GAP</span>' : ''}`;
+      })()}</div>`;
+
+  return `
+  <div class="game-row ${isLive?'is-live':isFinal?'is-final':''}" id="row-${g.id}">
+    <div class="game-row-inner">
+      <div class="time-block" onclick="toggleGame('${g.id}')" style="cursor:pointer">${timeBlock}</div>
+      <div class="matchup-block" onclick="toggleGame('${g.id}')" style="cursor:pointer">
+        <div class="team-line">
+          <span class="seed">${g.away?.seed??'—'}</span>
+          <span class="team-name ${isLive&&awayWinning||isFinal&&awayWinning?'fav':'dog'}">${g.away?.name??'TBD'}</span>
+        </div>
+        <div class="divider-vs"></div>
+        <div class="team-line">
+          <span class="seed">${g.home?.seed??'—'}</span>
+          <span class="team-name ${isLive&&homeWinning||isFinal&&homeWinning?'fav':'dog'}">${g.home?.name??'TBD'}</span>
+        </div>
+      </div>
+      ${rightCol}
+    </div>
+    <div class="detail-drawer" id="drawer-${g.id}">
+      <div class="drawer-inner">${buildDrawer(g)}</div>
+    </div>
+  </div>`;
+}
+
+function mlCls(v) {
+  if (!v||v==='—') return 'evn';
+  return parseInt(String(v).replace('+','')) < 0 ? 'neg' : 'pos';
+}
+
+function buildDrawer(g) {
+  const away=g.away?.name??'Away', home=g.home?.name??'Home';
+  const awayA=g.away?.abbr??'Away', homeA=g.home?.abbr??'Home';
+  let h = '';
+
+  // VARIANCE ALERT
+  const vd = g.varianceData;
+  if (vd?.high) {
+    h += `<div class="variance-alert">
+      <div class="va-icon">⚠️</div>
+      <div class="va-text"><strong>Line Shopping Opportunity</strong> — spread varies <strong>${vd.range} pts</strong> across books (${vd.min} to +${vd.max}). Check multiple books before placing.</div>
+    </div>`;
+  }
+
+  // CONSENSUS ROW
+  if (vd) {
+    const bestAwayStr = vd.bestAway!=null ? (vd.bestAway>0?'+':'')+vd.bestAway : '—';
+    const bestHomeStr = vd.bestHome!=null ? (vd.bestHome>0?'+':'')+vd.bestHome : '—';
+    h += `<div class="sect">Consensus Summary</div>
+    <div class="consensus-row">
+      <div class="cons-item"><div class="cons-label">Spread Range</div><div class="cons-val ${vd.high?'worst':''}">${vd.min} to ${vd.max>0?'+':''}${vd.max}</div><div class="cons-sub">${vd.range} pt gap</div></div>
+      <div class="cons-item"><div class="cons-label">Best ${awayA} ML</div><div class="cons-val best">${bestAwayStr}</div><div class="cons-sub">across all books</div></div>
+      <div class="cons-item"><div class="cons-label">Best ${homeA} ML</div><div class="cons-val best">${bestHomeStr}</div><div class="cons-sub">across all books</div></div>
+    </div>`;
+  }
+
+  // BOOK COMPARISON — merge oddsApi + AI books, dedup
+  const allBooks = dedupeBooks([...(g.oddsApiBooks||[]), ...(g.books||[])]);
+  if (allBooks.length) {
+    // Find best ML values for highlighting
+    const awayMLs = allBooks.map(b=>parseInt(String(b.awayML||'0').replace('+',''))).filter(n=>!isNaN(n)&&n!==0);
+    const homeMLs = allBooks.map(b=>parseInt(String(b.homeML||'0').replace('+',''))).filter(n=>!isNaN(n)&&n!==0);
+    const bestAway = awayMLs.length ? Math.max(...awayMLs) : null;
+    const bestHome = homeMLs.length ? Math.max(...homeMLs) : null;
+
+    h += `<div class="sect">Book Comparison <span class="sect-badge live">${allBooks.length} BOOKS</span></div>
+    <table class="source-compare">
+      <tr><th>Book</th><th>${awayA} ML</th><th>${homeA} ML</th><th>Spread</th><th>Total</th></tr>`;
+    for (const b of allBooks) {
+      const awayN = parseInt(String(b.awayML||'0').replace('+',''));
+      const homeN = parseInt(String(b.homeML||'0').replace('+',''));
+      const isBestRow = (awayN===bestAway && bestAway!=null) || (homeN===bestHome && bestHome!=null);
+      const src = b.source==='oddsapi' ? '●' : '○';
+      const srcColor = b.source==='oddsapi' ? '#5BB8FF' : '#FFC230';
+      h += `<tr ${isBestRow?'class="sc-best"':''}>
+        <td><div class="book-td"><div class="book-dot" style="background:${srcColor}"></div>${b.book}</div></td>
+        <td class="sc-ml ${mlCls(b.awayML)}">${b.awayML??'—'}${awayN===bestAway&&bestAway!=null?' ★':''}</td>
+        <td class="sc-ml ${mlCls(b.homeML)}">${b.homeML??'—'}${homeN===bestHome&&bestHome!=null?' ★':''}</td>
+        <td class="sc-num">${b.spread??'—'}</td>
+        <td class="sc-muted">${b.total??'—'}</td>
+      </tr>`;
+    }
+    h += `</table><div style="font-family:var(--mono);font-size:9.5px;color:var(--text3);margin-top:5px">● Odds API live &nbsp;○ AI search &nbsp;★ Best available line</div>`;
+  }
+
+  // SPREAD & TOTAL (summary)
+  const sp=g.spread, ml=g.moneyline, tot=g.total;
+  h += `<div class="sect">Spread &amp; Total</div>
+  <table class="odds-table">
+    <tr><th>Team</th><th>Spread</th><th>Juice</th><th>Moneyline</th></tr>
+    <tr><td class="t-td">${away}</td>
+      <td class="m-td ${sp?.favTeam===away?'fav':'dog'}">${sp?(sp.favTeam===away?sp.line:'+'+Math.abs(sp.line)):'—'}</td>
+      <td class="m-td neu">${sp?.juice??'-110'}</td>
+      <td class="m-td ${mlCls(ml?.away)}">${ml?.away??'—'}</td></tr>
+    <tr><td class="t-td">${home}</td>
+      <td class="m-td ${sp?.favTeam===home?'fav':'dog'}">${sp?(sp.favTeam===home?sp.line:'+'+Math.abs(sp.line)):'—'}</td>
+      <td class="m-td neu">${sp?.juice??'-110'}</td>
+      <td class="m-td ${mlCls(ml?.home)}">${ml?.home??'—'}</td></tr>
+    <tr><td class="t-td" colspan="2">Over / Under</td>
+      <td class="m-td neu" colspan="2">${tot?`${tot.line} (O:${tot.overJuice??'-110'} U:${tot.underJuice??'-110'})`:'—'}</td></tr>
+  </table>`;
+
+  // KALSHI
+  if (g.kalshiMarkets?.length) {
+    h += `<div class="sect">Kalshi Markets <span class="sect-badge kalshi">PREDICTION</span></div>
+    <div class="kalshi-card"><div class="kalshi-markets">`;
+    for (const m of g.kalshiMarkets) {
+      const yes = m.yes_ask != null ? Math.round(m.yes_ask*100)+'¢' : '—';
+      const no  = m.no_ask  != null ? Math.round(m.no_ask*100)+'¢'  : '—';
+      const imp = m.yes_ask != null ? Math.round(m.yes_ask*100)+'% implied' : '';
+      h += `<div class="kalshi-market-row">
+        <div><div class="km-question">${m.title||'Market'}</div>${imp?`<div class="km-implied">${imp}</div>`:''}</div>
+        <div class="km-price-pair"><span class="km-yes">YES ${yes}</span><span class="km-no">NO ${no}</span></div>
+      </div>`;
+    }
+    h += `</div></div>`;
+  }
+
+  // FIRST HALF
+  const fh=g.firstHalf;
+  if (fh) {
+    h += `<div class="sect">First Half Lines</div><div class="fh-grid">`;
+    if (fh.moneyline) {
+      h+=`<div class="fh-card"><div class="fh-label">1H ML — ${awayA}</div><div class="fh-val">${fh.moneyline.away??'—'}</div></div>`;
+      h+=`<div class="fh-card"><div class="fh-label">1H ML — ${homeA}</div><div class="fh-val">${fh.moneyline.home??'—'}</div></div>`;
+    }
+    if (fh.spread) h+=`<div class="fh-card"><div class="fh-label">1H Spread</div><div class="fh-val">${fh.spread.favTeam??''} ${fh.spread.line??'—'}</div><div class="fh-sub">-110 juice</div></div>`;
+    if (fh.total)  h+=`<div class="fh-card"><div class="fh-label">1H Total</div><div class="fh-val">O/U ${fh.total.line??'—'}</div><div class="fh-sub">-110/-110</div></div>`;
+    h += `</div>`;
+  }
+
+  // PLAYER PROPS
+  if (g.playerProps?.length) {
+    h += `<div class="sect">Player Props <span class="sect-badge ai">AI</span></div><div class="props-list">`;
+    for (const p of g.playerProps) {
+      h+=`<div class="prop-row">
+        <div><div class="prop-player">${p.player}</div><div class="prop-market">${p.team} · ${p.market}</div></div>
+        <div class="prop-odds-col">
+          <div class="prop-line">${p.line}</div>
+          <div class="prop-ovun"><span class="prop-ov">O ${p.overOdds}</span><span class="prop-un">U ${p.underOdds}</span></div>
+        </div>
+      </div>`;
+    }
+    h += `</div>`;
+  }
+
+  // SHARP ANGLE
+  if (g.sharpAngle) {
+    h+=`<div class="ai-tip"><div class="ai-tip-head">⚡ Sharp Angle</div><div class="ai-tip-text">${g.sharpAngle}</div></div>`;
+  }
+
+  // G-MONEY'S BETS — AI-powered fresh prediction, fetches when drawer opens
+  const gmId = `gmoney-${g.id}`;
+  h+=`<div class="gmoney-card" id="${gmId}">
+    <div class="gmoney-head">
+      <div class="gmoney-title">💰 G-Money's Bets</div>
+      <div class="gmoney-badge">AI · Live</div>
+    </div>
+    <div class="gmoney-loading"><span>⚡</span> Tap to load G-Money's pick...</div>
+  </div>`;
+
+  return h;
+}
+
+// ═══════════════════════════════════════════
+// G-MONEY'S BETS — Fresh AI prediction per game
+// ═══════════════════════════════════════════
+const gmoneyCache = {}; // cache per game so it doesn't re-fetch on re-open
+
+async function fetchGMoneyPick(g, elId) {
+  var el = document.getElementById(elId);
+  if (!el) return;
+  if (gmoneyCache[g.id]) { el.innerHTML = gmoneyCache[g.id]; return; }
+  var loadEl = el.querySelector(".gmoney-loading");
+  if (loadEl) loadEl.textContent = "G-Money is cooking...";
+  var proxyReady = PROXY_URL && PROXY_URL !== "YOUR_CLOUD_RUN_URL_HERE";
+  if (!proxyReady) { if (loadEl) loadEl.textContent = "Proxy not configured."; return; }
+  var away = (g.away && (g.away.name || g.away.abbr)) || "Away";
+  var home = (g.home && (g.home.name || g.home.abbr)) || "Home";
+  var sprd = g.spread ? (g.spread.favTeam + " " + (g.spread.line > 0 ? "+" : "") + g.spread.line) : "N/A";
+  var tot  = g.total  ? ("O/U " + g.total.line) : "N/A";
+  var aML  = (g.moneyline && g.moneyline.away) || "N/A";
+  var hML  = (g.moneyline && g.moneyline.home) || "N/A";
+  var ctx  = (g.sharpAngle || "").replace(/["\"]/g, " ");
+  var rgn  = g.region || "";
+  var tm   = g.timeET || "";
+  var gid  = g.id;
+
+  // Wait if a fetch was recently made to avoid rate limits
+  var now = Date.now();
+  var lastFetch = window._lastClaudeFetch || 0;
+  var waitMs = Math.max(0, 12000 - (now - lastFetch));
+  if (waitMs > 0) {
+    if (loadEl) loadEl.textContent = "⚡ G-Money loading in " + Math.ceil(waitMs/1000) + "s...";
+    await new Promise(function(r){ setTimeout(r, waitMs); });
+    // Update element reference after wait — drawer might have closed
+    var elNow = document.getElementById(elId);
+    if (!elNow) return;
+  }
+
+  try {
+    window._lastClaudeFetch = Date.now();
+    if (loadEl) loadEl.textContent = "⚡ G-Money is cooking...";
+    console.log("[G-Money] Fetching:", away, "vs", home);
+    var payload = {
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 180,
+      system: "You are G-Money, a sharp sassy sports betting analyst with serious edge. Fresh confident takes — precise, a little cocky, real reasoning. 2-3 punchy sentences. Always a specific pick (spread, ML, or total). No hedging, no asterisks.",
+      messages: [{ role: "user", content: "NCAA Tournament: " + away + " vs " + home + ". " + rgn + " Region. " + tm + ".\nSpread: " + sprd + " | Total: " + tot + " | ML: " + away + " " + aML + " / " + home + " " + hML + ".\nContext (give your own fresh take, don\'t repeat this): \"" + ctx + "\"\nGive G-Money\'s pick." }]
+    };
+    var resp = await fetch(PROXY_URL + "/api/claude", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    console.log("[G-Money] Status:", resp.status);
+    if (!resp.ok) {
+      if (resp.status === 429) {
+        // Auto-retry after 20 seconds
+        if (loadEl) loadEl.textContent = "⚡ Heavy traffic — G-Money retrying in 20s...";
+        window._lastClaudeFetch = Date.now() + 15000; // block other fetches too
+        setTimeout(function() { delete gmoneyCache[gid]; fetchGMoneyPick(g, elId); }, 20000);
+        return;
+      }
+      el.innerHTML = "<div class=\"gmoney-head\"><div class=\"gmoney-title\">G-Money Bets</div></div><div class=\"gmoney-text\" style=\"color:var(--text3)\">G-Money's picks require the API key — set ANTHROPIC_API_KEY in Cloud Run env vars and redeploy.</div>";
+      return;
+    }
+    var data = await resp.json();
+    var text = (data.content && data.content[0] && data.content[0].text) || "No pick right now.";
+    console.log("[G-Money] Got:", text.substring(0, 60));
+    var parts = text.split(/(?<=[.!?])\s+/);
+    var pick  = parts[0] || text;
+    var rest  = parts.slice(1).join(" ");
+    var html  = "<div class=\"gmoney-head\"><div class=\"gmoney-title\">G-Money Bets</div><div class=\"gmoney-badge\">AI Fresh</div></div>"
+      + "<div class=\"gmoney-pick\">🎯 " + pick + "</div>"
+      + (rest ? "<div class=\"gmoney-text\">" + rest + "</div>" : "");
+    gmoneyCache[gid] = html;
+    el.innerHTML = html;
+    // Auto-log this pick for tracking — extract odds from game data
+    const pickOdds = g.moneyline ? (g.moneyline.away || g.moneyline.home || -110) : -110;
+    const betOn = pick.length > 60 ? pick.substring(0, 57) + '...' : pick;
+    logGMoneyPick(gid, away, home, betOn, pickOdds, g);
+  } catch(e) {
+    console.error("[G-Money] Failed:", e.message);
+    el.innerHTML = "<div class=\"gmoney-head\"><div class=\"gmoney-title\">G-Money Bets</div></div><div class=\"gmoney-text\" style=\"color:var(--text3)\">Connection issue — reload and retry.</div>";
+  }
+}
+
+function triggerGMoney(gameId, elId) {
+  delete gmoneyCache[gameId];
+  var all = Object.values(STATIC_GAMES).reduce(function(a,d){ return a.concat(d.games||[]); }, []);
+  var g = all.find(function(x){ return x.id === gameId; });
+  if (g) fetchGMoneyPick(g, elId);
+}
+
+function dedupeBooks(books) {
+  const seen = new Set();
+  return books.filter(b => {
+    const k = b.book?.toLowerCase();
+    if (seen.has(k)) return false;
+    seen.add(k); return true;
+  });
+}
+
+// ═══════════════════════════════════════════
+// TOGGLE DRAWER
+// ═══════════════════════════════════════════
+function toggleGame(id) {
+  const row=document.getElementById('row-'+id), drawer=document.getElementById('drawer-'+id);
+  if (openGame&&openGame!==id) {
+    document.getElementById('row-'+openGame)?.classList.remove('open');
+    document.getElementById('drawer-'+openGame)?.classList.remove('open');
+  }
+  const isOpen=drawer.classList.contains('open');
+  row.classList.toggle('open',!isOpen); drawer.classList.toggle('open',!isOpen);
+  openGame=isOpen?null:id;
+  if (!isOpen) {
+    setTimeout(()=>row.scrollIntoView({behavior:'smooth',block:'nearest'}),60);
+    // Fire G-Money fetch when drawer opens — find the game data
+    setTimeout(()=>{
+      const gmEl = document.getElementById('gmoney-'+id);
+      if (gmEl && !gmoneyCache[id]) {
+        // Find game in static data
+        for (const key of Object.keys(STATIC_GAMES)) {
+          const g = STATIC_GAMES[key].games?.find(g=>g.id===id);
+          if (g) { fetchGMoneyPick(g, 'gmoney-'+id); break; }
+        }
+      }
+    }, 150);
+  }
+}
+
+// ═══════════════════════════════════════════
+// LIVE SCORES — fetches every 60s during game day
+// ═══════════════════════════════════════════
+let liveScores = {};       // keyed by "AWAY_abbr-HOME_abbr"
+let scoreInterval = null;
+
+async function fetchLiveScores() {
+  try {
+    const proxyReady = PROXY_URL && PROXY_URL !== 'YOUR_CLOUD_RUN_URL_HERE';
+    if (!proxyReady) return;
+    // Pass league param so proxy fetches the right ESPN sport
+    const ev = getActiveEvent();
+    const leagueMap = {
+      'ncaam-w1':      'ncaamb',
+      'nba-playoffs':  'nba',
+      'nhl-playoffs':  'nhl',
+      'nfl-playoffs':  'nfl',
+    };
+    const league = leagueMap[ev.id] || 'ncaamb';
+    const endpoint = `${PROXY_URL}/api/scores?league=${league}`;
+    const resp = await fetch(endpoint);
+    if (!resp.ok) { console.log('Scores HTTP error:', resp.status); return; }
+    const data = await resp.json();
+    console.log(`[${league}] Scores received:`, data.games?.length, 'games', data.games?.map(g=>(g.away||g.awayAbbr)+'-'+(g.home||g.homeAbbr)+':'+g.status));
+    const newScores = {};
+    for (const g of data.games || []) {
+      if (!g.away && !g.awayAbbr) continue;
+      const a = (g.away || g.awayAbbr).toUpperCase();
+      const h = (g.home || g.homeAbbr).toUpperCase();
+      newScores[a + '-' + h] = g;
+      newScores[h + '-' + a] = { ...g, flipped: true };
+      newScores[a + h] = g;
+      newScores[h + a] = { ...g, flipped: true };
+    }
+    liveScores = newScores;
+    console.log('liveScores keys:', Object.keys(newScores));
+    // Rebuild bracket with fresh live scores so winners show correctly
+    if (bracketDataLoaded) {
+      buildFallbackBracket();
+      if (document.getElementById('bracketPanel')?.style.display !== 'none') {
+        drawBracket(currentBracketRegion);
+      }
+    }
+    // Auto-resolve pending picks against latest scores
+    resolvePicksFromScores();
+    // Refresh picks panel if open
+    if (document.getElementById('picksPanel')?.style.display !== 'none') {
+      renderPicksPanel();
+    }
+    // Check if any game just went final — schedule post-game bracket refresh
+    const hasFinal = (data.games||[]).some(g => g.status === 'final');
+    const hadLive  = (data.games||[]).some(g => g.status === 'live');
+    if (hasFinal && !hadLive) schedulePostGameRefresh(); // all done for the session
+    else if (hasFinal)        schedulePostGameRefresh(); // some done, more playing
+    const cacheKey = prefs.activeEvent + '_' + currentDayKey;
+    if (cache[cacheKey]) renderPanel(currentDayKey, cache[cacheKey]);
+    refreshHomeStats();
+  } catch(e) {
+    console.log('Score fetch failed:', e.message);
+  }
+}
+
+// Live schedule + odds cache
+let liveSchedule = {};  // espnId → {time, network, venue, odds}
+let liveOddsData = {};  // teamKey → {spread, total, awayML, homeML, books}
+let scheduleLoaded = false;
+
+async function fetchLiveSchedule() {
+  try {
+    const today = new Date();
+    const dateStr = today.getFullYear().toString()
+      + String(today.getMonth()+1).padStart(2,'0')
+      + String(today.getDate()).padStart(2,'0');
+    const r = await fetch(`${PROXY_URL}/api/schedule?league=ncaamb&date=${dateStr}`);
+    const data = await r.json();
+    if (!data.games) return;
+
+    // Index by team abbr pair for matching to static games
+    for (const g of data.games) {
+      const key = g.away.abbr + '-' + g.home.abbr;
+      liveSchedule[key] = g;
+      liveSchedule[g.home.abbr + '-' + g.away.abbr] = g;
+
+      // If ESPN returned odds, store them
+      if (g.odds) {
+        liveOddsData[key] = g.odds;
+        liveOddsData[g.home.abbr + '-' + g.away.abbr] = g.odds;
+      }
+    }
+    scheduleLoaded = true;
+    console.log(`[Schedule] Loaded ${data.games.length} games for ${dateStr}`);
+
+    // Re-render current panel if open with updated times/odds
+    const cacheKey = prefs.activeEvent + '_' + currentDayKey;
+    if (cache[cacheKey]) renderPanel(currentDayKey, cache[cacheKey]);
+  } catch(e) {
+    console.warn('[Schedule] Fetch failed:', e.message);
+  }
+}
+
+async function fetchLiveOdds() {
+  try {
+    const r = await fetch(`${PROXY_URL}/api/odds?sport=basketball_ncaab&markets=h2h,spreads,totals`);
+    const data = await r.json();
+    if (!data.games?.length) return;
+
+    for (const g of data.games) {
+      // Match by team name to our abbr system
+      const awayAbbr = findAbbrByName(g.away);
+      const homeAbbr = findAbbrByName(g.home);
+      if (!awayAbbr || !homeAbbr) continue;
+      const key = awayAbbr + '-' + homeAbbr;
+      liveOddsData[key] = g;
+      liveOddsData[homeAbbr + '-' + awayAbbr] = g;
+    }
+    console.log(`[Odds] Loaded ${data.games.length} games. Quota: ${data.quota?.remaining} remaining`);
+
+    // Re-render if panel is open
+    const cacheKey = prefs.activeEvent + '_' + currentDayKey;
+    if (cache[cacheKey]) renderPanel(currentDayKey, cache[cacheKey]);
+  } catch(e) {
+    console.warn('[Odds] Fetch failed:', e.message);
+  }
+}
+
+function findAbbrByName(fullName) {
+  // Look up ESPN full name in our static data abbr list
+  if (!fullName) return null;
+  const upper = fullName.toUpperCase();
+  for (const data of Object.values(STATIC_GAMES)) {
+    for (const g of data.games||[]) {
+      if (g.away?.name?.toUpperCase().includes(upper.slice(0,6)) || upper.includes((g.away?.name||'').toUpperCase().slice(0,6)))
+        return (g.away?.abbr||'').toUpperCase();
+      if (g.home?.name?.toUpperCase().includes(upper.slice(0,6)) || upper.includes((g.home?.name||'').toUpperCase().slice(0,6)))
+        return (g.home?.abbr||'').toUpperCase();
+    }
+  }
+  return null;
+}
+
+// Get live odds for a game (merges live odds over static)
+function getGameOdds(g) {
+  const away = (g.away?.abbr||'').toUpperCase();
+  const home = (g.home?.abbr||'').toUpperCase();
+  const live = liveOddsData[away+'-'+home] || liveOddsData[home+'-'+away];
+  if (live) return live;
+  // Fall back to static data
+  return null;
+}
+
+// Get live schedule entry for a game (for real-time tip times)
+function getLiveScheduleEntry(g) {
+  const away = (g.away?.abbr||'').toUpperCase();
+  const home = (g.home?.abbr||'').toUpperCase();
+  return liveSchedule[away+'-'+home] || liveSchedule[home+'-'+away] || null;
+}
+
+let _autoRefreshTimer = null;
+function schedulePostGameRefresh() {
+  if (_autoRefreshTimer) return; // already scheduled
+  console.log('[AutoRefresh] Game went final — refreshing in 3 min');
+  _autoRefreshTimer = setTimeout(() => {
+    _autoRefreshTimer = null;
+    buildFallbackBracket();
+    if (document.getElementById('bracketPanel')?.style.display !== 'none') {
+      drawBracket(currentBracketRegion);
+    }
+  }, 3 * 60 * 1000);
+}
+
+function startScorePolling() {
+  fetchLiveScores();
+  fetchLiveSchedule();    // Fetch schedule on startup
+  fetchLiveOdds();        // Fetch odds on startup
+  if (scoreInterval) clearInterval(scoreInterval);
+  scoreInterval = setInterval(() => {
+    fetchLiveScores();
+    fetchLiveSchedule();  // Refresh every 60s — catches time changes
+  }, 60000);
+  // Odds refresh every 5 minutes (The Odds API quota-friendly)
+  setInterval(fetchLiveOdds, 300000);
+}
+
+function getGameScore(g) {
+  const a = (g.away?.abbr || '').toUpperCase();
+  const h = (g.home?.abbr || '').toUpperCase();
+  return liveScores[a+'-'+h] || liveScores[h+'-'+a] || liveScores[a+h] || liveScores[h+a] || null;
+}
+
+// ═══════════════════════════════════════════
+// INSTALL NUDGE
+// ═══════════════════════════════════════════
+function initNudge() {
+  // Only show in browser, not when already installed as PWA
+  const isStandalone = window.navigator.standalone === true ||
+    window.matchMedia('(display-mode: standalone)').matches;
+  const dismissed = localStorage.getItem('nudgeDismissed');
+  if (!isStandalone && !dismissed) {
+    document.getElementById('installNudge').style.display = 'flex';
+  }
+}
+
+function dismissNudge() {
+  document.getElementById('installNudge').style.display = 'none';
+  localStorage.setItem('nudgeDismissed', '1');
+}
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+// ═══════════════════════════════════════════
+// REVISION HISTORY
+// v1.0 — Mar 16 2026 — Initial build: live scores, day tabs, light/dark mode
+// v1.1 — Mar 18 2026 — Home tab, Bracket tab, abbr crosscheck, NBA Playoffs,
+//                       BYU vs TEX fix, Sweet16/E8/F4 shells, debug panel,
+//                       version footer, sport-aware homepage
+// ═══════════════════════════════════════════
+
+// ═══════════════════════════════════════════
+// ABBREVIATION CROSSCHECK SYSTEM
+// Fetches ESPN bracket data on load to build a
+// dynamic normalization map — no manual maintenance needed
+// ═══════════════════════════════════════════
+let ABBR_MAP = {};          // ESPN abbr → our static abbr
+let ESPN_TEAMS = {};        // espnAbbr → { fullName, espnAbbr }
+let abbrMapReady = false;
+
+async function buildAbbrMap() {
+  try {
+    // Fetch ESPN tournament scoreboard which returns full team names + abbrs
+    const url = 'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?limit=100&groups=100';
+    const r = await fetch(url);
+    const data = await r.json();
+    const events = data.events || [];
+
+    // Build ESPN team registry: abbr → full name
+    for (const ev of events) {
+      const comp = ev.competitions?.[0];
+      if (!comp) continue;
+      for (const c of comp.competitors || []) {
+        const t = c.team;
+        if (t?.abbreviation) {
+          ESPN_TEAMS[t.abbreviation.toUpperCase()] = {
+            fullName: t.displayName || t.name || t.abbreviation,
+            espnAbbr: t.abbreviation.toUpperCase(),
+          };
+        }
+      }
+    }
+
+    // Now cross-check against our static game data
+    const staticAbbrs = getAllStaticAbbrs();
+    let mapped = 0, mismatches = 0;
+
+    for (const sa of staticAbbrs) {
+      const upper = sa.toUpperCase();
+      if (ESPN_TEAMS[upper]) {
+        // Exact match — no mapping needed
+        mapped++;
+      } else {
+        // Try fuzzy: find ESPN team whose full name contains our abbr as substring
+        const fuzzyMatch = Object.values(ESPN_TEAMS).find(t =>
+          t.fullName.toUpperCase().includes(upper) ||
+          upper.includes(t.espnAbbr.replace(/[^A-Z]/g,'').substring(0,3))
+        );
+        if (fuzzyMatch) {
+          ABBR_MAP[fuzzyMatch.espnAbbr] = upper;  // ESPN abbr → our abbr
+          ABBR_MAP[upper] = fuzzyMatch.espnAbbr;  // our abbr → ESPN abbr
+          mismatches++;
+          console.warn(`[AbbrMap] Mismatch: static="${upper}" ESPN="${fuzzyMatch.espnAbbr}" (${fuzzyMatch.fullName})`);
+        }
+      }
+    }
+
+    abbrMapReady = true;
+    console.log(`[AbbrMap] Ready — ${mapped} exact, ${mismatches} remapped, ${Object.keys(ESPN_TEAMS).length} ESPN teams loaded`);
+    runDiagnostics();
+  } catch(e) {
+    console.warn('[AbbrMap] Build failed:', e.message);
+    abbrMapReady = true; // continue without map
+  }
+}
+
+function getAllStaticAbbrs() {
+  const abbrs = new Set();
+  for (const key of Object.keys(STATIC_GAMES)) {
+    const day = STATIC_GAMES[key];
+    for (const g of day.games || []) {
+      if (g.away?.abbr) abbrs.add(g.away.abbr.toUpperCase());
+      if (g.home?.abbr) abbrs.add(g.home.abbr.toUpperCase());
+    }
+  }
+  return [...abbrs];
+}
+
+function normalizeAbbr(abbr) {
+  if (!abbr) return '';
+  const u = abbr.toUpperCase();
+  return ABBR_MAP[u] || u;
+}
+
+// ═══════════════════════════════════════════
+// ENHANCED SCORE MATCHING — uses abbr map + fuzzy fallback
+// ═══════════════════════════════════════════
+function getGameScore(g) {
+  const rawA = (g.away?.abbr || '').toUpperCase();
+  const rawH = (g.home?.abbr || '').toUpperCase();
+  // Try original
+  let score = liveScores[rawA+'-'+rawH] || liveScores[rawH+'-'+rawA] ||
+               liveScores[rawA+rawH]     || liveScores[rawH+rawA];
+  if (score) return score;
+  // Try normalized via abbr map
+  const normA = normalizeAbbr(rawA);
+  const normH = normalizeAbbr(rawH);
+  if (normA !== rawA || normH !== rawH) {
+    score = liveScores[normA+'-'+normH] || liveScores[normH+'-'+normA] ||
+             liveScores[normA+normH]     || liveScores[normH+normA];
+    if (score) return score;
+  }
+  // Fuzzy: strip non-alpha and try 3-char prefix
+  const fuzA = rawA.replace(/[^A-Z]/g,'');
+  const fuzH = rawH.replace(/[^A-Z]/g,'');
+  for (const key of Object.keys(liveScores)) {
+    const k = key.replace(/[^A-Z]/g,'');
+    if (k === fuzA+fuzH || k === fuzH+fuzA) return liveScores[key];
+  }
+  return null;
+}
+
+// ═══════════════════════════════════════════
+// DEBUG / DIAGNOSTICS PANEL
+// ═══════════════════════════════════════════
+function toggleDebugPanel() {
+  const el = document.getElementById('debugOverlay');
+  el.classList.toggle('hidden');
+  if (!el.classList.contains('hidden')) runDiagnostics();
+}
+
+function runDiagnostics() {
+  const lines = [];
+  lines.push(`<div style="color:var(--text3);margin-bottom:8px">Run: ${new Date().toLocaleTimeString()}</div>`);
+
+  // Abbr map status
+  lines.push(`<div class="debug-${abbrMapReady?'ok':'warn'}">AbbrMap: ${abbrMapReady?'✓ Ready':'⏳ Loading'} — ${Object.keys(ESPN_TEAMS).length} ESPN teams, ${Object.keys(ABBR_MAP).length/2|0} remapped</div>`);
+
+  // Live score match status
+  const allGames = [];
+  for (const key of Object.keys(STATIC_GAMES)) {
+    for (const g of STATIC_GAMES[key].games || []) allGames.push({...g, _dayKey: key});
+  }
+
+  const liveCount = Object.keys(liveScores).length / 4 | 0;
+  lines.push(`<div style="margin-top:8px;color:var(--text3)">Live scores: ${liveCount} games from ESPN</div>`);
+
+  if (liveCount > 0) {
+    lines.push(`<div style="margin-top:6px;margin-bottom:4px;color:var(--text3)">Match check (today's games):</div>`);
+    const todayGames = allGames.filter(g => {
+      const d = new Date();
+      const mo = d.getMonth(), da = d.getDate();
+      const keyMap = {'2-17':'tue','2-18':'wed','2-19':'thu','2-20':'fri','2-21':'sat','2-22':'sun'};
+      return g._dayKey === `ncaam-w1_${keyMap[mo+'-'+da]||''}`;
+    });
+    if (todayGames.length === 0) {
+      lines.push(`<div class="debug-warn">No today games found in static data for current date</div>`);
+    }
+    for (const g of todayGames) {
+      const a = (g.away?.abbr||'').toUpperCase();
+      const h = (g.home?.abbr||'').toUpperCase();
+      const score = getGameScore(g);
+      const status = score
+        ? `<span class="debug-ok">✓ ${score.status} ${score.awayScore??''}-${score.homeScore??''}</span>`
+        : `<span class="debug-fail">✗ No match (looking for ${a} vs ${h})</span>`;
+      lines.push(`<div>${a} vs ${h}: ${status}</div>`);
+    }
+  }
+
+  // Known mismatch log
+  const mismatches = Object.entries(ABBR_MAP).filter(([k,v])=>k!==v).slice(0,10);
+  if (mismatches.length) {
+    lines.push(`<div style="margin-top:8px;color:var(--text3)">Auto-remapped:</div>`);
+    for (const [k,v] of mismatches) {
+      if (k < v) lines.push(`<div class="debug-warn">⚡ ${k} ↔ ${v}</div>`);
+    }
+  }
+
+  document.getElementById('debugContent').innerHTML = lines.join('');
+}
+
+// ═══════════════════════════════════════════
+// PANEL SWITCHING — Home / Bracket / Game days
+// ═══════════════════════════════════════════
+let activeMainView = 'home'; // 'home' | 'bracket' | 'games'
+
+function refreshHomeStats() {
+  // Refresh bracket if visible — re-fetch from ESPN for latest results
+  if (document.getElementById('bracketPanel')?.style.display !== 'none') {
+    bracketFetchPromise = null; // allow re-fetch
+    fetchBracketData().then(() => drawBracket(currentBracketRegion));
+  }
+  // Update live count chip without re-rendering the whole home panel
+  const seen = new Set();
+  let liveCount = 0, finalCount = 0;
+  for (const g of Object.values(liveScores)) {
+    const key = (g.away||'') + (g.home||'');
+    if (seen.has(key)) continue;
+    seen.add(key);
+    if (g.status === 'live') liveCount++;
+    if (g.status === 'final') finalCount++;
+  }
+  // Update stat chips if they exist in DOM
+  const liveEl = document.getElementById('homeLiveCount');
+  const finalEl = document.getElementById('homeFinalCount');
+  if (liveEl) liveEl.textContent = liveCount || '—';
+  if (finalEl) finalEl.textContent = finalCount || '—';
+}
+
+// ═══════════════════════════════════════════
+// G-MONEY PICKS PANEL — Track W/L + Bankroll
+// ═══════════════════════════════════════════
+
+// Storage keys
+const PICKS_KEY = 'gmoney_picks_2026';
+const PICKS_SEEDED_KEY = 'gmoney_picks_seeded_v5';
+const BANKROLL_START = 1000;
+const BET_SIZE = 25;
+
+// G-Money's picks — Tournament record through Mar 20
+const SEED_PICKS = [
+  // ── R64 Thu Mar 19 — 7W-2L ─────────────────────────────────
+  {gameId:'g1',  game:'Duke vs Siena',          betOn:'Duke -22.5 ATS',    odds:-110, betType:'ATS', result:'win',  score:'DUKE 71 – SIE 65',   date:'3/19', round:'R64'},
+  {gameId:'g2',  game:'Ohio State vs TCU',       betOn:'TCU +1.5 ATS',      odds:-110, betType:'ATS', result:'win',  score:'TCU 66 – OSU 64',    date:'3/19', round:'R64'},
+  {gameId:'g3',  game:'Louisville vs USF',       betOn:'USF +3.5 ATS',      odds:-110, betType:'ATS', result:'loss', score:'LOU 83 – USF 79',    date:'3/19', round:'R64'},
+  {gameId:'g4',  game:'Michigan State vs NDSU',  betOn:'MSU -14.5 ATS',     odds:-110, betType:'ATS', result:'win',  score:'MSU 92 – NDSU 67',   date:'3/19', round:'R64'},
+  {gameId:'g9',  game:'Nebraska vs Troy',        betOn:'NEB -8.5 ATS',      odds:-110, betType:'ATS', result:'win',  score:'NEB 76 – TROY 47',   date:'3/19', round:'R64'},
+  {gameId:'g10', game:'Wisconsin vs High Point', betOn:'WIS -5.5 ATS',      odds:-110, betType:'ATS', result:'loss', score:'HPU 83 – WIS 82',    date:'3/19', round:'R64'},
+  {gameId:'g11', game:'Vanderbilt vs McNeese',   betOn:'VAN -4 ATS',        odds:-110, betType:'ATS', result:'win',  score:'VAN 78 – MCN 68',    date:'3/19', round:'R64'},
+  {gameId:'g12', game:'Arkansas vs Hawaii',      betOn:'ARK -8.5 ATS',      odds:-110, betType:'ATS', result:'win',  score:'ARK 97 – HAW 78',    date:'3/19', round:'R64'},
+  {gameId:'g14', game:'Michigan vs Howard',      betOn:'MICH -20.5 ATS',    odds:-110, betType:'ATS', result:'win',  score:'MICH 101 – HOW 80',  date:'3/19', round:'R64'},
+  // ── R64 Fri Mar 20 — 8W-3L ─────────────────────────────────
+  {gameId:'f1',  game:'Arizona vs Long Island',  betOn:'ARIZ -21.5 ATS',    odds:-110, betType:'ATS', result:'win',  score:'ARIZ 92 – LIU 58',   date:'3/20', round:'R64'},
+  {gameId:'f3',  game:'Kentucky vs Santa Clara', betOn:'SCU +6.5 ATS',      odds:-110, betType:'ATS', result:'win',  score:'UK 89 – SCU 84 OT',  date:'3/20', round:'R64'},
+  {gameId:'f4',  game:'Texas Tech vs Akron',     betOn:'AKR +7 ATS',        odds:-110, betType:'ATS', result:'loss', score:'TTU 91 – AKR 71',    date:'3/20', round:'R64'},
+  {gameId:'f5',  game:'Florida vs Prairie View', betOn:'FLA -19.5 ATS',     odds:-110, betType:'ATS', result:'win',  score:'FLA 114 – PV 55',    date:'3/20', round:'R64'},
+  {gameId:'f7',  game:"St. John's vs N. Iowa",   betOn:'SJU -6 ATS',        odds:-110, betType:'ATS', result:'win',  score:'SJU 79 – UNI 53',    date:'3/20', round:'R64'},
+  {gameId:'f8',  game:'Iowa State vs TNST',      betOn:'ISU -18 ATS',       odds:-110, betType:'ATS', result:'win',  score:'ISU 108 – TNST 74',  date:'3/20', round:'R64'},
+  {gameId:'f11', game:'Miami FL vs Missouri',    betOn:'MIA -2.5 ATS',      odds:-110, betType:'ATS', result:'win',  score:'MIA 80 – MIZ 66',    date:'3/20', round:'R64'},
+  {gameId:'f12', game:'Alabama vs Hofstra',      betOn:'ALA -11 ATS',       odds:-110, betType:'ATS', result:'win',  score:'ALA 87 – HOF 69',    date:'3/20', round:'R64'},
+  {gameId:'f13', game:'UCF vs UCLA',             betOn:'UCF -3 ATS',        odds:-110, betType:'ATS', result:'loss', score:'UCLA 75 – UCF 71',   date:'3/20', round:'R64'},
+  {gameId:'f14', game:'UConn vs Furman',         betOn:'CONN -16.5 ATS',    odds:-110, betType:'ATS', result:'loss', score:'CONN 82 – FUR 71',   date:'3/20', round:'R64'},
+  {gameId:'f15', game:'Tennessee vs Miami OH',   betOn:'TENN -5 ATS',       odds:-110, betType:'ATS', result:'win',  score:'TENN 78 – M-OH 56',  date:'3/20', round:'R64'},
+  // ── R32 Sat Mar 21 — 4W-4L ─────────────────────────────────
+  {gameId:'s1',  game:'SLU vs Michigan',         betOn:'OVER 161.5',        odds:-110, betType:'OU',  result:'loss', score:'MICH 95 – SLU 77',   date:'3/21', round:'R32'},
+  {gameId:'s3',  game:'TCU vs Duke',             betOn:'TCU +10.5 ATS',     odds:-110, betType:'ATS', result:'loss', score:'DUKE 81 – TCU 58',   date:'3/21', round:'R32'},
+  {gameId:'s5',  game:'Texas vs Gonzaga',        betOn:'GONZ -6.5 ATS',     odds:-110, betType:'ATS', result:'loss', score:'TEX 74 – GONZ 68',   date:'3/21', round:'R32'},
+  {gameId:'s6',  game:'VAN vs Nebraska',         betOn:'VAN -1.5 ATS',      odds:-110, betType:'ATS', result:'loss', score:'NEB 74 – VAN 68',    date:'3/21', round:'R32'},
+  {gameId:'s4',  game:'TAM vs Houston',          betOn:'HOU -10.5 ATS',     odds:-110, betType:'ATS', result:'win',  score:'HOU 79 – TAM 62',    date:'3/21', round:'R32'},
+  {gameId:'s7',  game:'VCU vs Illinois',         betOn:'ILL -11.5 ATS',     odds:-110, betType:'ATS', result:'win',  score:'ILL 84 – VCU 61',    date:'3/21', round:'R32'},
+  {gameId:'s8',  game:'HPU vs Arkansas',         betOn:'OVER 168.5',        odds:-110, betType:'OU',  result:'win',  score:'ARK 91 – HPU 78',    date:'3/21', round:'R32'},
+  {gameId:'s2',  game:'Louisville vs MSU',       betOn:'MSU -4.5 ATS',      odds:-110, betType:'ATS', result:'win',  score:'MSU 82 – LOU 71',    date:'3/21', round:'R32'},
+  // ── R32 Sun Mar 22 — 5W-3L ─────────────────────────────────
+  {gameId:'u1',  game:'SCU vs Iowa State',       betOn:'ISU -5.5 ATS',      odds:-110, betType:'ATS', result:'win',  score:'ISU 79 – SCU 61',    date:'3/22', round:'R32'},
+  {gameId:'u2',  game:'Kentucky vs Iowa State',  betOn:'ISU -4 ATS',        odds:-110, betType:'ATS', result:'win',  score:'ISU 82 – UK 63',     date:'3/22', round:'R32'},
+  {gameId:'u3',  game:'SJU vs Kansas',           betOn:'SJU -3.5 ATS',      odds:-110, betType:'ATS', result:'win',  score:'SJU 67 – KU 65',     date:'3/22', round:'R32'},
+  {gameId:'u4',  game:'Tennessee vs Virginia',   betOn:'UVA +1.5 ATS',      odds:-110, betType:'ATS', result:'loss', score:'TENN 79 – UVA 72',   date:'3/22', round:'R32'},
+  {gameId:'u5',  game:'Iowa vs Florida',         betOn:'FLA -10.5 ATS',     odds:-110, betType:'ATS', result:'loss', score:'IOWA 73 – FLA 72',   date:'3/22', round:'R32'},
+  {gameId:'u6',  game:'USU vs Arizona',          betOn:'ARIZ -11.5 ATS',    odds:-110, betType:'ATS', result:'win',  score:'ARIZ 78 – USU 66',   date:'3/22', round:'R32'},
+  {gameId:'u7',  game:'UCLA vs UConn',           betOn:'CONN -4.5 ATS',     odds:-110, betType:'ATS', result:'win',  score:'CONN 73 – UCLA 57',  date:'3/22', round:'R32'},
+  {gameId:'u8',  game:'TTU vs Alabama',          betOn:'OVER 164.5',        odds:-110, betType:'OU',  result:'loss', score:'ALA 90 – TTU 65',    date:'3/22', round:'R32'},
+  // ── Sweet 16 Thu Mar 26 — PENDING ──────────────────────────
+  {gameId:'s16-2',game:'Nebraska vs Iowa',       betOn:'IOWA +4.5 ATS',     odds:-110, betType:'ATS', result:'pending', score:'', date:'3/26', round:'S16'},
+  {gameId:'s16-3',game:'Arizona vs Alabama',     betOn:'ALA +4.5 ATS',      odds:-110, betType:'ATS', result:'pending', score:'', date:'3/26', round:'S16'},
+  {gameId:'s16-4',game:'Houston vs Illinois',    betOn:'UNDER 139.5',       odds:-110, betType:'OU',  result:'pending', score:'', date:'3/26', round:'S16'},
+  // ── Sweet 16 Fri Mar 27 — PENDING ──────────────────────────
+  {gameId:'s16-5',game:"Duke vs St. John's",     betOn:"SJU +6.5 ATS",      odds:-110, betType:'ATS', result:'pending', score:'', date:'3/27', round:'S16'},
+  {gameId:'s16-6',game:'Michigan vs Iowa State', betOn:'ISU +2.5 ATS',      odds:-110, betType:'ATS', result:'pending', score:'', date:'3/27', round:'S16'},
+  {gameId:'s16-8',game:'UConn vs Michigan State',betOn:'MSU +3.5 ATS',      odds:-110, betType:'ATS', result:'pending', score:'', date:'3/27', round:'S16'},
+];
+
+
+// Calculate payout for a winning bet
+function calcPayout(betAmt, odds) {
+  if (odds < 0) return parseFloat((betAmt * 100 / Math.abs(odds)).toFixed(2));
+  return parseFloat((betAmt * odds / 100).toFixed(2));
+}
+
+// Calculate P&L: win = +payout, loss = -betAmt, push = 0
+function calcPnl(result, betAmt, odds) {
+  if (result === 'win')  return calcPayout(betAmt, odds);
+  if (result === 'loss') return -betAmt;
+  return 0;
+}
+
+function loadPicks() {
+  try { return JSON.parse(localStorage.getItem(PICKS_KEY) || '[]'); }
+  catch(e) { return []; }
+}
+
+function savePicks(picks) {
+  localStorage.setItem(PICKS_KEY, JSON.stringify(picks));
+}
+
+function logGMoneyPick(gameId, awayName, homeName, pickText, odds, gameObj) {
+  const picks = loadPicks();
+  if (picks.find(p => p.gameId === gameId)) return;
+  const ev = getActiveEvent();
+  const dayInfo = getActiveWeek()?.days?.find(d => d.key === currentDayKey);
+  picks.push({
+    gameId,
+    game:    awayName + ' vs ' + homeName,
+    betOn:   pickText,
+    odds:    odds || -110,
+    betType: (odds && odds < -130) ? 'ML' : 'ATS',
+    result:  'pending',
+    date:    new Date().toLocaleDateString('en-US',{month:'numeric',day:'numeric'}),
+    round:   dayInfo?.round || ev?.name || 'Tournament',
+    score:   '',
+  });
+  savePicks(picks);
+}
+
+function seedHistoricalPicks() {
+  if (localStorage.getItem(PICKS_SEEDED_KEY)) return;
+  // v4 upgrade: hard reset picks entirely to fix stale localStorage data
+  // Keep nothing from old versions — start fresh with correct pick history
+  localStorage.removeItem(PICKS_KEY);
+  savePicks([...SEED_PICKS]);
+  localStorage.setItem(PICKS_SEEDED_KEY, '1');
+  console.log(`[Picks] v4 reset — seeded ${SEED_PICKS.length} picks fresh`);
+}
+
+function resolvePicksFromScores() {
+  const picks = loadPicks();
+  let changed = false;
+
+  // Build gameId → static game lookup
+  const gameById = {};
+  for (const data of Object.values(STATIC_GAMES)) {
+    for (const g of data.games||[]) { if (g.id) gameById[g.id] = g; }
+  }
+
+  for (const pick of picks) {
+    if (pick.result !== 'pending') continue;
+
+    // Find static game by gameId
+    const g = gameById[pick.gameId];
+    if (!g) continue;
+
+    // Get score using fuzzy matching
+    const score = getGameScore(g);
+    if (!score || score.status !== 'final') continue;
+
+    // Determine actual scores
+    const away = (g.away?.abbr||'').toUpperCase();
+    const home = (g.home?.abbr||'').toUpperCase();
+    const fl = score.flipped || score.home === away;
+    const awayScore = fl ? (score.homeScore||0) : (score.awayScore||0);
+    const homeScore = fl ? (score.awayScore||0) : (score.homeScore||0);
+    const awayWon = awayScore > homeScore;
+    const margin = Math.abs(awayScore - homeScore);
+
+    const betText = (pick.betOn||'').toLowerCase();
+
+    // Determine result based on bet type
+    let result = 'loss';
+    if (pick.betType === 'ML') {
+      // Moneyline — did our team win outright?
+      const betTeam = betText.split(' ml')[0].split(' ').pop().toUpperCase();
+      const betOnAway = away.includes(betTeam) || betTeam.includes(away.slice(0,3));
+      result = (betOnAway && awayWon) || (!betOnAway && !awayWon) ? 'win' : 'loss';
+    } else {
+      // ATS — extract spread from betOn text e.g. "DUKE -22.5 ATS"
+      const spreadMatch = betText.match(/([+-]?\d+\.?\d*)\s*ats/);
+      if (spreadMatch) {
+        const spread = parseFloat(spreadMatch[1]);
+        // Which team is the bet on?
+        const betTeam = betText.split(/[+-]/)[0].trim().split(' ').pop().toUpperCase();
+        const betOnAway = away.includes(betTeam) || betTeam.includes(away.slice(0,3));
+        // Apply spread: if bet on favorite (negative), they need to win by more than spread
+        // if bet on underdog (positive), they just need to cover
+        if (betOnAway) {
+          const adjustedMargin = awayWon ? margin + spread : -(margin) + spread;
+          result = adjustedMargin > 0 ? 'win' : adjustedMargin === 0 ? 'push' : 'loss';
+        } else {
+          const adjustedMargin = !awayWon ? margin + spread : -(margin) + spread;
+          result = adjustedMargin > 0 ? 'win' : adjustedMargin === 0 ? 'push' : 'loss';
+        }
+      } else {
+        // Fallback: straight win/loss on team mentioned
+        const betTeam = betText.split(' ')[0].toUpperCase();
+        const betOnAway = away.includes(betTeam) || betTeam.includes(away.slice(0,3));
+        result = (betOnAway && awayWon) || (!betOnAway && !awayWon) ? 'win' : 'loss';
+      }
+    }
+
+    pick.result = result;
+    pick.score  = awayScore + '-' + homeScore;
+    changed = true;
+    console.log(`[Picks] Resolved ${pick.gameId}: ${pick.betOn} → ${result} (${awayScore}-${homeScore})`);
+  }
+  if (changed) savePicks(picks);
+}
+
+function renderPicksPanel() {
+  const picks = loadPicks();
+  const BET = BET_SIZE;
+  const wins    = picks.filter(p => p.result === 'win').length;
+  const losses  = picks.filter(p => p.result === 'loss').length;
+  const pending = picks.filter(p => p.result === 'pending').length;
+  const total   = wins + losses;
+  const pct     = total ? Math.round(wins / total * 100) : 0;
+
+  // Calculate true P&L with real odds
+  let totalPnl = 0;
+  for (const p of picks) {
+    const odds = p.odds || -110;
+    totalPnl += calcPnl(p.result, BET, odds);
+  }
+  totalPnl = parseFloat(totalPnl.toFixed(2));
+  const bankroll = parseFloat((BANKROLL_START + totalPnl).toFixed(2));
+  const bankrollPct = Math.min(100, Math.max(2, ((bankroll - 800) / (1500 - 800)) * 100));
+  const isUp = bankroll >= BANKROLL_START;
+
+  // Bankroll sparkline points — build from picks chronologically
+  let running = BANKROLL_START;
+  const sparkPts = [running];
+  for (const p of [...picks].reverse()) {
+    running += calcPnl(p.result, BET, p.odds || -110);
+    sparkPts.push(running);
+  }
+  const minSpark = Math.min(...sparkPts) - 10;
+  const maxSpark = Math.max(...sparkPts) + 10;
+  const sparkW = 400, sparkH = 44;
+  const sx = (i) => (i / (sparkPts.length - 1)) * sparkW;
+  const sy = (v) => sparkH - ((v - minSpark) / (maxSpark - minSpark)) * sparkH;
+  const sparkPath = sparkPts.map((v,i) => (i===0?'M':'L') + sx(i).toFixed(1) + ',' + sy(v).toFixed(1)).join(' ');
+  const lastX = sx(sparkPts.length-1).toFixed(1);
+  const lastY = sy(sparkPts[sparkPts.length-1]).toFixed(1);
+
+  function pickCard(p) {
+    const odds = p.odds || -110;
+    const pnl  = calcPnl(p.result, BET, odds);
+    const badgeCls = p.result === 'win' ? 'win' : p.result === 'loss' ? 'loss' : p.result === 'push' ? 'push' : 'pending';
+    const badgeTxt = p.result === 'win' ? 'W' : p.result === 'loss' ? 'L' : p.result === 'push' ? 'P' : '?';
+    const oddsStr  = odds > 0 ? '+' + odds : '' + odds;
+    const chipCls  = p.result === 'win' ? 'chip chip-bet' : p.result === 'loss' ? 'chip chip-bet-l' : 'chip';
+    const pnlStr   = p.result === 'pending' ? '<span class="pick-footer-pnl" style="color:var(--amber)">$' + BET + ' pending</span>'
+                   : pnl >= 0 ? '<span class="pick-footer-pnl up">+$' + pnl + '</span>'
+                   : '<span class="pick-footer-pnl dn">-$' + Math.abs(pnl) + '</span>';
+    const detail   = p.result === 'pending' ? '$' + BET + ' wagered · awaiting result'
+                   : p.result === 'win'     ? '$' + BET + ' bet → +$' + pnl + ' profit'
+                   : '$' + BET + ' bet → lost';
+    return '<div class="pick-item">'
+      + '<div class="pick-top">'
+      + '<div class="pick-badge ' + badgeCls + '">' + badgeTxt + '</div>'
+      + '<div class="pick-body">'
+      + '<div class="pick-game-title">' + p.game + '</div>'
+      + '<div class="pick-round-lbl">' + p.date + ' · ' + p.round + (p.score ? ' · ' + p.score : '') + '</div>'
+      + '<div class="pick-chips">'
+      + '<span class="chip">$' + BET + '</span>'
+      + '<span class="' + chipCls + '">' + (p.betOn || p.pick || 'Pick') + '</span>'
+      + '<span class="chip chip-odds">' + oddsStr + '</span>'
+      + '</div>'
+      + '</div></div>'
+      + '<div class="pick-footer"><span class="pick-footer-detail">' + detail + '</span>' + pnlStr + '</div>'
+      + '</div>';
+  }
+
+  const picksHtml = picks.length
+    ? [...picks].reverse().map(pickCard).join('')
+    : '<div style="font-family:var(--mono);font-size:11px;color:var(--text3);padding:24px;text-align:center">Open a game drawer and load G-Money\'s pick to start tracking 🎯</div>';
+
+  const now = new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',second:'2-digit'});
+  const hasPending = pending > 0;
+
+  document.getElementById('picksPanel').innerHTML = '<div class="picks-page">'
+
+    // Live status bar
+    + '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 16px;background:var(--card2);border-bottom:1px solid var(--border);margin-bottom:0">'
+    + '<div style="display:flex;align-items:center;gap:6px">'
+    + (hasPending
+        ? '<span style="width:7px;height:7px;border-radius:50%;background:var(--amber);display:inline-block;animation:pulse 1.5s infinite"></span><span style="font-family:var(--mono);font-size:10px;color:var(--amber);font-weight:700">' + pending + ' LIVE PENDING</span>'
+        : '<span style="width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block"></span><span style="font-family:var(--mono);font-size:10px;color:var(--green);font-weight:700">ALL RESOLVED</span>')
+    + '</div>'
+    + '<div style="font-family:var(--mono);font-size:9px;color:var(--text3)">Updated ' + now + '</div>'
+    + '</div>'
+
+    + '<div class="picks-hero">'
+    + '<div class="picks-hero-lbl">G-Money Picks · NCAA Tournament 2026</div>'
+    + '<div class="picks-record-row">'
+    + '<div class="picks-record-block"><div class="picks-record-num prn-win">' + wins + '</div><div class="picks-record-lbl">Wins</div></div>'
+    + '<div class="picks-divider"></div>'
+    + '<div class="picks-record-block"><div class="picks-record-num prn-loss">' + losses + '</div><div class="picks-record-lbl">Losses</div></div>'
+    + '<div class="picks-divider"></div>'
+    + '<div class="picks-record-block"><div class="picks-record-num" style="color:var(--amber)">' + pending + '</div><div class="picks-record-lbl">Pending</div></div>'
+    + '<div class="picks-divider"></div>'
+    + '<div class="picks-record-block"><div class="picks-record-num prn-pct">' + (total ? pct + '%' : '—') + '</div><div class="picks-record-lbl">Win Rate</div></div>'
+    + '</div>'
+    + '<div class="picks-stats-grid">'
+    + '<div class="picks-stat"><div class="picks-stat-lbl">Total wagered</div><div class="picks-stat-val">$' + (picks.length * BET) + '</div></div>'
+    + '<div class="picks-stat"><div class="picks-stat-lbl">Net P/L</div><div class="picks-stat-val ' + (totalPnl >= 0 ? 'up' : 'dn') + '">' + (totalPnl >= 0 ? '+' : '') + '$' + Math.abs(totalPnl) + '</div></div>'
+    + '<div class="picks-stat"><div class="picks-stat-lbl">Pending value</div><div class="picks-stat-val" style="color:var(--amber)">$' + (pending * BET) + '</div></div>'
+    + '</div>'
+    + '</div>'
+
+    + '<div class="bk-card">'
+    + '<div class="bk-header">'
+    + '<div><div class="bk-title">Simulated Bankroll</div><div class="bk-sub">$' + BET + '/game · real payout odds</div></div>'
+    + '<div><div class="bk-amount ' + (isUp?'':'dn') + '">$' + bankroll.toLocaleString() + '</div>'
+    + '<div class="bk-change ' + (isUp?'':'dn') + '">' + (isUp?'+':'') + ((bankroll - BANKROLL_START >= 0 ? '+' : '') + ((bankroll - BANKROLL_START) / BANKROLL_START * 100).toFixed(1)) + '% vs start</div></div>'
+    + '</div>'
+    + '<div class="bk-meter-labels"><span>$800</span><span>Start $' + BANKROLL_START + '</span><span>Goal $1,500</span></div>'
+    + '<div class="bk-track"><div class="bk-fill" style="width:' + bankrollPct.toFixed(1) + '%;background:' + (isUp ? 'var(--green)' : 'var(--red)') + '"></div></div>'
+    + '<div class="bk-ticks"><span>bust</span><span style="color:' + (isUp?'var(--green)':'var(--red)') + '">▲ $' + bankroll + '</span><span>goal</span></div>'
+    + '<svg style="width:100%;height:44px;margin:8px 0 2px" viewBox="0 0 400 44" preserveAspectRatio="none">'
+    + '<path d="' + sparkPath + '" fill="none" stroke="' + (isUp ? 'var(--green)' : 'var(--red)') + '" stroke-width="2"/>'
+    + '<circle cx="' + lastX + '" cy="' + lastY + '" r="3" fill="' + (isUp ? 'var(--green)' : 'var(--red)') + '"/>'
+    + '</svg>'
+    + '</div>'
+
+    + '<div class="picks-section-lbl">Pick History</div>'
+    + picksHtml
+
+    + '<div style="font-family:var(--mono);font-size:9px;color:var(--text3);text-align:center;padding:12px;border-top:1px solid var(--border)">All picks simulated for entertainment only · Not financial advice · Bet responsibly</div>'
+    + '</div>';
+}
+
+
+let picksRefreshInterval = null;
+
+// ── MY BETS PANEL ─────────────────────────────────────────────
+const MY_BETS_KEY     = 'gmoney_my_bets_v1';
+const MY_PARLAYS_KEY  = 'gmoney_my_parlays_v1';
+
+function loadMyBets()       { try { return JSON.parse(localStorage.getItem(MY_BETS_KEY)||'[]'); } catch(e) { return []; } }
+function saveMyBets(b)      { localStorage.setItem(MY_BETS_KEY, JSON.stringify(b)); }
+function loadMyParlays()    { try { return JSON.parse(localStorage.getItem(MY_PARLAYS_KEY)||'[]'); } catch(e) { return []; } }
+function saveMyParlays(p)   { localStorage.setItem(MY_PARLAYS_KEY, JSON.stringify(p)); }
+
+function showMyBetsPanel() {
+  if (picksRefreshInterval) { clearInterval(picksRefreshInterval); picksRefreshInterval = null; }
+  activeMainView = 'mybets';
+  document.getElementById('homePanel').style.display    = 'none';
+  document.getElementById('bracketPanel').style.display = 'none';
+  document.getElementById('mainPanels').style.display   = 'none';
+  document.getElementById('picksPanel').style.display   = 'none';
+  document.getElementById('myBetsPanel').style.display  = '';
+  document.getElementById('homeNavBtn').classList.remove('active');
+  document.getElementById('bracketNavBtn').classList.remove('active');
+  document.getElementById('picksNavBtn')?.classList.remove('active');
+  document.getElementById('myBetsNavBtn').classList.add('active');
+  document.querySelectorAll('.day-tab').forEach(t => t.classList.remove('active'));
+  renderMyBetsPanel();
+}
+
+function renderMyBetsPanel() {
+  const panel    = document.getElementById('myBetsPanel');
+  const bets     = loadMyBets();
+  const parlays  = loadMyParlays();
+  // Also include saved parlays from builder
+  const saved    = loadSavedParlays();
+
+  const wins   = bets.filter(b => b.result === 'win').length;
+  const losses = bets.filter(b => b.result === 'loss').length;
+  const pending= bets.filter(b => b.result === 'pending').length;
+  const pnl    = bets.reduce((sum, b) => {
+    if (b.result === 'win')  return sum + (b.toWin || 0);
+    if (b.result === 'loss') return sum - (b.stake || 25);
+    return sum;
+  }, 0);
+
+  panel.innerHTML = `
+  <div style="padding:0 0 100px">
+    <!-- Header stats -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:14px 14px 0">
+      <div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:10px 8px;text-align:center">
+        <div style="font-family:var(--mono);font-size:18px;font-weight:800;color:var(--green)">${wins}</div>
+        <div style="font-family:var(--mono);font-size:9px;color:var(--text3)">WINS</div>
+      </div>
+      <div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:10px 8px;text-align:center">
+        <div style="font-family:var(--mono);font-size:18px;font-weight:800;color:var(--red)">${losses}</div>
+        <div style="font-family:var(--mono);font-size:9px;color:var(--text3)">LOSSES</div>
+      </div>
+      <div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:10px 8px;text-align:center">
+        <div style="font-family:var(--mono);font-size:18px;font-weight:800;color:var(--amber)">${pending}</div>
+        <div style="font-family:var(--mono);font-size:9px;color:var(--text3)">PENDING</div>
+      </div>
+      <div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:10px 8px;text-align:center">
+        <div style="font-family:var(--mono);font-size:18px;font-weight:800;color:${pnl>=0?'var(--green)':'var(--red)'}">${pnl>=0?'+':''}$${Math.abs(pnl).toFixed(0)}</div>
+        <div style="font-family:var(--mono);font-size:9px;color:var(--text3)">P&L</div>
+      </div>
+    </div>
+
+    <!-- Add bet button -->
+    <div style="padding:12px 14px 0;display:flex;gap:8px">
+      <button onclick="showAddBetForm()" style="flex:1;font-family:var(--mono);font-size:11px;font-weight:700;padding:10px;border-radius:8px;background:var(--accent-d);border:1px solid var(--accent);color:var(--accent);cursor:pointer;">+ ADD STRAIGHT BET</button>
+      <button onclick="showAddParlayForm()" style="flex:1;font-family:var(--mono);font-size:11px;font-weight:700;padding:10px;border-radius:8px;background:var(--amber-d);border:1px solid var(--amber);color:var(--amber);cursor:pointer;">+ ADD PARLAY</button>
+    </div>
+
+    <!-- Saved parlay slips from builder -->
+    ${saved.length ? `
+    <div style="padding:14px 14px 0">
+      <div style="font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:.1em;margin-bottom:8px">🎰 PARLAY SLIPS FROM BUILDER</div>
+      ${saved.map((p,i) => buildSavedParlayCard(p,i)).join('')}
+    </div>` : ''}
+
+    <!-- Straight bets -->
+    ${bets.length ? `
+    <div style="padding:14px 14px 0">
+      <div style="font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:.1em;margin-bottom:8px">📝 STRAIGHT BETS</div>
+      ${bets.map((b,i) => buildBetCard(b,i)).join('')}
+    </div>` : bets.length === 0 && saved.length === 0 ? `
+    <div style="text-align:center;padding:60px 24px;color:var(--text3)">
+      <div style="font-size:40px;margin-bottom:12px">📋</div>
+      <div style="font-family:var(--mono);font-size:13px;font-weight:700;margin-bottom:6px">No bets yet</div>
+      <div style="font-size:13px">Add bets you've placed on DraftKings, FanDuel etc to track your results</div>
+    </div>` : ''}
+  </div>
+
+  <!-- Add Bet Form (hidden by default) -->
+  <div id="addBetForm" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:960;overflow-y:auto">
+    <div style="background:var(--card);border-radius:16px 16px 0 0;padding:20px 16px 40px;position:absolute;bottom:0;left:0;right:0;max-height:90vh;overflow-y:auto">
+      <div style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--accent);letter-spacing:.1em;margin-bottom:16px">ADD STRAIGHT BET</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <input id="betGame" placeholder="Game (e.g. Duke vs SJU)" style="${inputStyle()}">
+        <input id="betPick" placeholder="Your pick (e.g. Duke -6.5)" style="${inputStyle()}">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <input id="betOdds" placeholder="Odds (e.g. -110)" style="${inputStyle()}">
+          <input id="betStake" placeholder="Stake ($)" type="number" style="${inputStyle()}">
+        </div>
+        <select id="betBook" style="${inputStyle()}">
+          <option value="">Book (optional)</option>
+          <option>DraftKings</option><option>FanDuel</option><option>BetMGM</option>
+          <option>Caesars</option><option>PointsBet</option><option>Other</option>
+        </select>
+        <select id="betResult" style="${inputStyle()}">
+          <option value="pending">Pending</option>
+          <option value="win">Win ✅</option>
+          <option value="loss">Loss ❌</option>
+          <option value="push">Push</option>
+        </select>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px">
+        <button onclick="submitBet()" style="padding:12px;border-radius:8px;background:var(--accent);border:none;color:#000;font-family:var(--mono);font-size:11px;font-weight:800;cursor:pointer;">SAVE BET</button>
+        <button onclick="document.getElementById('addBetForm').style.display='none'" style="padding:12px;border-radius:8px;background:var(--card2);border:1px solid var(--border);color:var(--text3);font-family:var(--mono);font-size:11px;cursor:pointer;">CANCEL</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function inputStyle() {
+  return 'width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-family:var(--mono);font-size:12px;box-sizing:border-box;';
+}
+
+function buildBetCard(b, i) {
+  const rc = b.result === 'win' ? 'var(--green)' : b.result === 'loss' ? 'var(--red)' : 'var(--amber)';
+  const ri = b.result === 'win' ? '✅' : b.result === 'loss' ? '❌' : '⏳';
+  return `<div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
+    <div style="flex:1">
+      <div style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--text)">${b.pick}</div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--text3);margin-top:2px">${b.game||''} · ${b.book||''}${b.odds?' · '+b.odds:''}</div>
+      ${b.stake ? `<div style="font-family:var(--mono);font-size:10px;color:var(--text3)">$${b.stake} to win $${b.toWin||'?'}</div>` : ''}
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="font-family:var(--mono);font-size:11px;font-weight:700;color:${rc}">${ri} ${b.result.toUpperCase()}</span>
+      <button onclick="updateBetResult(${i})" style="font-size:11px;background:none;border:1px solid var(--border);border-radius:6px;padding:3px 8px;color:var(--text3);cursor:pointer;">Edit</button>
+      <button onclick="deleteBet(${i})" style="font-size:14px;background:none;border:none;color:var(--text3);cursor:pointer;">✕</button>
+    </div>
+  </div>`;
+}
+
+function buildSavedParlayCard(p, i) {
+  const rc = p.result === 'win' ? 'var(--green)' : p.result === 'loss' ? 'var(--red)' : 'var(--amber)';
+  const ri = p.result === 'win' ? '✅' : p.result === 'loss' ? '❌' : '⏳';
+  const legs = p.legs || [];
+  return `<div style="background:var(--card2);border:1px solid var(--amber);border-radius:10px;padding:12px 14px;margin-bottom:8px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--amber)">${legs.length}-LEG PARLAY${p.stake?' · $'+p.stake:''}</div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <span style="font-family:var(--mono);font-size:10px;color:${rc}">${ri} ${(p.result||'pending').toUpperCase()}</span>
+        <button onclick="updateSavedParlayResult(${i})" style="font-size:10px;background:none;border:1px solid var(--border);border-radius:5px;padding:2px 6px;color:var(--text3);cursor:pointer;">Edit</button>
+        <button onclick="deleteSavedParlay(${i})" style="font-size:14px;background:none;border:none;color:var(--text3);cursor:pointer;">✕</button>
+      </div>
+    </div>
+    ${legs.map(l => `<div style="font-family:var(--mono);font-size:11px;color:var(--text2);padding:2px 0;border-bottom:1px solid var(--border)">${l.label} <span style="color:var(--text3)">${l.odds}</span></div>`).join('')}
+    ${p.payout ? `<div style="font-family:var(--mono);font-size:10px;color:var(--green);margin-top:6px">Potential payout: $${p.payout}</div>` : ''}
+  </div>`;
+}
+
+function showAddBetForm() {
+  document.getElementById('addBetForm').style.display = 'block';
+}
+
+function showAddParlayForm() {
+  // Open parlay builder sheet
+  openParlaySheet();
+}
+
+function submitBet() {
+  const game  = document.getElementById('betGame').value.trim();
+  const pick  = document.getElementById('betPick').value.trim();
+  const odds  = document.getElementById('betOdds').value.trim();
+  const stake = parseFloat(document.getElementById('betStake').value) || 0;
+  const book  = document.getElementById('betBook').value;
+  const result= document.getElementById('betResult').value;
+  if (!pick) { showToast('Enter your pick', 'var(--red)'); return; }
+  const toWin = odds ? Math.round(stake * (parseInt(odds) > 0 ? parseInt(odds)/100 : 100/Math.abs(parseInt(odds)))) : 0;
+  const bets = loadMyBets();
+  bets.unshift({ game, pick, odds, stake, toWin, book, result, date: new Date().toLocaleDateString('en-US',{month:'numeric',day:'numeric'}) });
+  saveMyBets(bets);
+  document.getElementById('addBetForm').style.display = 'none';
+  showToast('✅ Bet saved', 'var(--green)');
+  renderMyBetsPanel();
+}
+
+function deleteBet(i) {
+  const bets = loadMyBets();
+  bets.splice(i, 1);
+  saveMyBets(bets);
+  renderMyBetsPanel();
+}
+
+function updateBetResult(i) {
+  const bets = loadMyBets();
+  const b = bets[i];
+  const opts = ['pending','win','loss','push'];
+  const cur  = opts.indexOf(b.result);
+  b.result   = opts[(cur + 1) % opts.length];
+  saveMyBets(bets);
+  renderMyBetsPanel();
+}
+
+function deleteSavedParlay(i) {
+  const saved = loadSavedParlays();
+  saved.splice(i, 1);
+  localStorage.setItem(SAVED_PARLAYS_KEY, JSON.stringify(saved));
+  updateParlayModeBtn();
+  renderMyBetsPanel();
+}
+
+function updateSavedParlayResult(i) {
+  const saved = loadSavedParlays();
+  const p = saved[i];
+  const opts = ['pending','win','loss'];
+  const cur  = opts.indexOf(p.result||'pending');
+  p.result   = opts[(cur + 1) % opts.length];
+  localStorage.setItem(SAVED_PARLAYS_KEY, JSON.stringify(saved));
+  renderMyBetsPanel();
+}
+
+function showPicksPanel() {
+  if (picksRefreshInterval) { clearInterval(picksRefreshInterval); picksRefreshInterval = null; }
+  activeMainView = 'picks';
+  document.getElementById('homePanel').style.display = 'none';
+  document.getElementById('bracketPanel').style.display = 'none';
+  document.getElementById('mainPanels').style.display = 'none';
+  document.getElementById('picksPanel').style.display = '';
+  document.getElementById('homeNavBtn').classList.remove('active');
+  document.getElementById('bracketNavBtn').classList.remove('active');
+  document.getElementById('picksNavBtn').classList.add('active');
+  document.querySelectorAll('.day-tab').forEach(t => t.classList.remove('active'));
+
+  const ev = getActiveEvent();
+
+  // Only show real picks for active NCAA tournament — otherwise status screen
+  if (!ev.status || ev.status !== 'active' || ev.id !== 'ncaam-w1') {
+    renderPicksStatusScreen(ev);
+    return;
+  }
+
+  seedHistoricalPicks();
+  resolvePicksFromScores();
+  renderPicksPanel();
+  picksRefreshInterval = setInterval(() => {
+    resolvePicksFromScores();
+    renderPicksPanel();
+  }, 30000);
+}
+
+function renderPicksStatusScreen(ev) {
+  const statusIcons   = { upcoming:'📅', offseason:'🏖️', ended:'✅', active:'🟢' };
+  const statusColors  = { upcoming:'var(--accent)', offseason:'var(--text3)', ended:'var(--green)', active:'var(--green)' };
+  const icon  = statusIcons[ev.status]  || '📅';
+  const color = statusColors[ev.status] || 'var(--text3)';
+
+  const isUpcoming = ev.status === 'upcoming';
+  const isOffseason = ev.status === 'offseason';
+  const isEnded = ev.status === 'ended';
+
+  let msg = ev.statusMsg || 'No picks available yet.';
+  let detail = '';
+  if (isUpcoming) detail = `G-Money's picks will be posted once the ${ev.name} bracket is set and odds go live.`;
+  if (isOffseason) detail = `The ${ev.name} season is over. G-Money's picks and stats will reset for next season.`;
+  if (isEnded) detail = `This event has concluded. Final pick results are archived.`;
+
+  document.getElementById('picksPanel').innerHTML = `
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 24px;text-align:center;min-height:60vh;">
+      <div style="font-size:44px;margin-bottom:14px">💰</div>
+      <div style="font-family:var(--mono);font-size:18px;font-weight:800;color:var(--text);margin-bottom:8px">G-Money Picks</div>
+      <div style="font-family:var(--mono);font-size:11px;color:var(--text3);margin-bottom:6px">${ev.icon} ${ev.name.toUpperCase()}</div>
+      <div style="display:inline-flex;align-items:center;gap:6px;background:var(--card2);border:1px solid var(--border);border-radius:20px;padding:4px 14px;margin-bottom:20px">
+        <span style="font-size:13px">${icon}</span>
+        <span style="font-family:var(--mono);font-size:11px;font-weight:700;color:${color};letter-spacing:.08em">${(ev.status||'').toUpperCase()}</span>
+      </div>
+      <div style="font-size:14px;color:var(--text2);line-height:1.6;max-width:300px;margin-bottom:10px">${msg}</div>
+      ${detail ? `<div style="font-size:13px;color:var(--text3);line-height:1.6;max-width:300px;margin-bottom:32px">${detail}</div>` : '<div style="margin-bottom:32px"></div>'}
+      <div style="background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:16px 20px;width:100%;max-width:320px;margin-bottom:20px">
+        <div style="font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:.1em;margin-bottom:12px">NCAA TOURNAMENT · CURRENT SEASON</div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div style="text-align:center">
+            <div style="font-family:var(--mono);font-size:22px;font-weight:800;color:var(--green)">24-12</div>
+            <div style="font-family:var(--mono);font-size:9px;color:var(--text3);margin-top:2px">RECORD</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-family:var(--mono);font-size:22px;font-weight:800;color:var(--amber)">66.7%</div>
+            <div style="font-family:var(--mono);font-size:9px;color:var(--text3);margin-top:2px">WIN RATE</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-family:var(--mono);font-size:22px;font-weight:800;color:var(--text)">$1,246</div>
+            <div style="font-family:var(--mono);font-size:9px;color:var(--text3);margin-top:2px">BANKROLL</div>
+          </div>
+        </div>
+      </div>
+      <button onclick="selectEvent('ncaam-w1');setTimeout(showPicksPanel,100)" style="font-family:var(--mono);font-size:11px;font-weight:700;padding:10px 20px;border-radius:8px;border:1px solid var(--amber);background:rgba(186,117,23,.1);color:var(--amber);cursor:pointer;">
+        View NCAA Picks →
+      </button>
+    </div>`;
+}
+
+function showHomePanel() {
+  if (picksRefreshInterval) { clearInterval(picksRefreshInterval); picksRefreshInterval = null; }
+  activeMainView = 'home';
+  document.getElementById('homePanel').style.display = '';
+  document.getElementById('bracketPanel').style.display = 'none';
+  document.getElementById('picksPanel').style.display = 'none';
+  document.getElementById('myBetsPanel').style.display = 'none';
+  document.getElementById('mainPanels').style.display = 'none';
+  document.getElementById('homeNavBtn').classList.add('active');
+  document.getElementById('bracketNavBtn').classList.remove('active');
+  document.getElementById('picksNavBtn')?.classList.remove('active');
+  document.querySelectorAll('.day-tab').forEach(t => t.classList.remove('active'));
+  renderHome();
+  // Load smack talk after odds fetch completes — wait 30s minimum
+  setTimeout(function() { loadSmackTalk(false); }, 30000);
+}
+
+function showBracketPanel() {
+  const ev = getActiveEvent();
+  if (ev.status && ev.status !== 'active') {
+    showToast('Bracket not available — ' + ev.name + ' hasn\'t started yet', 'var(--text3)');
+    return;
+  }
+  activeMainView = 'bracket';
+  document.getElementById('homePanel').style.display = 'none';
+  document.getElementById('bracketPanel').style.display = '';
+  document.getElementById('picksPanel').style.display = 'none';
+  document.getElementById('myBetsPanel').style.display = 'none';
+  document.getElementById('mainPanels').style.display = 'none';
+  document.getElementById('homeNavBtn').classList.remove('active');
+  document.getElementById('bracketNavBtn').classList.add('active');
+  document.getElementById('picksNavBtn')?.classList.remove('active');
+  document.querySelectorAll('.day-tab').forEach(t => t.classList.remove('active'));
+  renderBracketPanel();
+}
+
+function showGamesPanel() {
+  const ev = getActiveEvent();
+  if (ev.status && ev.status !== 'active') {
+    showSportStatusScreen(ev);
+    return;
+  }
+  activeMainView = 'games';
+  document.getElementById('homePanel').style.display = 'none';
+  document.getElementById('bracketPanel').style.display = 'none';
+  document.getElementById('picksPanel').style.display = 'none';
+  document.getElementById('myBetsPanel').style.display = 'none';
+  document.getElementById('mainPanels').style.display = '';
+  document.getElementById('homeNavBtn').classList.remove('active');
+  document.getElementById('bracketNavBtn').classList.remove('active');
+}
+
+// Override switchDay to show games panel first
+const _origSwitchDay = typeof switchDay !== 'undefined' ? switchDay : null;
+
+// ═══════════════════════════════════════════
+// HOME PANEL — sport-aware rendering
+// ═══════════════════════════════════════════
+// ═══════════════════════════════════════════
+// G-MONEY SMACK TALK — daily AI game previews
+// ═══════════════════════════════════════════
+var smackTalkCache = null;
+var smackTalkDate  = null;
+
+function loadSmackTalk(force) {
+  var today = new Date().toDateString();
+  var el = document.getElementById('smackTalkCard');
+  if (!el) return;
+
+  // Use cache unless forced refresh or new day
+  if (smackTalkCache && smackTalkDate === today && !force) {
+    el.innerHTML = smackTalkCache;
+    return;
+  }
+
+  el.innerHTML = '<div class="smack-loading">⚡ G-Money is studying the tape...</div>';
+
+  var proxyReady = PROXY_URL && PROXY_URL !== 'YOUR_CLOUD_RUN_URL_HERE';
+  if (!proxyReady) {
+    el.innerHTML = '<div class="smack-loading">Proxy not configured.</div>';
+    return;
+  }
+
+  // Build today's game list from static data
+  var t = new Date(), mo = t.getMonth(), da = t.getDate();
+  var dayMap = {'2-17':'tue','2-18':'wed','2-19':'thu','2-20':'fri','2-21':'sat','2-22':'sun',
+                '2-23':'thu2','2-24':'thu2','2-25':'thu2',
+                '2-26':'thu2','2-27':'fri2','2-28':'sat2','2-29':'sun2','3-4':'sat3','3-6':'mon3'};
+  var todayKey = 'ncaam-w1_' + (dayMap[mo+'-'+da] || 'thu2');
+  var dayData = STATIC_GAMES[todayKey];
+
+  if (!dayData || !dayData.games || !dayData.games.length) {
+    el.innerHTML = '<div class="smack-loading">No games found for today.</div>';
+    return;
+  }
+
+  // Build game summaries for the prompt
+  var gameLines = dayData.games.map(function(g) {
+    var awayName = (g.away && g.away.name) || (g.away && g.away.abbr) || 'Away';
+    var homeName = (g.home && g.home.name) || (g.home && g.home.abbr) || 'Home';
+    var awaySeed = (g.away && g.away.seed) ? '#' + g.away.seed : '';
+    var homeSeed = (g.home && g.home.seed) ? '#' + g.home.seed : '';
+    var sprd = g.spread ? (g.spread.favTeam + ' ' + (g.spread.line > 0 ? '+' : '') + g.spread.line) : 'N/A';
+    var tot  = g.total  ? ('O/U ' + g.total.line) : 'N/A';
+    var aml  = (g.moneyline && g.moneyline.away) || 'N/A';
+    var hml  = (g.moneyline && g.moneyline.home) || 'N/A';
+    var time = g.timeET || g.timePT || '';
+    return time + ': ' + awayName + ' ' + awaySeed + ' vs ' + homeName + ' ' + homeSeed + ' | ' + sprd + ' | ' + tot + ' | ML ' + aml + '/' + hml;
+  }).join('\n');
+
+  var prompt = 'Today is ' + dayData.day + ' — ' + dayData.round + '.\n\nGames today in order:\n' + gameLines + '\n\n'
+    + 'For EACH game write a short smack talk preview. Format exactly like this for each game:\n'
+    + 'GAME: [Away] vs [Home] | [Time]\n'
+    + 'PICK: [Your specific pick with line]\n'
+    + 'SMACK: [2-3 sentences of sassy trash talk. Include player names, records, matchup insight. '
+    + 'Be funny and insulting to the team you think will lose. Make creative analogies. '
+    + 'End with a bold prediction like "Lehigh will clobber Prairie View like we clobber groundhogs back into the ground." '
+    + 'Escalate the smack talk as the games get later in the day. '
+    + 'Add a humility disclaimer on the last game like "...but if I am wrong I will eat my hat."]\n\n'
+    + 'Do all ' + dayData.games.length + ' games. Be sassy, specific, and funny.';
+
+  // Stagger this call to avoid rate limit with other fetches
+  var wait = (window._lastClaudeFetch && (Date.now() - window._lastClaudeFetch) < 25000)
+    ? 25000 - (Date.now() - window._lastClaudeFetch) : 0;
+
+  if (wait > 0) {
+    el.innerHTML = '<div class="smack-loading">⚡ G-Money warming up... ' + Math.ceil(wait/1000) + 's</div>';
+    // Update countdown
+    var countInterval = setInterval(function() {
+      var remaining = Math.max(0, 25000 - (Date.now() - window._lastClaudeFetch));
+      var countEl = document.getElementById('smackTalkCard');
+      if (countEl && remaining > 0) {
+        countEl.innerHTML = '<div class="smack-loading">⚡ G-Money warming up... ' + Math.ceil(remaining/1000) + 's</div>';
+      } else {
+        clearInterval(countInterval);
+      }
+    }, 1000);
+    setTimeout(function() { clearInterval(countInterval); }, wait + 1000);
+  }
+
+  setTimeout(async function() {
+    try {
+      window._lastClaudeFetch = Date.now();
+      console.log('[SmackTalk] Prompt length:', prompt.length, 'chars');
+      console.log('[SmackTalk] Prompt preview:', prompt.substring(0, 200));
+      var payload = {
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 900,
+        system: 'You are G-Money, a sassy sharp sports betting analyst. Short punchy smack talk with real picks. Funny, confident, specific. Gambling is for entertainment only.',
+        messages: [{ role: 'user', content: prompt }]
+      };
+      console.log('[SmackTalk] Payload:', JSON.stringify(payload).substring(0, 300));
+      var resp = await fetch(PROXY_URL + '/api/claude', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!resp.ok) {
+        var errBody = {};
+        try { errBody = await resp.json(); } catch(e) {}
+        console.warn('[SmackTalk] FULL ERROR:', resp.status, JSON.stringify(errBody));
+        if (resp.status === 429) {
+          el.innerHTML = '<div class="smack-loading">⚡ G-Money is slammed — retrying in 45s...</div>';
+          window._lastClaudeFetch = Date.now() + 40000;
+          setTimeout(function() { loadSmackTalk(true); }, 45000);
+          return;
+        }
+        var errMsg = (errBody.error && errBody.error.message) ? errBody.error.message.substring(0,120) : JSON.stringify(errBody).substring(0,120);
+        el.innerHTML = '<div class="smack-loading" style="color:var(--red)">Error ' + resp.status + ': ' + errMsg + '</div>'
+          + '<button onclick="loadSmackTalk(true)" style="margin-top:8px;font-family:var(--mono);font-size:10px;background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:5px 12px;color:var(--accent);cursor:pointer;display:block">↻ Retry</button>';
+        return;
+      }
+
+      var data = await resp.json();
+      var text = (data.content && data.content[0] && data.content[0].text) || '';
+      if (!text) { el.innerHTML = '<div class="smack-loading">No response — tap refresh.</div>'; return; }
+
+      // Parse into game blocks
+      var blocks = text.split(/\nGAME:/g).filter(function(b) { return b.trim(); });
+      if (blocks[0] && !blocks[0].includes('|')) blocks.shift(); // remove preamble if any
+
+      var html = '';
+      blocks.forEach(function(block) {
+        var lines = block.trim().split('\n');
+        var headerLine = lines[0] || '';
+        var pickLine   = '';
+        var smackLines = [];
+        lines.forEach(function(l) {
+          if (l.startsWith('PICK:'))  pickLine = l.replace('PICK:', '').trim();
+          else if (l.startsWith('SMACK:')) smackLines.push(l.replace('SMACK:', '').trim());
+          else if (smackLines.length) smackLines.push(l.trim());
+        });
+        var smackText = smackLines.join(' ').trim();
+        var parts = headerLine.split('|');
+        var matchup = parts[0] ? parts[0].trim() : headerLine;
+        var time    = parts[1] ? parts[1].trim() : '';
+
+        html += '<div class="smack-game">'
+          + '<div class="smack-game-hdr">'
+          + '<div class="smack-matchup">' + matchup + '</div>'
+          + '<div class="smack-time">' + time + '</div>'
+          + '</div>'
+          + (pickLine ? '<div class="smack-pick">🎯 ' + pickLine + '</div>' : '')
+          + '<div class="smack-text">' + smackText + '</div>'
+          + '</div>';
+      });
+
+      if (!html) {
+        // Fallback — show raw text nicely
+        html = '<div class="smack-text">' + text.replace(/\n/g, '<br>') + '</div>';
+      }
+
+      html += '<div class="smack-disclaimer">💬 G-Money\'s takes are for entertainment only. Bet responsibly. If G-Money is wrong, blame the algorithm — not the analyst.</div>';
+
+      smackTalkCache = html;
+      smackTalkDate  = today;
+      el.innerHTML = html;
+
+    } catch(e) {
+      console.error('[SmackTalk] Failed:', e.message);
+      el.innerHTML = '<div class="smack-loading">Connection issue — tap refresh to retry.</div>';
+    }
+  }, wait);
+}
+
+function renderHome() {
+  const ev = getActiveEvent();
+  const panel = document.getElementById('homePanel');
+  // Non-active sports get full status screen — no blank generic home
+  if (ev.status && ev.status !== 'active') {
+    showSportStatusScreen(ev);
+    return;
+  }
+  if (ev.id === 'nba-playoffs') {
+    panel.innerHTML = buildNBAHome();
+  } else if (ev.id === 'nhl-playoffs') {
+    panel.innerHTML = buildNHLHome();
+  } else if (ev.id === 'ncaam-w1') {
+    panel.innerHTML = buildNCAAHome();
+  } else {
+    panel.innerHTML = buildGenericHome(ev);
+  }
+}
+
+function getRoundSubtitle() {
+  const t = new Date(), m = t.getMonth(), d = t.getDate();
+  if (m === 2 && d <= 20) return 'First Round · Round of 64 · 4 regions';
+  if (m === 2 && d <= 22) return 'Second Round · Round of 32 · 8 cities';
+  if (m === 2 && d <= 27) return 'Sweet 16 · Regional Semifinals · 2 sites';
+  if (m === 2 && d <= 29) return 'Elite Eight · Regional Finals · 4 sites';
+  if (m === 3 && d <= 4)  return 'Final Four · Indianapolis, IN';
+  if (m === 3 && d <= 6)  return 'National Championship · Indianapolis, IN';
+  return 'March Madness 2026';
+}
+
+function buildNCAAHome() {
+  // Count live/final/upcoming from liveScores
+  const games = Object.values(liveScores);
+  const liveGames  = games.filter((g,i) => i%4===0 && g.status==='live');
+  const finalGames = games.filter((g,i) => i%4===0 && g.status==='final');
+
+  // Build strips — split live games vs final results
+  // Build single chronological strip — live first, then finals
+  let combinedStrip = '';
+  const seen = new Set();
+  // Live games first
+  for (const g of Object.values(liveScores)) {
+    if (seen.has(g.id||g.away+g.home)) continue;
+    seen.add(g.id||g.away+g.home);
+    if (g.status === 'live') {
+      combinedStrip += `<div class="hlc">
+        <div class="hlc-tag"><div class="live-dot"></div><div class="hlc-t">LIVE · ${g.period||''}</div><div class="hlc-clk">${g.clock||''}</div></div>
+        <div class="hlc-row"><div class="hlc-name">${g.away}</div><div class="hlc-sc ${g.awayScore>g.homeScore?'lead':''}\">${g.awayScore}</div></div>
+        <div class="hlc-row"><div class="hlc-name">${g.home}</div><div class="hlc-sc ${g.homeScore>g.awayScore?'lead':''}\">${g.homeScore}</div></div>
+        <div class="hlc-net">${g.network||''}</div>
+      </div>`;
+    }
+  }
+  // Then finals
+  const seen2 = new Set();
+  for (const g of Object.values(liveScores)) {
+    if (seen2.has(g.id||g.away+g.home)) continue;
+    seen2.add(g.id||g.away+g.home);
+    if (g.status === 'final') {
+      const aw = g.awayScore > g.homeScore;
+      combinedStrip += `<div class="hfc">
+        <div class="hfc-tag">FINAL</div>
+        <div class="hlc-row"><div class="hlc-name" style="${aw?'color:var(--green)':''}">${g.away}</div><div class="hlc-sc ${aw?'lead':''}\">${g.awayScore}</div></div>
+        <div class="hlc-row"><div class="hlc-name" style="${!aw?'color:var(--green)':''}">${g.home}</div><div class="hlc-sc ${!aw?'lead':''}\">${g.homeScore}</div></div>
+      </div>`;
+    }
+  }
+  const hasLive  = combinedStrip.includes('live-dot');
+  const hasFinal = combinedStrip.includes('hfc-tag');
+  const sectTitle = hasLive && hasFinal ? '🔴 Live · ✓ Results'
+                  : hasLive             ? '🔴 Live Right Now'
+                  : hasFinal            ? '✓ Recent Results'
+                  : '';
+  const liveSection  = '';
+  const finalSection = '';
+  const combinedSection = combinedStrip ? `
+    <div class="home-sect">
+      <div class="home-sect-t" style="display:flex;align-items:center;gap:6px">${hasLive?'<div class="live-dot" style="width:6px;height:6px;flex-shrink:0"></div>':''}${sectTitle}</div>
+      <button class="home-sect-a" onclick="${hasLive?'showBracketPanel()':'showGamesPanel()'}">See all →</button>
+    </div>
+    <div class="home-live-strip">${combinedStrip}</div>` : '';
+
+  // Tournament schedule rows
+  const today = new Date();
+  const mo = today.getMonth(), da = today.getDate();
+  function schedStatus(month, day) {
+    if (mo > month || (mo===month && da > day)) return 'done';
+    if (mo===month && da===day) return 'live';
+    if (mo===month && da===day+1) return 'next';
+    return 'soon';
+  }
+  const s = (m,d) => {
+    const st = schedStatus(m,d);
+    const labels = {done:'✓ Done', live:'✓ Now', next:'Upcoming', soon:'Upcoming'};
+    const cls    = {done:'done',   live:'live',   next:'soon',     soon:'soon'};
+    return `<span class="hs-badge ${cls[st]}">${labels[st]}</span>`;
+  };
+
+  return `
+  <div style="padding-bottom:80px">
+    <!-- Hero -->
+    <div class="home-hero">
+      <div class="home-hero-bg"></div>
+      <div class="home-hero-inner">
+        <div class="home-eyebrow">${liveGames.length > 0 ? '<div class="live-dot"></div>' : ''}NCAA TOURNAMENT 2026</div>
+        <div class="home-title">March <em>Madness</em></div>
+        <div class="home-sub">${getRoundSubtitle()}</div>
+        <div class="home-stats">
+          <div class="home-stat"><div class="home-stat-v">${finalGames.length||'0'}</div><div class="home-stat-l">Final</div></div>
+          <div class="home-stat ${liveGames.length > 0 ? 'live-stat' : ''}">
+            ${liveGames.length > 0
+              ? `<div class="home-stat-v red"><div class="live-dot" style="width:8px;height:8px"></div><span id="homeLiveCount">${liveGames.length}</span></div><div class="home-stat-l red">Live Now</div>`
+              : `<div class="home-stat-v"><span id="homeLiveCount">0</span></div><div class="home-stat-l">Live</div>`
+            }
+          </div>
+          <div class="home-stat"><div class="home-stat-v amber">${16 - finalGames.length > 0 ? 16 - finalGames.length : '—'}</div><div class="home-stat-l">Upcoming</div></div>
+          <div class="home-stat"><div class="home-stat-v">${new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'})}</div><div class="home-stat-l">Today</div></div>
+        </div>
+      </div>
+    </div>
+
+    ${combinedSection}
+
+    <!-- G-Money Smack Talk -->
+    <div class="home-sect"><div class="home-sect-t">🎤 G-Money Smack Talk</div><button class="home-sect-a" onclick="loadSmackTalk(true)">↻ Refresh</button></div>
+    <div id="smackTalkCard" class="smack-card">
+      <div class="smack-loading">⚡ G-Money is studying the tape...</div>
+    </div>
+
+    <!-- Tournament roadmap -->
+    <div class="home-sect"><div class="home-sect-t">📅 Tournament Roadmap</div></div>
+    <div class="home-sched">
+      <div class="hs-row" onclick="showGamesPanel()"><div class="hs-date" style="color:var(--green)">THU–FRI<br>3/19–20</div><div class="hs-div" style="background:var(--green);opacity:.3"></div><div class="hs-info"><div class="hs-round">First Round</div><div class="hs-sub">32 games · 8 cities</div></div>${s(2,19)}</div>
+      <div class="hs-row"><div class="hs-date">SAT–SUN<br>3/21–22</div><div class="hs-div"></div><div class="hs-info"><div class="hs-round">Second Round</div><div class="hs-sub">16 games · Round of 32</div></div>${s(2,22)}</div>
+      <div class="hs-row"><div class="hs-date">THU–FRI<br>3/26–27</div><div class="hs-div"></div><div class="hs-info"><div class="hs-round">Sweet 16</div><div class="hs-sub">8 games · 2 sites</div></div>${s(2,26)}</div>
+      <div class="hs-row"><div class="hs-date">SAT–SUN<br>3/28–29</div><div class="hs-div"></div><div class="hs-info"><div class="hs-round">Elite Eight</div><div class="hs-sub">4 games · Regional Finals</div></div>${s(2,28)}</div>
+      <div class="hs-row"><div class="hs-date">SAT<br>4/4</div><div class="hs-div"></div><div class="hs-info"><div class="hs-round">Final Four</div><div class="hs-sub">2 games · San Antonio</div></div>${s(3,4)}</div>
+      <div class="hs-row"><div class="hs-date">MON<br>4/6</div><div class="hs-div"></div><div class="hs-info"><div class="hs-round">Championship</div><div class="hs-sub">The Final · San Antonio</div></div>${s(3,6)}</div>
+    </div>
+
+    <!-- Coming next -->
+    <div class="home-sect" style="margin-top:20px"><div class="home-sect-t">🗓 Coming Next</div></div>
+    <div class="next-sport-card" onclick="selectEvent('nba-playoffs')">
+      <div class="ns-ico">🏀</div>
+      <div><div class="ns-title">NBA Playoffs</div><div class="ns-sub">Apr 19 · Full bracket · Live odds · Props</div></div>
+      <div class="ns-badge">Apr 19</div>
+    </div>
+  </div>`;
+}
+
+function buildNBAHome() {
+  const liveCount = Object.values(liveScores).filter((g,i)=>i%4===0&&g.status==='live').length;
+
+  function sc(conf, round, t1seed, t1name, t1rec, t2seed, t2name, t2rec, seriesScore, leading, nextGame, seriesOdds, isLive, liveStr) {
+    const liveTag = isLive ? `<div class="sc-live-tag"><div class="live-dot" style="width:5px;height:5px"></div>${liveStr}</div>` : '';
+    const [s1,s2] = (seriesScore||'0-0').split('-').map(Number);
+    const scoreCls = (s1>s2||s2>s1) ? 'leads' : '';
+    return `<div class="series-card sc-${conf} ${isLive?'sc-live':''}">
+      <div class="sc-bar"></div>
+      <div class="sc-inner">
+        <div class="sc-top">
+          <div class="sc-round">${round}</div>
+          <div class="sc-tags">${liveTag}<div class="conf-tag ${conf}">${conf.toUpperCase()}</div></div>
+        </div>
+        <div class="sc-matchup">
+          <div class="sc-team">
+            <div class="sc-seed">#${t1seed} · ${t1rec}</div>
+            <div class="sc-name ${leading===1?'leading':''}">${t1name}</div>
+            <div class="sc-rec">${leading===1?'Series leads':leading===2?'Trails series':'Series tied'}</div>
+          </div>
+          <div class="sc-score-wrap">
+            <div class="sc-score ${scoreCls}">${seriesScore}</div>
+            <div class="sc-score-lbl">Series</div>
+          </div>
+          <div class="sc-team right">
+            <div class="sc-seed">#${t2seed} · ${t2rec}</div>
+            <div class="sc-name ${leading===2?'leading':''}">${t2name}</div>
+            <div class="sc-rec">${leading===2?'Series leads':leading===1?'Trails series':'Series tied'}</div>
+          </div>
+        </div>
+      </div>
+      <div class="sc-footer">
+        <div class="sc-next">${nextGame}</div>
+        <div class="sc-odds"><span>${seriesOdds}</span></div>
+      </div>
+    </div>`;
+  }
+
+  return `<div style="padding-bottom:80px">
+    <div class="home-hero">
+      <div class="home-hero-bg" style="background:radial-gradient(ellipse at 80% 10%,#C9553A16 0%,transparent 55%),radial-gradient(ellipse at 10% 90%,#5BB8FF08 0%,transparent 50%)"></div>
+      <div class="home-hero-inner">
+        <div class="home-eyebrow">🏀 NBA PLAYOFFS 2026 · FIRST ROUND</div>
+        <div class="home-title">Playoff <em>Time</em></div>
+        <div class="home-sub">First Round · 16 teams · Best of 7</div>
+        <div class="home-stats">
+          <div class="home-stat"><div class="home-stat-v">8</div><div class="home-stat-l">Series</div></div>
+          <div class="home-stat live-stat"><div class="home-stat-v red"><div class="live-dot" style="width:8px;height:8px"></div>${liveCount||"—"}</div><div class="home-stat-l red">Live Now</div></div>
+          <div class="home-stat"><div class="home-stat-v" style="color:var(--accent)">OKC</div><div class="home-stat-l">#1 West</div></div>
+          <div class="home-stat"><div class="home-stat-v" style="color:var(--blue)">DET</div><div class="home-stat-l">#1 East</div></div>
+        </div>
+      </div>
+    </div>
+    ${liveCount ? `
+    <div class="home-sect"><div class="home-sect-t">🔴 Live Right Now</div><button class="home-sect-a" onclick="showBracketPanel()">Bracket →</button></div>
+    <div class="nba-live-strip" id="nbaLiveStrip">
+      <div class="nlc"><div class="nlc-tag"><div class="live-dot"></div><div class="nlc-t">LIVE · Q4</div><div class="nlc-clk">3:42</div></div><div class="nlc-row"><div class="nlc-name">OKC</div><div class="nlc-sc lead">98</div></div><div class="nlc-row"><div class="nlc-name">HOU</div><div class="nlc-sc trail">91</div></div><div class="nlc-series">Gm 3 · OKC leads series 2-0</div></div>
+      <div class="nlc"><div class="nlc-tag"><div class="live-dot"></div><div class="nlc-t">LIVE · Q3</div><div class="nlc-clk">8:11</div></div><div class="nlc-row"><div class="nlc-name">DET</div><div class="nlc-sc lead">76</div></div><div class="nlc-row"><div class="nlc-name">MIA</div><div class="nlc-sc trail">71</div></div><div class="nlc-series">Gm 2 · Series tied 1-1</div></div>
+      <div class="nlc"><div class="nlc-tag"><div class="live-dot"></div><div class="nlc-t">LIVE · Q2</div><div class="nlc-clk">1:55</div></div><div class="nlc-row"><div class="nlc-name">BOS</div><div class="nlc-sc lead">58</div></div><div class="nlc-row"><div class="nlc-name">TOR</div><div class="nlc-sc trail">52</div></div><div class="nlc-series">Gm 1 · Series 0-0</div></div>
+    </div>` : ''}
+    <div class="home-sect" style="margin-top:20px"><div class="home-sect-t">📊 First Round Series</div><button class="home-sect-a" onclick="showBracketPanel()">Bracket →</button></div>
+    <div style="font-family:var(--mono);font-size:9px;color:var(--accent);text-transform:uppercase;letter-spacing:.1em;padding:0 14px;margin-bottom:8px">Western Conference</div>
+    <div class="series-list" style="padding:0 14px;margin-bottom:16px">
+      ${sc("west","R1 · Gm 3",1,"OKC Thunder","54-15",8,"HOU Rockets","41-26","2-0",1,"Tonight: <strong>OKC 98 · HOU 91 · Q4</strong>","OKC -2800",true,"Q4 3:42")}
+      ${sc("west","R1 · Gm 2",2,"SA Spurs","51-18",7,"GSW Warriors","33-35","1-0",1,"Gm 2: <strong>Tonight 9:30 PM PDT</strong>","SA -850",false,"")}
+      ${sc("west","R1 · Gm 1",3,"DEN Nuggets","42-27",6,"PHX Suns","39-30","0-0",0,"Gm 1: <strong>Apr 20 · 7:00 PM PDT</strong>","DEN -280",false,"")}
+      ${sc("west","R1 · Gm 1",4,"LAL Lakers","43-25",5,"MIN T-Wolves","42-27","0-0",0,"Gm 1: <strong>Apr 19 · 10:00 PM PDT</strong>","LAL -145",false,"")}
+    </div>
+    <div style="font-family:var(--mono);font-size:9px;color:var(--blue);text-transform:uppercase;letter-spacing:.1em;padding:0 14px;margin-bottom:8px">Eastern Conference</div>
+    <div class="series-list" style="padding:0 14px;margin-bottom:20px">
+      ${sc("east","R1 · Gm 2",1,"DET Pistons","49-19",8,"MIA Heat","38-31","1-0",1,"Tonight: <strong>DET 76 · MIA 71 · Q3</strong>","DET -650",true,"Q3 8:11")}
+      ${sc("east","R1 · Gm 1",2,"BOS Celtics","45-23",7,"TOR Raptors","38-29","0-0",0,"Tonight: <strong>BOS 58 · TOR 52 · Q2</strong>","BOS -1100",true,"Q2 1:55")}
+      ${sc("east","R1 · Gm 1",3,"NYK Knicks","45-25",6,"ORL Magic","38-30","0-0",0,"Gm 1: <strong>Apr 20 · 4:30 PM PDT</strong>","NYK -320",false,"")}
+      ${sc("east","R1 · Gm 1",4,"CLE Cavaliers","42-27",5,"PHI 76ers","37-32","0-0",0,"Gm 1: <strong>Apr 19 · 4:30 PM PDT</strong>","CLE -200",false,"")}
+    </div>
+    <div class="home-sect"><div class="home-sect-t">🗓 Playoff Roadmap</div></div>
+    <div class="home-sched">
+      <div class="hs-row" style="border-color:#00E88230"><div class="hs-date" style="color:var(--green)">APR 19<br>–MAY 3</div><div class="hs-div" style="background:var(--green);opacity:.3"></div><div class="hs-info"><div class="hs-round">First Round</div><div class="hs-sub">8 series · Best of 7</div></div><span class="hs-badge live">✓ Now</span></div>
+      <div class="hs-row"><div class="hs-date">MAY ~5</div><div class="hs-div"></div><div class="hs-info"><div class="hs-round">Conf. Semifinals</div><div class="hs-sub">4 series · Best of 7</div></div><span class="hs-badge soon">Upcoming</span></div>
+      <div class="hs-row"><div class="hs-date">MAY ~19</div><div class="hs-div"></div><div class="hs-info"><div class="hs-round">Conf. Finals</div><div class="hs-sub">2 series · Best of 7</div></div><span class="hs-badge soon">Upcoming</span></div>
+      <div class="hs-row"><div class="hs-date">JUN ~5</div><div class="hs-div"></div><div class="hs-info"><div class="hs-round">NBA Finals</div><div class="hs-sub">Best of 7 · Championship</div></div><span class="hs-badge soon">Upcoming</span></div>
+    </div>
+    <div class="home-sect" style="margin-top:20px"><div class="home-sect-t">🏀 Also Active</div></div>
+    <div class="next-sport-card" onclick="selectEvent('ncaam-w1')">
+      <div class="ns-ico">🏆</div>
+      <div><div class="ns-title">NCAA Tournament</div><div class="ns-sub">March Madness · Final Four · Apr 4</div></div>
+      <div class="ns-badge" style="background:var(--amber-d);color:var(--amber);border-color:#FFC23030">Live</div>
+    </div>
+  </div>`;
+}
+
+function buildNHLHome() {
+  const liveCount = Object.values(liveScores).filter((g,i)=>i%4===0&&g.status==='live').length;
+
+  // Series card reused from NBA — same sc() helper pattern
+  function sc(conf, round, t1seed, t1name, t1rec, t2seed, t2name, t2rec, seriesScore, leading, nextGame, seriesOdds, isLive, liveStr) {
+    const liveTag = isLive ? `<div class="sc-live-tag"><div class="live-dot" style="width:5px;height:5px"></div>${liveStr}</div>` : '';
+    const [s1,s2] = (seriesScore||'0-0').split('-').map(Number);
+    const scoreCls = (s1>s2||s2>s1) ? 'leads' : '';
+    return `<div class="series-card sc-${conf} ${isLive?'sc-live':''}">
+      <div class="sc-bar"></div>
+      <div class="sc-inner">
+        <div class="sc-top">
+          <div class="sc-round">${round}</div>
+          <div class="sc-tags">${liveTag}<div class="conf-tag ${conf}">${conf.toUpperCase()}</div></div>
+        </div>
+        <div class="sc-matchup">
+          <div class="sc-team">
+            <div class="sc-seed">#${t1seed} · ${t1rec}</div>
+            <div class="sc-name ${leading===1?'leading':''}">${t1name}</div>
+            <div class="sc-rec">${leading===1?'Series leads':leading===2?'Trails series':'Series tied'}</div>
+          </div>
+          <div class="sc-score-wrap">
+            <div class="sc-score ${scoreCls}">${seriesScore}</div>
+            <div class="sc-score-lbl">Series</div>
+          </div>
+          <div class="sc-team right">
+            <div class="sc-seed">#${t2seed} · ${t2rec}</div>
+            <div class="sc-name ${leading===2?'leading':''}">${t2name}</div>
+            <div class="sc-rec">${leading===2?'Series leads':leading===1?'Trails series':'Series tied'}</div>
+          </div>
+        </div>
+      </div>
+      <div class="sc-footer">
+        <div class="sc-next">${nextGame}</div>
+        <div class="sc-odds"><span>${seriesOdds}</span></div>
+      </div>
+    </div>`;
+  }
+
+  return `<div style="padding-bottom:80px">
+
+    <!-- Hero — NHL blue accent -->
+    <div class="home-hero">
+      <div class="home-hero-bg" style="background:radial-gradient(ellipse at 80% 10%,#60AAEE16 0%,transparent 55%),radial-gradient(ellipse at 10% 90%,#C9553A08 0%,transparent 50%)"></div>
+      <div class="home-hero-inner">
+        <div class="home-eyebrow">🏒 NHL PLAYOFFS 2026 · STANLEY CUP</div>
+        <div class="home-title">Cup <em>Chase</em></div>
+        <div class="home-sub">Stanley Cup Playoffs · 16 teams · Best of 7</div>
+        <div class="home-stats">
+          <div class="home-stat"><div class="home-stat-v">8</div><div class="home-stat-l">Series</div></div>
+          <div class="home-stat live-stat"><div class="home-stat-v red"><div class="live-dot" style="width:8px;height:8px"></div>${liveCount||'—'}</div><div class="home-stat-l red">Live Now</div></div>
+          <div class="home-stat"><div class="home-stat-v" style="color:#60AAEE">COL</div><div class="home-stat-l">#1 West</div></div>
+          <div class="home-stat"><div class="home-stat-v" style="color:#60AAEE">CAR</div><div class="home-stat-l">#1 East</div></div>
+        </div>
+      </div>
+    </div>
+
+    ${liveCount ? `
+    <div class="home-sect"><div class="home-sect-t">🔴 Live Right Now</div><button class="home-sect-a" onclick="showBracketPanel()">Bracket →</button></div>
+    <div class="nba-live-strip" id="nhlLiveStrip"></div>` : ''}
+
+    <!-- First Round series — projected based on current standings -->
+    <div class="home-sect" style="margin-top:${liveCount?'8px':'14px'}">
+      <div class="home-sect-t">🏒 First Round Series</div>
+      <button class="home-sect-a" onclick="showBracketPanel()">Bracket →</button>
+    </div>
+
+    <div style="font-family:var(--mono);font-size:9px;color:#60AAEE;text-transform:uppercase;letter-spacing:.1em;padding:0 14px;margin-bottom:8px">Western Conference</div>
+    <div class="series-list" style="padding:0 14px;margin-bottom:16px">
+      ${sc('west','R1 · Projected',1,'COL Avalanche','44-13',8,'STL Blues','27-30','0-0',0,'Starts: <strong>~Apr 19</strong>','COL -420',false,'')}
+      ${sc('west','R1 · Projected',2,'DAL Stars','42-15',7,'WPG Jets','28-28','0-0',0,'Starts: <strong>~Apr 19</strong>','DAL -280',false,'')}
+      ${sc('west','R1 · Projected',3,'MIN Wild','39-18',6,'UTA Mammoth','35-27','0-0',0,'Starts: <strong>~Apr 19</strong>','MIN -200',false,'')}
+      ${sc('west','R1 · Projected',4,'ANA Ducks','37-27',5,'EDM Oilers','34-26','0-0',0,'Starts: <strong>~Apr 19</strong>','ANA -115',false,'')}
+    </div>
+
+    <div style="font-family:var(--mono);font-size:9px;color:#60AAEE;text-transform:uppercase;letter-spacing:.1em;padding:0 14px;margin-bottom:8px">Eastern Conference</div>
+    <div class="series-list" style="padding:0 14px;margin-bottom:20px">
+      ${sc('east','R1 · Projected',1,'CAR Hurricanes','42-19',8,'NJ Devils','34-31','0-0',0,'Starts: <strong>~Apr 19</strong>','CAR -380',false,'')}
+      ${sc('east','R1 · Projected',2,'BUF Sabres','42-20',7,'BOS Bruins','37-23','0-0',0,'Starts: <strong>~Apr 20</strong>','BUF -175',false,'')}
+      ${sc('east','R1 · Projected',3,'NYI Islanders','39-24',6,'CBJ Blue Jackets','35-21','0-0',0,'Starts: <strong>~Apr 20</strong>','NYI -155',false,'')}
+      ${sc('east','R1 · Projected',4,'TB Lightning','41-21',5,'PIT Penguins','34-18','0-0',0,'Starts: <strong>~Apr 21</strong>','TB -190',false,'')}
+    </div>
+
+    <!-- Stanley Cup roadmap -->
+    <div class="home-sect"><div class="home-sect-t">🗓 Playoffs Roadmap</div></div>
+    <div class="home-sched">
+      <div class="hs-row" style="border-color:#60AAEE30">
+        <div class="hs-date" style="color:#60AAEE">APR<br>~19</div>
+        <div class="hs-div" style="background:#60AAEE;opacity:.3"></div>
+        <div class="hs-info"><div class="hs-round">First Round</div><div class="hs-sub">8 series · Best of 7</div></div>
+        <span class="hs-badge" style="background:#60AAEE18;color:#60AAEE;border:1px solid #60AAEE30">~Apr 19</span>
+      </div>
+      <div class="hs-row"><div class="hs-date">MAY<br>~5</div><div class="hs-div"></div><div class="hs-info"><div class="hs-round">Second Round</div><div class="hs-sub">4 series · Best of 7</div></div><span class="hs-badge soon">Upcoming</span></div>
+      <div class="hs-row"><div class="hs-date">MAY<br>~19</div><div class="hs-div"></div><div class="hs-info"><div class="hs-round">Conf. Finals</div><div class="hs-sub">2 series · Best of 7</div></div><span class="hs-badge soon">Upcoming</span></div>
+      <div class="hs-row"><div class="hs-date">JUN<br>~1</div><div class="hs-div"></div><div class="hs-info"><div class="hs-round">Stanley Cup Finals</div><div class="hs-sub">Best of 7 · The Cup</div></div><span class="hs-badge soon">Upcoming</span></div>
+    </div>
+
+    <!-- Also active -->
+    <div class="home-sect" style="margin-top:20px"><div class="home-sect-t">🏀 Also Active</div></div>
+    <div class="next-sport-card" onclick="selectEvent('ncaam-w1')" style="margin-bottom:8px">
+      <div class="ns-ico">🏆</div>
+      <div><div class="ns-title">NCAA Tournament</div><div class="ns-sub">March Madness · Final Four · Apr 4</div></div>
+      <div class="ns-badge" style="background:var(--amber-d);color:var(--amber);border-color:#FFC23030">Live</div>
+    </div>
+    <div class="next-sport-card" onclick="selectEvent('nba-playoffs')">
+      <div class="ns-ico">🏀</div>
+      <div><div class="ns-title">NBA Playoffs</div><div class="ns-sub">Starts April 19 · Same time as NHL</div></div>
+      <div class="ns-badge">Apr 19</div>
+    </div>
+
+  </div>`;
+}
+
+function buildGenericHome(ev) {
+  return `
+  <div style="padding:14px 14px 80px">
+    <div class="home-hero">
+      <div class="home-hero-inner">
+        <div class="home-eyebrow">${ev.icon} ${ev.sport.toUpperCase()}</div>
+        <div class="home-title"><em>${ev.name}</em></div>
+        <div class="home-sub">Select a day tab above to view odds and lines</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════
+// BRACKET PANEL — visual tree, 4 region tabs
+// ═══════════════════════════════════════════
+// ═══════════════════════════════════════════
+// BRACKET DATA — fully dynamic from ESPN
+// Fetches all rounds, updates as matchups are set
+// ═══════════════════════════════════════════
+
+// Region mapping: ESPN uses group IDs for each region
+// We map ESPN team abbreviations to bracket slots
+const BRACKET_REGIONS = {
+  east:    { name:'East',    seeds:[1,8,5,4,6,3,7,2] },
+  west:    { name:'West',    seeds:[1,8,5,4,6,3,7,2] },
+  south:   { name:'South',  seeds:[1,8,5,4,6,3,7,2] },
+  midwest: { name:'Midwest', seeds:[1,8,5,4,6,3,7,2] },
+};
+
+// ═══════════════════════════════════════════
+// BRACKET — simple win/loss data fills the tree
+// ═══════════════════════════════════════════
+let BRACKET_DATA = {};
+let bracketDataLoaded = false;
+let currentBracketRegion = 'east';
+let bracketFetchPromise = null;
+
+// R64 game IDs per region — explicit, no guessing
+const R64_MAP = {
+  east:    ['g1','g2','g3','g4'],           // Thu: DUKE,OSU/TCU,LOU/USF,MSU — all done
+  west:    ['g15','g16','g19','f1'],         // Thu: BYU/TEX,SMC/TXAM,GONZ/KENN | Fri: ARIZ/LIU
+  south:   ['g9','g17','g20','f5'],          // Thu: NEB,ILL,HOU | Fri: FLA/LEH
+  midwest: ['g14','g11','g12','g6'],         // Thu: MICH,VAN,ARK,UGA/SLU — all done
+  // Friday-only regions (shown in FRI tab but bracket slots use above IDs)
+  fri_east:    ['f2','f8'],                  // UVA/WRST, ISU/TNST
+  fri_west:    ['f7','f10'],                 // STJ/UNI, KAN/CBU
+  fri_south:   ['f3','f6','f11'],            // SCU/KEN, CLEM/IOWA, MIA/MIZ
+  fri_midwest: ['f4','f9'],                  // TTU/AKR, PUR/QNS
+};
+
+// R32 games by region — actual Second Round matchup IDs
+const R32_MAP = {
+  east:    ['s3','s2','s7','u7'],    // TCU/DUKE, LOU/MSU, VCU/ILL, UCLA/CONN
+  west:    ['s5','u6','u3','u4'],    // TEX/GONZ, USU/ARIZ, SJU/KU, TENN/UVA
+  south:   ['s4','u5','u1','u2'],    // TAM/HOU, IOWA/FLA, SCU/ISU, UK/ISU
+  midwest: ['s1','s6','s8','u8'],    // SLU/MICH, VAN/NEB, HPU/ARK, TTU/ALA
+};
+
+function makeTBDSlots(count, label) {
+  return Array.from({length:count}, () => ({
+    id: 'tbd-'+Math.random(), a:{s:'?',n:'TBD'}, h:{s:'?',n:'TBD'}, st:'tbd', as:0, hs:0, aw:false, tm:label||'TBD'
+  }));
+}
+
+function getGameResult(g) {
+  // Returns {winner, loser, awayScore, homeScore} or null if not final
+  const away = (g.away?.abbr||'').toUpperCase();
+  const home = (g.home?.abbr||'').toUpperCase();
+  // 1. hardcoded result in static data
+  if (g.result?.status === 'final') {
+    const ws = g.result.awayScore > g.result.homeScore ? away : home;
+    const winner = g.result.winner ? g.result.winner.toUpperCase() : ws;
+    return { winner, awayScore: g.result.awayScore||0, homeScore: g.result.homeScore||0 };
+  }
+  // 2. live scores from ESPN feed
+  const s = liveScores[away+'-'+home] || liveScores[home+'-'+away];
+  if (s && s.status === 'final') {
+    const fl = s.flipped || s.home === away;
+    const as = fl ? s.homeScore : s.awayScore;
+    const hs = fl ? s.awayScore : s.homeScore;
+    return { winner: as > hs ? away : home, awayScore: as, homeScore: hs };
+  }
+  return null;
+}
+
+function getLiveState(g) {
+  const away = (g.away?.abbr||'').toUpperCase();
+  const home = (g.home?.abbr||'').toUpperCase();
+  const s = liveScores[away+'-'+home] || liveScores[home+'-'+away];
+  if (!s) return null;
+  const fl = s.flipped || s.home === away;
+  return {
+    status: s.status,
+    awayScore: fl ? s.homeScore : s.awayScore,
+    homeScore: fl ? s.awayScore : s.homeScore,
+    period: s.period, clock: s.clock
+  };
+}
+
+function buildFallbackBracket() {
+  // Build a lookup of all R64 game objects by ID
+  const gameById = {};
+  for (const data of Object.values(STATIC_GAMES)) {
+    for (const g of data.games||[]) { if (g.id) gameById[g.id] = g; }
+  }
+
+  const dates = {
+    r32: {east:'SAT 3/21', west:'SUN 3/22', south:'SAT 3/21', midwest:'SAT 3/21'},
+    s16: {east:'THU 3/26', west:'FRI 3/27', south:'THU 3/26', midwest:'FRI 3/27'},
+    e8:  {east:'SAT 3/28', west:'SUN 3/29', south:'SAT 3/28', midwest:'SUN 3/29'},
+  };
+
+  BRACKET_DATA = {};
+  for (const [region, ids] of Object.entries(R64_MAP)) {
+    // Build r64 from static game objects
+    const r64 = ids.map(id => {
+      const g = gameById[id];
+      if (!g) return makeTBDSlots(1,'?')[0];
+      const away = (g.away?.abbr||'').toUpperCase();
+      const home = (g.home?.abbr||'').toUpperCase();
+      const live = getLiveState(g);
+      const result = getGameResult(g);
+      // Also check liveScores with fuzzy matching
+      const scoreData = getGameScore(g);
+      let st = 'pre', as = 0, hs = 0, aw = false, tm = g.timeET||'';
+      if (result) {
+        st = 'final'; as = result.awayScore; hs = result.homeScore; aw = as > hs; tm = 'FINAL';
+      } else if (scoreData && scoreData.status === 'final') {
+        const fl = scoreData.flipped || scoreData.home === away;
+        as = fl ? (scoreData.homeScore||0) : (scoreData.awayScore||0);
+        hs = fl ? (scoreData.awayScore||0) : (scoreData.homeScore||0);
+        st = 'final'; aw = as > hs; tm = 'FINAL';
+      } else if (scoreData && scoreData.status === 'live') {
+        const fl = scoreData.flipped || scoreData.home === away;
+        as = fl ? (scoreData.homeScore||0) : (scoreData.awayScore||0);
+        hs = fl ? (scoreData.awayScore||0) : (scoreData.homeScore||0);
+        st = 'live'; tm = scoreData.period ? 'P'+scoreData.period : 'LIVE';
+      } else if (live) {
+        st = live.status === 'live' ? 'live' : 'pre';
+        as = live.awayScore||0; hs = live.homeScore||0;
+        tm = live.status==='live' ? (live.period?'P'+live.period+(live.clock?' '+live.clock:''):'LIVE') : tm;
+      }
+      return { id, a:{s:g.away?.seed||'?', n:away}, h:{s:g.home?.seed||'?', n:home}, st, as, hs, aw, tm };
+    });
+
+    // Advance winners round by round
+    function advance(srcGames, count, label) {
+      const slots = makeTBDSlots(count, label);
+      return slots.map((slot, i) => {
+        const g1 = srcGames[i*2],   g2 = srcGames[i*2+1];
+        const w1 = g1?.st==='final' ? (g1.aw ? g1.a : g1.h) : null;
+        const w2 = g2?.st==='final' ? (g2.aw ? g2.a : g2.h) : null;
+        if (!w1 && !w2) return slot;
+        return { ...slot, a: w1||{s:'?',n:'TBD'}, h: w2||{s:'?',n:'TBD'}, st:'pre' };
+      });
+    }
+
+    // Build r32 from actual Second Round game results
+    const r32ids = R32_MAP[region] || [];
+    const r32 = r32ids.length ? r32ids.map(id => {
+      const g = gameById[id];
+      if (!g) return makeTBDSlots(1, dates.r32[region])[0];
+      const away = (g.away?.abbr||'').toUpperCase();
+      const home = (g.home?.abbr||'').toUpperCase();
+      const result = getGameResult(g);
+      const scoreData = getGameScore(g);
+      let st = 'pre', as = 0, hs = 0, aw = false, tm = g.timeET||dates.r32[region];
+      if (result) {
+        st = 'final'; as = result.awayScore; hs = result.homeScore; aw = as > hs; tm = 'FINAL';
+      } else if (scoreData?.status === 'final') {
+        const fl = scoreData.flipped || scoreData.home === away;
+        as = fl ? (scoreData.homeScore||0) : (scoreData.awayScore||0);
+        hs = fl ? (scoreData.awayScore||0) : (scoreData.homeScore||0);
+        st = 'final'; aw = as > hs; tm = 'FINAL';
+      } else if (scoreData?.status === 'live') {
+        const fl = scoreData.flipped || scoreData.home === away;
+        as = fl ? (scoreData.homeScore||0) : (scoreData.awayScore||0);
+        hs = fl ? (scoreData.awayScore||0) : (scoreData.homeScore||0);
+        st = 'live'; tm = scoreData.period ? 'P'+scoreData.period : 'LIVE';
+      }
+      return { id, a:{s:g.away?.seed||'?', n:away}, h:{s:g.home?.seed||'?', n:home}, st, as, hs, aw, tm };
+    }) : advance(r64, 2, dates.r32[region]);
+
+    const s16 = advance(r32, 1, dates.s16[region]);
+    const e8  = advance(s16, 1, dates.e8[region]);
+    BRACKET_DATA[region] = { r64, r32, s16, e8 };
+  }
+
+  BRACKET_DATA.finalfour = {
+    f4:    makeTBDSlots(2,'SAT 4/4 · Houston'),
+    natty: makeTBDSlots(1,'MON 4/6 · Houston'),
+  };
+
+  bracketDataLoaded = true;
+  console.log('[Bracket] Built:', Object.entries(R64_MAP).map(([k])=>k+':'+BRACKET_DATA[k].r64.length).join(' '));
+}
+
+function fetchBracketData() {
+  // No-op — bracket is built entirely from STATIC_GAMES + liveScores
+  // ESPN overlay removed to prevent floating brackets
+  return Promise.resolve();
+}
+
+function drawBracket(rk) {
+  if (rk === 'finalfour') { drawFinalFour(); return; }
+  if (rk === 'gmoney')    { drawGMoneyBracket(); return; }
+
+  const r = BRACKET_DATA[rk];
+  if (!r) return;
+
+  // r64 already has correct state from buildFallbackBracket (result + liveScores)
+  // Re-check live/final updates using fuzzy score lookup
+  const r64 = r.r64.map(g => {
+    if (g.st === 'tbd' || g.st === 'final') return g; // already settled
+    const fakeG = { away:{abbr:g.a.n}, home:{abbr:g.h.n} };
+    const s = getGameScore(fakeG);
+    if (!s) return g;
+    const fl = s.flipped || s.home === g.a.n;
+    const as = fl ? (s.homeScore||0) : (s.awayScore||0);
+    const hs = fl ? (s.awayScore||0) : (s.homeScore||0);
+    if (s.status === 'final') return {...g, st:'final', as, hs, aw:as>hs, tm:'FINAL'};
+    if (s.status === 'live')  return {...g, st:'live',  as, hs, tm:(s.period?'P'+s.period+(s.clock?' '+s.clock:''):'LIVE')};
+    return g;
+  });
+
+  // Advance winners
+  function adv(src, slots) {
+    return slots.map((slot, i) => {
+      const g1 = src[i*2], g2 = src[i*2+1];
+      const w1 = g1?.st==='final' ? (g1.aw ? g1.a : g1.h) : null;
+      const w2 = g2?.st==='final' ? (g2.aw ? g2.a : g2.h) : null;
+      if (!w1 && !w2) return slot;
+      return { ...slot, a: w1||slot.a, h: w2||slot.h, st: 'pre' };
+    });
+  }
+
+  const r32 = adv(r64, r.r32);
+  const s16 = adv(r32, r.s16);
+  const e8  = adv(s16, r.e8);
+
+  // Render a game card
+  function card(g) {
+    const tbd = !g || g.st==='tbd';
+    if (tbd) return '<div style="width:82px;height:50px;flex-shrink:0;border:1px dashed var(--border);border-radius:7px;background:var(--card2);display:flex;align-items:center;justify-content:center"><span style="font-family:var(--mono);font-size:8px;color:var(--text3)">'+(g?g.tm:'TBD')+'</span></div>';
+    const fin=g.st==='final', live=g.st==='live';
+    const aWin=fin&&g.aw, hWin=fin&&!g.aw, aLead=live&&g.as>g.hs, hLead=live&&g.hs>g.as;
+    const ck = findStaticGameKey(g.a.n, g.h.n);
+    function row(t, sc, win, lead) {
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:2px 5px;'+(win?'background:var(--green-d);':'')+((!win&&fin)?'opacity:.5;':'')+'">'
+        +'<span style="font-family:var(--mono);font-size:8px;color:var(--text3);margin-right:2px">'+t.s+'</span>'
+        +'<span style="font-family:var(--sans);font-size:10px;font-weight:700;flex:1;color:'+(win?'var(--green)':lead?'var(--text)':'var(--text2)')+'">'+t.n+(win?' ✓':'')+'</span>'
+        +((fin||live)?'<span style="font-family:var(--mono);font-size:9px;font-weight:700;color:'+(win||lead?'var(--green)':'var(--text3)')+'">'+sc+'</span>':'')
+        +'</div>';
+    }
+    return '<div onclick="'+(ck?"bracketTapGame('"+ck+"')":'')+'" style="width:82px;flex-shrink:0;background:var(--card);border:1px solid '+(live?'var(--red)':fin?'var(--border2)':'var(--border)')+';border-radius:7px;overflow:hidden;cursor:'+(ck?'pointer':'default')+'">'
+      +(live?'<div style="height:2px;background:var(--red)"></div>':'')
+      +row(g.a,g.as,aWin,aLead)
+      +'<div style="height:1px;background:var(--border)"></div>'
+      +row(g.h,g.hs,hWin,hLead)
+      +(fin?'<div style="text-align:center;font-family:var(--mono);font-size:6px;color:var(--text3);padding:1px">FINAL</div>':'')
+      +'</div>';
+  }
+
+  // Card height: 2 rows (~22px each) + divider (1px) + optional FINAL label (10px) ≈ 56px
+  // Use 56 for connector math so SVGs align with actual rendered cards
+  const SH=56, SG=6;
+
+  // Flex-based layout — no pixel math, cards self-align
+  function connSvg(h) {
+    const mid = h/2;
+    return '<svg width="18" height="'+h+'" style="flex-shrink:0;overflow:visible;display:block">'
+      +'<line x1="0" y1="0" x2="9" y2="0" stroke="var(--border2)" stroke-width="1"/>'
+      +'<line x1="0" y1="'+h+'" x2="9" y2="'+h+'" stroke="var(--border2)" stroke-width="1"/>'
+      +'<line x1="9" y1="0" x2="9" y2="'+h+'" stroke="var(--border2)" stroke-width="1"/>'
+      +'<line x1="9" y1="'+mid+'" x2="18" y2="'+mid+'" stroke="var(--border2)" stroke-width="1"/>'
+      +'</svg>';
+  }
+
+  // One pair: two R64 cards + connector + one R32 card, all flex-aligned
+  function pair(g1, g2, r32slot) {
+    const pairH = SH*2 + SG;
+    return '<div style="display:flex;align-items:stretch;flex-shrink:0">'
+      // two R64 stacked
+      +'<div style="display:flex;flex-direction:column;flex-shrink:0">'
+      +'<div style="margin-bottom:'+SG+'px">'+card(g1)+'</div>'
+      +card(g2)
+      +'</div>'
+      // connector
+      +'<div style="display:flex;align-items:center;flex-shrink:0">'+connSvg(pairH)+'</div>'
+      // R32 slot centered
+      +'<div style="display:flex;align-items:center;flex-shrink:0">'+card(r32slot)+'</div>'
+      +'</div>';
+  }
+
+  const p0 = pair(r64[0], r64[1], r32[0]);
+  const p1 = pair(r64[2], r64[3], r32[1]);
+
+  // S16 + E8 span the full height of both pairs
+  const pairH = SH*2 + SG;
+  const twoGroupH = pairH*2 + SG;
+  // Midpoints of each pair group — where connectors should land
+  const mid0 = pairH / 2;          // center of top pair
+  const mid1 = pairH + SG + pairH / 2; // center of bottom pair
+  const midAll = (mid0 + mid1) / 2; // center between both pairs → S16
+
+  const conn2Svg = '<svg width="18" height="'+twoGroupH+'" style="flex-shrink:0;overflow:visible;display:block">'
+    +'<line x1="0" y1="'+mid0+'" x2="9" y2="'+mid0+'" stroke="var(--border2)" stroke-width="1"/>'
+    +'<line x1="0" y1="'+mid1+'" x2="9" y2="'+mid1+'" stroke="var(--border2)" stroke-width="1"/>'
+    +'<line x1="9" y1="'+mid0+'" x2="9" y2="'+mid1+'" stroke="var(--border2)" stroke-width="1"/>'
+    +'<line x1="9" y1="'+midAll+'" x2="18" y2="'+midAll+'" stroke="var(--border2)" stroke-width="1"/>'
+    +'</svg>';
+
+  const rightCols =
+    '<div style="display:flex;align-items:flex-start;flex-shrink:0">'+conn2Svg+'</div>'
+    +'<div style="display:flex;align-items:flex-start;flex-shrink:0;padding-top:'+(midAll - SH/2)+'px">'+card(s16[0])+'</div>'
+    +'<div style="display:flex;align-items:flex-start;flex-shrink:0;padding-top:'+(midAll - 1)+'px"><svg width="18" height="2" style="overflow:visible;display:block"><line x1="0" y1="0" x2="18" y2="0" stroke="var(--border2)" stroke-width="1"/></svg></div>'
+    +'<div style="display:flex;align-items:flex-start;flex-shrink:0;padding-top:'+(midAll - SH/2)+'px">'+card(e8[0])+'</div>';
+
+  const labels =
+    '<div style="display:flex;gap:0;margin-bottom:4px;padding-left:0">'
+    +'<div style="width:82px;flex-shrink:0;font-family:var(--mono);font-size:7px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em">R64</div>'
+    +'<div style="width:18px;flex-shrink:0"></div>'
+    +'<div style="width:82px;flex-shrink:0;font-family:var(--mono);font-size:7px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em">R32</div>'
+    +'<div style="width:18px;flex-shrink:0"></div>'
+    +'<div style="width:82px;flex-shrink:0;font-family:var(--mono);font-size:7px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em">S16</div>'
+    +'<div style="width:18px;flex-shrink:0"></div>'
+    +'<div style="width:82px;flex-shrink:0;font-family:var(--mono);font-size:7px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em">E8</div>'
+    +'</div>';
+
+  document.getElementById('brkRoundHdr').innerHTML =
+    '<div style="font-family:var(--mono);font-size:8px;color:var(--text3);padding:2px 0;text-transform:uppercase;letter-spacing:.08em">'+rk.toUpperCase()+' REGION</div>';
+
+  document.getElementById('brkArea').innerHTML =
+    '<div style="padding:6px 14px 80px;overflow-x:auto">'
+    + labels
+    + '<div style="display:flex;align-items:stretch;flex-shrink:0">'
+    +   '<div style="display:flex;flex-direction:column;flex-shrink:0">'
+    +     '<div style="margin-bottom:'+SG+'px">'+p0+'</div>'
+    +     p1
+    +   '</div>'
+    +   rightCols
+    + '</div>'
+    + '</div>';
+}
+
+function findStaticGameKey(awayAbbr, homeAbbr) {
+  for (const [key, data] of Object.entries(STATIC_GAMES)) {
+    for (const g of data.games||[]) {
+      const a=(g.away?.abbr||'').toUpperCase(), h=(g.home?.abbr||'').toUpperCase();
+      if ((a===awayAbbr&&h===homeAbbr)||(a===homeAbbr&&h===awayAbbr)) return key+'|'+g.id;
+    }
+  }
+  return null;
+}
+
+function bracketTapGame(keyStr) {
+  const [dayKey, gameId] = keyStr.split('|');
+  const shortKey = dayKey.replace('ncaam-w1_','');
+  showGamesPanel();
+  const tabEl = document.getElementById('tab-'+shortKey);
+  if (tabEl) {
+    tabEl.click();
+    setTimeout(() => {
+      const row = document.getElementById('row-'+gameId);
+      if (row) { row.scrollIntoView({behavior:'smooth',block:'center'}); toggleGame(gameId); }
+    }, 300);
+  }
+}
+
+
+// ═══════════════════════════════════════════
+// OVERRIDE switchDay TO SHOW GAMES PANEL
+// ═══════════════════════════════════════════
+function switchDay(key, el) {
+  showGamesPanel();
+  currentDayKey=key; openGame=null;
+  document.querySelectorAll('.day-tab').forEach(t=>t.classList.remove('active'));
+  if(el) el.classList.add('active');
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+key)?.classList.add('active');
+  if (!cache[prefs.activeEvent+'_'+key]) loadDay(key);
+}
+// ═══════════════════════════════════════════
+// BRACKET PANEL RENDER + TABS
+// ═══════════════════════════════════════════
+function renderBracketPanel() {
+  const panel = document.getElementById('bracketPanel');
+  panel.innerHTML = `
+    <div class="brk-region-tabs">
+      <div class="brk-tab active" id="brkt-east"     onclick="switchBracketRegion('east',this)">EAST</div>
+      <div class="brk-tab"        id="brkt-west"     onclick="switchBracketRegion('west',this)">WEST</div>
+      <div class="brk-tab"        id="brkt-south"    onclick="switchBracketRegion('south',this)">SOUTH</div>
+      <div class="brk-tab"        id="brkt-midwest"  onclick="switchBracketRegion('midwest',this)">MIDWEST</div>
+      <div class="brk-tab"        id="brkt-finalfour" onclick="switchBracketRegion('finalfour',this)">🏆 F4</div>
+      <div class="brk-tab"        id="brkt-gmoney"   onclick="switchBracketRegion('gmoney',this)" style="color:#B09DFF">💰 G-Money</div>
+    </div>
+    <div class="brk-round-hdr" id="brkRoundHdr"></div>
+    <div class="brk-area" id="brkArea"><div style="padding:20px;font-family:var(--mono);font-size:11px;color:var(--text3)">⚡ Loading bracket...</div></div>`;
+  buildFallbackBracket();
+  drawBracket(currentBracketRegion);
+}
+
+function switchBracketRegion(key, el) {
+  currentBracketRegion = key;
+  document.querySelectorAll('.brk-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  drawBracket(key);
+}
+
+function drawFinalFour() {
+  const ff = BRACKET_DATA.finalfour;
+  document.getElementById('brkRoundHdr').innerHTML = '';
+  function ffCard(g) {
+    if (!g || g.st==='tbd') return '<div style="background:var(--card2);border:1px dashed var(--border);border-radius:10px;padding:14px;text-align:center;font-family:var(--mono);font-size:10px;color:var(--text3)">'+(g?.tm||'TBD')+'</div>';
+    const fin=g.st==='final', aWin=fin&&g.aw, hWin=fin&&!g.aw;
+    return '<div style="background:var(--card);border:1px solid '+(fin?'var(--border2)':'var(--border)')+';border-radius:10px;overflow:hidden">'
+      +'<div style="display:flex;justify-content:space-between;padding:8px 12px;'+(aWin?'background:var(--green-d)':'')+'">'
+      +'<div style="font-family:var(--sans);font-size:13px;font-weight:700;color:'+(aWin?'var(--green)':'var(--text)')+'"><span style="font-family:var(--mono);font-size:9px;color:var(--text3);margin-right:4px">'+g.a.s+'</span>'+g.a.n+(aWin?' ✓':'')+'</div>'
+      +(fin?'<span style="font-family:var(--mono);font-size:12px;font-weight:700;color:'+(aWin?'var(--green)':'var(--text3)')+'">'+g.as+'</span>':'')+'</div>'
+      +'<div style="height:1px;background:var(--border)"></div>'
+      +'<div style="display:flex;justify-content:space-between;padding:8px 12px;'+(hWin?'background:var(--green-d)':'')+'">'
+      +'<div style="font-family:var(--sans);font-size:13px;font-weight:700;color:'+(hWin?'var(--green)':'var(--text)')+'"><span style="font-family:var(--mono);font-size:9px;color:var(--text3);margin-right:4px">'+g.h.s+'</span>'+g.h.n+(hWin?' ✓':'')+'</div>'
+      +(fin?'<span style="font-family:var(--mono);font-size:12px;font-weight:700;color:'+(hWin?'var(--green)':'var(--text3)')+'">'+g.hs+'</span>':'')+'</div>'
+      +(fin?'<div style="text-align:center;font-family:var(--mono);font-size:8px;color:var(--text3);padding:2px">FINAL</div>':'')+'</div>';
+  }
+  document.getElementById('brkArea').innerHTML =
+    '<div style="padding:14px">'
+    +'<div style="font-family:var(--mono);font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px">🏆 Final Four · SAT 4/4 · Houston</div>'
+    +(ff?.f4||[]).map(g=>'<div style="margin-bottom:10px">'+ffCard(g)+'</div>').join('')
+    +'<div style="font-family:var(--mono);font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin:14px 0 10px">🏆 Championship · MON 4/6</div>'
+    +(ff?.natty||[]).map(g=>ffCard(g)).join('')
+    +'</div>';
+}
+
+const GMONEY_BRACKET = {
+  champion: 'MICH',
+  championship: ['MICH','FLA'],
+  analysis: "Michigan wins it all. Beats Arizona in the West/Midwest Final Four semifinal — Lendeborg too big. Florida beats Duke in the other semifinal. Then MICH vs FLA in the Championship — title favorite beats the defending champ.",
+  date: 'Mar 16, 2026',
+  regions: {
+    east: { name:'East',
+      r64:[{a:'DUKE',as:1,h:'SIE', hs:16,pick:'DUKE',note:'Boozer by 20+'   },
+           {a:'OSU', as:8,h:'TCU', hs:9, pick:'TCU', note:'TCU +1.5 value'   },
+           {a:'LOU', as:6,h:'USF', hs:11,pick:'USF', note:'11-seeds 8-4 ATS' },
+           {a:'MSU', as:3,h:'NDSU',hs:14,pick:'MSU', note:'Fears dominates'  }],
+      r32:[{a:'DUKE',as:1,h:'TCU', hs:9, pick:'DUKE',note:'Duke rolls easily' },
+           {a:'USF', as:11,h:'MSU',hs:3, pick:'MSU', note:'Size advantage wins'}],
+      s16:[{a:'DUKE',as:1,h:'MSU', hs:3, pick:'DUKE',note:'Boozer too good'   }],
+      e8: [{a:'DUKE',as:1,h:'CONN',hs:2, pick:'DUKE',note:'Duke to Final Four'}]},
+    west: { name:'West',
+      r64:[{a:'BYU', as:5,h:'TEX', hs:11,pick:'BYU', note:'Dybantsa 30+'     },
+           {a:'SMC', as:4,h:'TXAM',hs:13,pick:'SMC', note:'SMC efficiency'   },
+           {a:'GONZ',as:3,h:'KENN',hs:14,pick:'GONZ',note:'Gonzaga locks down'},
+           {a:'ARIZ',as:1,h:'LIU', hs:16,pick:'ARIZ',note:'Arizona rolls easy'}],
+      r32:[{a:'BYU', as:5,h:'SMC', hs:4, pick:'BYU', note:'Dybantsa too good' },
+           {a:'GONZ',as:3,h:'ARIZ',hs:1, pick:'ARIZ',note:'Arizona D wins'    }],
+      s16:[{a:'BYU', as:5,h:'ARIZ',hs:1, pick:'ARIZ',note:'Burries takes over'}],
+      e8: [{a:'ARIZ',as:1,h:'KAN', hs:2, pick:'ARIZ',note:'Arizona Final Four'}]},
+    south: { name:'South',
+      r64:[{a:'NEB', as:4,h:'TROY',hs:13,pick:'NEB', note:'NEB first ever win'},
+           {a:'ILL', as:6,h:'PENN',hs:11,pick:'ILL', note:'Wagler drops 30'  },
+           {a:'HOU', as:2,h:'IDHO',hs:15,pick:'HOU', note:'Houston pack D'   },
+           {a:'FLA', as:1,h:'LEH', hs:16,pick:'FLA', note:'Defending champs' }],
+      r32:[{a:'NEB', as:4,h:'ILL', hs:6, pick:'ILL', note:'ILL too talented'  },
+           {a:'HOU', as:2,h:'FLA', hs:1, pick:'FLA', note:'Florida experience'}],
+      s16:[{a:'ILL', as:6,h:'FLA', hs:1, pick:'FLA', note:'Florida defends'   }],
+      e8: [{a:'FLA', as:1,h:'TENN',hs:2, pick:'FLA', note:'Gators Final Four' }]},
+    midwest: { name:'Midwest',
+      r64:[{a:'MICH',as:1,h:'HOW', hs:16,pick:'MICH',note:'Lendeborg 25/12'  },
+           {a:'VAN', as:5,h:'MCNS',hs:12,pick:'VAN', note:'Vandy peaked'      },
+           {a:'ARK', as:4,h:'HAW', hs:13,pick:'ARK', note:'ARK SEC form'      },
+           {a:'UGA', as:8,h:'SLU', hs:9, pick:'UGA', note:'Lean Georgia'      }],
+      r32:[{a:'MICH',as:1,h:'VAN', hs:5, pick:'MICH',note:'MICH D smothers'  },
+           {a:'ARK', as:4,h:'UGA', hs:8, pick:'ARK', note:'ARK size wins'     }],
+      s16:[{a:'MICH',as:1,h:'ARK', hs:4, pick:'MICH',note:'Too big inside'    }],
+      e8: [{a:'MICH',as:1,h:'IOWA',hs:2, pick:'MICH',note:'MICH on a mission' }]},
+  }
+};
+
+function drawGMoneyBracket() {
+  document.getElementById('brkRoundHdr').innerHTML = '';
+  const gb = GMONEY_BRACKET.regions;
+
+  function gcard(g) {
+    const aWin=g.pick===g.a, hWin=g.pick===g.h;
+    return '<div style="width:80px;flex-shrink:0;background:var(--card);border:0.5px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:5px">'
+      +'<div style="display:flex;align-items:center;padding:2px 5px;'+(aWin?'background:var(--green-d)':'opacity:.55;')+'">'
+      +'<span style="font-family:var(--mono);font-size:7px;color:var(--text3);width:10px;flex-shrink:0">'+g.as+'</span>'
+      +'<span style="font-family:var(--sans);font-size:10px;font-weight:700;flex:1;color:'+(aWin?'var(--green)':'var(--text2)')+'">'+g.a+'</span>'
+      +(aWin?'<span style="font-size:8px;color:var(--green)">→</span>':'')+'</div>'
+      +'<div style="height:1px;background:var(--border)"></div>'
+      +'<div style="display:flex;align-items:center;padding:2px 5px;'+(hWin?'background:var(--green-d)':'opacity:.55;')+'">'
+      +'<span style="font-family:var(--mono);font-size:7px;color:var(--text3);width:10px;flex-shrink:0">'+g.hs+'</span>'
+      +'<span style="font-family:var(--sans);font-size:10px;font-weight:700;flex:1;color:'+(hWin?'var(--green)':'var(--text2)')+'">'+g.h+'</span>'
+      +(hWin?'<span style="font-size:8px;color:var(--green)">→</span>':'')+'</div>'
+      +'<div style="padding:2px 5px;font-family:var(--mono);font-size:7px;color:var(--text3);border-top:1px solid var(--border)">'+g.note+'</div>'
+      +'</div>';
+  }
+
+  function connSvg(n,sh,sg,mt) {
+    const h=n*sh+(n-1)*sg;
+    let s='<svg width="14" height="'+h+'" style="flex-shrink:0;overflow:visible;margin-top:'+(mt||0)+'px">';
+    for(let i=0;i<n;i+=2){
+      const y1=i*(sh+sg)+sh/2,y2=(i+1)*(sh+sg)+sh/2,mid=(y1+y2)/2;
+      s+='<line x1="0" y1="'+y1+'" x2="7" y2="'+y1+'" stroke="var(--border2)" stroke-width="1"/>'
+        +'<line x1="0" y1="'+y2+'" x2="7" y2="'+y2+'" stroke="var(--border2)" stroke-width="1"/>'
+        +'<line x1="7" y1="'+y1+'" x2="7" y2="'+y2+'" stroke="var(--border2)" stroke-width="1"/>'
+        +'<line x1="7" y1="'+mid+'" x2="14" y2="'+mid+'" stroke="var(--border2)" stroke-width="1"/>';
+    }
+    return s+'</svg>';
+  }
+
+  const SH=54,SG=5;
+  function gcol(games,lbl,pad) {
+    return '<div style="display:flex;flex-direction:column;flex-shrink:0">'
+      +'<div style="font-family:var(--mono);font-size:7px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;height:13px;line-height:13px">'+lbl+'</div>'
+      +(pad?'<div style="height:'+pad+'px"></div>':'')
+      +games.map(g=>'<div>'+gcard(g)+'</div>').join('')+'</div>';
+  }
+
+  const regionColors={east:'#185FA5',west:'#854F0B',south:'#0F6E56',midwest:'#72243E'};
+
+  let html='<div style="padding:10px">'
+
+    // ── Analysis header ──
+    +'<div style="background:var(--card2);border-left:3px solid #B09DFF;border-radius:6px;padding:10px 12px;margin-bottom:12px">'
+    +'<div style="font-family:var(--mono);font-size:8px;color:#B09DFF;text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">💰 G-Money\'s Bracket · Locked Mar 16</div>'
+    +'<div style="font-family:var(--sans);font-size:11px;line-height:1.5;color:var(--text)">'+GMONEY_BRACKET.analysis+'</div>'
+    +'</div>'
+
+    // ── 4 Regions ──
+    +'<div style="font-family:var(--mono);font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Regional Brackets</div>';
+
+  for(const [rk,rd] of Object.entries(gb)) {
+    const col = regionColors[rk]||'var(--accent)';
+    html += '<div style="margin-bottom:10px;border:1px solid var(--border);border-radius:8px;overflow:hidden">'
+      +'<div style="padding:5px 10px;font-family:var(--mono);font-size:8px;font-weight:500;text-transform:uppercase;letter-spacing:.1em;color:'+col+';border-bottom:1px solid var(--border)">'+rd.name+' Region → <span style="color:var(--green)">'+rd.e8[0].pick+' to Final Four</span></div>'
+      +'<div style="display:flex;align-items:flex-start;padding:8px 10px;overflow-x:auto;gap:0">'
+      +gcol(rd.r64,'R64',0)
+      +connSvg(4,SH,SG,13)
+      +gcol(rd.r32,'R32',(SH+SG)/2)
+      +connSvg(2,SH,SH+SG*5,13+(SH+SG)/2)
+      +gcol(rd.s16,'S16',(SH+SG)*1.5)
+      +'<div style="flex-shrink:0;margin-top:'+(13+(SH+SG)*1.5+SH/2)+'px"><svg width="14" height="2" style="overflow:visible"><line x1="0" y1="0" x2="14" y2="0" stroke="var(--border2)" stroke-width="1"/></svg></div>'
+      +gcol(rd.e8,'E8',(SH+SG)*3.5-SG)
+      +'</div></div>';
+  }
+
+  // ── Final Four ──
+  html += '<div style="font-family:var(--mono);font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin:12px 0 6px">Final Four · Apr 4 · Houston</div>'
+    +'<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px">'
+    +'<div style="background:var(--card);border:1px solid var(--border);border-radius:7px;padding:8px 12px">'
+    +'<div style="font-family:var(--mono);font-size:7px;color:var(--text3);margin-bottom:5px">SEMIFINAL 1 · West vs Midwest</div>'
+    +'<div style="display:flex;justify-content:space-between;align-items:center">'
+    +'<span style="font-family:var(--sans);font-size:13px;font-weight:700;color:var(--text)">ARIZ <span style="font-family:var(--mono);font-size:8px;color:var(--text3)">#1 West</span></span>'
+    +'<span style="font-family:var(--mono);font-size:9px;color:var(--text3)">vs</span>'
+    +'<span style="font-family:var(--sans);font-size:13px;font-weight:700;color:var(--green)">MICH ✓ <span style="font-family:var(--mono);font-size:8px">#1 Midwest</span></span>'
+    +'</div></div>'
+    +'<div style="background:var(--card);border:1px solid var(--border);border-radius:7px;padding:8px 12px">'
+    +'<div style="font-family:var(--mono);font-size:7px;color:var(--text3);margin-bottom:5px">SEMIFINAL 2 · East vs South</div>'
+    +'<div style="display:flex;justify-content:space-between;align-items:center">'
+    +'<span style="font-family:var(--sans);font-size:13px;font-weight:700;color:var(--text)">DUKE <span style="font-family:var(--mono);font-size:8px;color:var(--text3)">#1 East</span></span>'
+    +'<span style="font-family:var(--mono);font-size:9px;color:var(--text3)">vs</span>'
+    +'<span style="font-family:var(--sans);font-size:13px;font-weight:700;color:var(--green)">FLA ✓ <span style="font-family:var(--mono);font-size:8px">#1 South</span></span>'
+    +'</div></div>'
+    +'</div>'
+
+  // ── Championship ──
+    +'<div style="background:var(--card2);border:1px solid var(--amber);border-radius:10px;padding:12px;text-align:center;margin-bottom:6px">'
+    +'<div style="font-family:var(--mono);font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">🏆 National Championship · Apr 6 · Houston</div>'
+    +'<div style="display:flex;justify-content:center;align-items:center;gap:12px;margin-bottom:6px">'
+    +'<span style="font-family:var(--sans);font-size:16px;font-weight:800;color:var(--text)">FLA</span>'
+    +'<span style="font-family:var(--mono);font-size:11px;color:var(--text3)">vs</span>'
+    +'<span style="font-family:var(--sans);font-size:16px;font-weight:800;color:var(--amber)">MICH</span>'
+    +'</div>'
+    +'<div style="font-family:var(--sans);font-size:22px;font-weight:800;color:var(--amber)">MICHIGAN WINS 🏆</div>'
+    +'<div style="font-family:var(--mono);font-size:9px;color:var(--green);margin-top:3px">+350 · G-Money backed before tournament</div>'
+    +'</div>'
+
+    +'<div style="font-family:var(--mono);font-size:8px;color:var(--text3);text-align:center;padding:8px 0">For entertainment only 🎯</div>'
+    +'</div>';
+
+  document.getElementById('brkArea').innerHTML = html;
+}
+
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+
+// ═══════════════════════════════════════════
+// PARLAY BUILDER
+// ═══════════════════════════════════════════
+const PARLAY_KEY     = 'gmoney_parlay_legs';
+const SAVED_PARLAYS_KEY = 'gmoney_saved_parlays';
+
+function loadParlayLegs()   { try { return JSON.parse(localStorage.getItem(PARLAY_KEY)||'[]'); } catch(e) { return []; } }
+function saveParlayLegs(l)  { localStorage.setItem(PARLAY_KEY, JSON.stringify(l)); }
+function loadSavedParlays() { try { return JSON.parse(localStorage.getItem(SAVED_PARLAYS_KEY)||'[]'); } catch(e) { return []; } }
+function saveSavedParlays(p){ localStorage.setItem(SAVED_PARLAYS_KEY, JSON.stringify(p)); }
+
+function isParlaySelected(gameId, slot) {
+  const legs = loadParlayLegs();
+  return legs.some(l => l.id === gameId + '-' + slot);
+}
+
+// Global parlay mode state
+let _parlayMode   = false;
+let _ouPending    = null; // stores pending O/U leg while user picks over/under
+let _spreadPending = null; // stores pending spread leg while user picks side
+
+// ── SPREAD PICKER ─────────────────────────────────────────────
+function showSpreadPicker(gameId, away, home, spreadLine, awayOdds, homeOdds) {
+  _spreadPending = { gameId, away, home, spreadLine, awayOdds, homeOdds };
+  const overlay  = document.getElementById('spreadPickerOverlay');
+  const modal    = document.getElementById('spreadPickerModal');
+  const gameEl   = document.getElementById('spreadPickerGame');
+  const awayBtn  = document.getElementById('spreadPickerAway');
+  const homeBtn  = document.getElementById('spreadPickerHome');
+  if (!modal) return;
+  const line = parseFloat(spreadLine) || 0;
+  const awayLine = (line > 0 ? '+' : '') + line;
+  const homeLine = (line > 0 ? '' : '+') + (-line);
+  if (gameEl)  gameEl.textContent  = away + ' vs ' + home;
+  if (awayBtn) awayBtn.innerHTML   = away + '<br><span style="font-size:16px">' + awayLine + '</span><br><span style="font-size:11px;opacity:.7">' + (awayOdds||'-110') + '</span>';
+  if (homeBtn) homeBtn.innerHTML   = home + '<br><span style="font-size:16px">' + homeLine + '</span><br><span style="font-size:11px;opacity:.7">' + (homeOdds||'-110') + '</span>';
+  overlay.style.display = 'block';
+  modal.style.display   = 'block';
+}
+
+function closeSpreadPicker() {
+  document.getElementById('spreadPickerOverlay').style.display = 'none';
+  document.getElementById('spreadPickerModal').style.display   = 'none';
+  _spreadPending = null;
+}
+
+function selectSpread(side) {
+  if (!_spreadPending) return;
+  const { gameId, away, home, spreadLine, awayOdds, homeOdds } = _spreadPending;
+  const line = parseFloat(spreadLine) || 0;
+  const isAway = side === 'away';
+  const team   = isAway ? away : home;
+  const pick   = isAway ? ((line > 0 ? '+' : '') + line) : ((line > 0 ? '' : '+') + (-line));
+  const leg = {
+    id:    gameId + '-spread-' + side,
+    gameId,
+    type:  'Spread',
+    label: team + ' ' + pick,
+    odds:  isAway ? (awayOdds||'-110') : (homeOdds||'-110'),
+    game:  away + 'v' + home,
+    away, home,
+  };
+  closeSpreadPicker();
+  addParlayLeg(leg);
+}
+
+// Update spread pill onclick to use picker
+function _spreadTap(el) {
+  const key      = el.getAttribute('data-pleg');
+  const gameId   = el.getAttribute('data-sp-game');
+  const away     = el.getAttribute('data-sp-away');
+  const home     = el.getAttribute('data-sp-home');
+  const line     = el.getAttribute('data-sp-line');
+  const awayOdds = el.getAttribute('data-sp-aodds');
+  const homeOdds = el.getAttribute('data-sp-hodds');
+  if (gameId && line) {
+    if (!_parlayMode) { _parlayMode = true; updateParlayModeBtn(); }
+    showSpreadPicker(gameId, away, home, line, awayOdds, homeOdds);
+  } else {
+    _parlayTap(el);
+  }
+}
+
+
+
+function updateParlayModeBtn() {
+  const btn     = document.getElementById('parlayModeBtn');
+  const slipBtn = document.getElementById('viewSlipBtn');
+  if (!btn) return;
+  const legs  = loadParlayLegs();
+  const saved = loadSavedParlays();
+  if (_parlayMode) {
+    btn.classList.add('active');
+    btn.textContent = '🎰 Build · ' + legs.length;
+  } else {
+    btn.classList.remove('active');
+    btn.style.background  = '';
+    btn.style.color       = '';
+    btn.style.borderColor = '';
+    btn.textContent = '🎰 Build New';
+  }
+  if (slipBtn) {
+    const n = saved.length;
+    slipBtn.textContent   = n > 0 ? '📋 View Slips (' + n + ')' : '📋 View Slips';
+    slipBtn.style.borderColor = n > 0 ? 'var(--accent)' : '';
+    slipBtn.style.color       = n > 0 ? 'var(--accent)' : '';
+  }
+  const doneBtn = document.getElementById('parlayDoneBtn');
+  if (doneBtn) {
+    doneBtn.style.display = (_parlayMode && legs.length >= 2) ? 'flex' : 'none';
+    doneBtn.textContent   = '✓ DONE — VIEW ' + legs.length + '-LEG SLIP';
+  }
+}
+
+function applyParlayModeUI() {
+  // Add/remove parlay-mode-active class on all panels
+  document.querySelectorAll('.panel').forEach(p => {
+    p.classList.toggle('parlay-mode-active', _parlayMode);
+  });
+  // Mark game rows that already have a pick
+  const legs = loadParlayLegs();
+  const pickedGameIds = new Set(legs.map(l => l.gameId));
+  document.querySelectorAll('.game-row').forEach(row => {
+    const gid = row.id.replace('row-', '');
+    row.classList.toggle('parlay-picked', pickedGameIds.has(gid));
+  });
+  // Show/hide done button
+  const doneBtn = document.getElementById('parlayDoneBtn');
+  if (doneBtn) {
+    doneBtn.style.display = (_parlayMode && legs.length >= 2) ? 'flex' : 'none';
+    doneBtn.textContent   = '✓ DONE — VIEW ' + legs.length + '-LEG SLIP';
+  }
+  // Update mode bar
+  const bar = document.getElementById('parlayModeBar');
+  if (bar) {
+    bar.style.display = _parlayMode ? 'flex' : 'none';
+    const cnt = bar.querySelector('#parlayModeCount');
+    if (cnt) cnt.textContent = legs.length + (legs.length === 1 ? ' leg' : ' legs');
+  }
+}
+
+function toggleParlayMode() {
+  const ev = getActiveEvent();
+  if (ev.status && ev.status !== 'active') {
+    showToast('Parlay builder unlocks when ' + ev.name + ' starts', 'var(--text3)');
+    return;
+  }
+  _parlayMode = !_parlayMode;
+  updateParlayModeBtn();
+  applyParlayModeUI();
+  if (_parlayMode) {
+    showGamesPanel();
+    showToast('🎰 Tap any highlighted odds pill to add a leg', 'var(--amber)');
+  } else {
+    const legs = loadParlayLegs();
+    if (legs.length > 0) openParlaySheet();
+  }
+}
+
+// O/U picker — shown when user taps O/U pill
+function showOUPicker(gameId, awayAbbr, homeAbbr, total, overOdds, underOdds) {
+  _ouPending = { gameId, awayAbbr, homeAbbr, total, overOdds, underOdds };
+  const overlay = document.getElementById('ouPickerOverlay');
+  const modal   = document.getElementById('ouPickerModal');
+  const gameEl  = document.getElementById('ouPickerGame');
+  const overBtn = document.getElementById('ouPickerOver');
+  const underBtn= document.getElementById('ouPickerUnder');
+  if (!modal) return;
+  if (gameEl)   gameEl.textContent  = awayAbbr + ' vs ' + homeAbbr + ' · O/U ' + total;
+  if (overBtn)  overBtn.innerHTML   = '📈 OVER ' + total + '<br><span style="font-size:11px;opacity:.7">' + overOdds + '</span>';
+  if (underBtn) underBtn.innerHTML  = '📉 UNDER ' + total + '<br><span style="font-size:11px;opacity:.7">' + underOdds + '</span>';
+  overlay.style.display = 'block';
+  modal.style.display   = 'block';
+}
+
+function closeOUPicker() {
+  document.getElementById('ouPickerOverlay').style.display = 'none';
+  document.getElementById('ouPickerModal').style.display   = 'none';
+  _ouPending = null;
+}
+
+function selectOU(direction) {
+  if (!_ouPending) return;
+  const { gameId, awayAbbr, homeAbbr, total, overOdds, underOdds } = _ouPending;
+  const isOver = direction === 'over';
+  const leg = {
+    id:      gameId + '-ou-' + direction,
+    gameId,
+    type:    'O/U',
+    label:   (isOver ? 'OVER ' : 'UNDER ') + total,
+    odds:    isOver ? overOdds : underOdds,
+    game:    awayAbbr + 'v' + homeAbbr,
+    away:    awayAbbr,
+    home:    homeAbbr,
+  };
+  closeOUPicker();
+  addParlayLeg(leg);
+}
+
+function addParlayLeg(leg) {
+  let legs = loadParlayLegs();
+  const idx = legs.findIndex(l => l.id === leg.id);
+  if (idx >= 0) {
+    legs.splice(idx, 1);
+    showToast('✕ ' + leg.label + ' removed', 'var(--text3)');
+  } else {
+    legs = legs.filter(l => l.gameId !== leg.gameId);
+    if (legs.length >= 12) { showToast('Max 12 legs', 'var(--amber)'); return; }
+    legs.push(leg);
+    const n = legs.length;
+    showToast('✓ ' + leg.label + ' · ' + n + ' leg' + (n > 1 ? 's' : ''), 'var(--amber)');
+  }
+  saveParlayLegs(legs);
+  updateParlayFab();
+  updateParlayModeBtn();
+  // Update pill highlights in place — NO full re-render
+  updatePillHighlights();
+  setTimeout(() => applyParlayModeUI(), 30);
+}
+
+function updatePillHighlights() {
+  const legs = loadParlayLegs();
+  const pickedIds  = new Set(legs.map(l => l.id));
+  const pickedGames= new Set(legs.map(l => l.gameId));
+  // Update each pill
+  document.querySelectorAll('.parlay-pill').forEach(el => {
+    const pleg   = el.getAttribute('data-pleg');
+    const ouGame = el.getAttribute('data-ou-game');
+    const spGame = el.getAttribute('data-sp-game');
+    const gameId = el.getAttribute('data-ou-game') || el.getAttribute('data-sp-game') ||
+                   (pleg ? pleg.split('-').slice(0,-2).join('-') || pleg.split('-')[0] : null);
+    if (pleg) {
+      const on = pickedIds.has(pleg) || pickedIds.has(pleg + '-away') || pickedIds.has(pleg + '-home');
+      el.classList.toggle('parlay-on', on);
+    }
+    if (ouGame) {
+      const on = legs.some(l => l.gameId === ouGame && l.type === 'O/U');
+      el.classList.toggle('parlay-on', on);
+    }
+    if (spGame) {
+      const on = legs.some(l => l.gameId === spGame && l.type === 'Spread');
+      el.classList.toggle('parlay-on', on);
+    }
+    // Dim pills for games already picked (different pill same game)
+    if (gameId && pickedGames.has(gameId)) {
+      const thisLegId = pleg || (ouGame ? ouGame+'-ou' : null) || (spGame ? spGame+'-spread' : null);
+      const isPicked  = legs.some(l => l.gameId === gameId && (l.id === pleg || (ouGame && l.type==='O/U') || (spGame && l.type==='Spread')));
+      el.style.opacity = (!isPicked && pickedGames.has(gameId)) ? '0.35' : '';
+      el.style.pointerEvents = (!isPicked && pickedGames.has(gameId)) ? 'none' : '';
+    } else {
+      el.style.opacity = '';
+      el.style.pointerEvents = '';
+    }
+  });
+  // Update game row borders
+  document.querySelectorAll('.game-row').forEach(row => {
+    const gid = row.id.replace('row-', '');
+    row.classList.toggle('parlay-picked', pickedGames.has(gid));
+  });
+}
+
+// Gate toggleParlay — auto-activates parlay mode on first tap
+function toggleParlay(leg) {
+  if (!_parlayMode) {
+    _parlayMode = true;
+    updateParlayModeBtn();
+    showToast('🎰 Tap highlighted pills to build your parlay', 'var(--amber)');
+  }
+  addParlayLeg(leg);
+}
+
+// Called when O/U pill tapped
+function tapOUParlay(gameId, awayAbbr, homeAbbr, total, overOdds, underOdds) {
+  if (!_parlayMode) {
+    _parlayMode = true;
+    updateParlayModeBtn();
+  }
+  showOUPicker(gameId, awayAbbr, homeAbbr, total, overOdds, underOdds);
+}
+
+
+
+function updateParlayFab() {
+  const legs = loadParlayLegs();
+  const fab  = document.getElementById('parlayFab');
+  const cnt  = document.getElementById('parlayCount');
+  const navBtn = document.getElementById('parlayNavBtn');
+  if (fab) fab.style.display = legs.length > 0 ? 'flex' : 'none';
+  if (cnt) cnt.textContent = legs.length;
+  if (navBtn) {
+    navBtn.innerHTML = legs.length > 0
+      ? `🎰 Parlay <span style="background:var(--amber);color:#000;border-radius:50%;width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;margin-left:4px;">${legs.length}</span>`
+      : '🎰 Parlay';
+  }
+  updateParlayModeBtn();
+}
+
+function updateParlayModeCount() {
+  const el = document.getElementById('parlayModeCount');
+  if (!el) return;
+  const n = loadParlayLegs().length;
+  el.textContent = n + (n === 1 ? ' leg' : ' legs');
+}
+
+// Convert American odds to decimal
+function toDecimal(american) {
+  const n = parseInt(String(american).replace('+',''));
+  if (isNaN(n)) return 1.909; // default -110
+  return n > 0 ? (n/100)+1 : (100/Math.abs(n))+1;
+}
+
+// Convert decimal back to American
+function toAmerican(decimal) {
+  if (decimal >= 2) return '+' + Math.round((decimal-1)*100);
+  return Math.round(-100/(decimal-1)).toString();
+}
+
+function calcParlayOdds(legs) {
+  if (!legs.length) return { decimal: 1, american: 'EVEN', payout: 0 };
+  const dec = legs.reduce((acc, l) => acc * toDecimal(l.odds), 1);
+  return {
+    decimal: dec,
+    american: toAmerican(dec),
+    payout: dec  // multiply by stake
+  };
+}
+
+function finishParlay() {
+  // Exit parlay mode and open the slip
+  _parlayMode = false;
+  updateParlayModeBtn();
+  applyParlayModeUI();
+  openParlaySheet();
+}
+
+function openViewSlips() {
+  // Open parlay sheet and scroll to saved slips
+  if (_parlayMode) {
+    _parlayMode = false;
+    updateParlayModeBtn();
+    applyParlayModeUI();
+  }
+  document.getElementById('parlaySheet').classList.add('open');
+  document.getElementById('parlayOverlay').style.display = 'block';
+  renderParlaySheet();
+  setTimeout(() => {
+    const sheet = document.getElementById('parlaySheet');
+    if (sheet) sheet.scrollTo({ top: sheet.scrollHeight, behavior: 'smooth' });
+  }, 200);
+}
+
+function openParlaySheet() {
+  // Exit parlay mode when viewing slip
+  if (_parlayMode) {
+    _parlayMode = false;
+    updateParlayModeBtn();
+    applyParlayModeUI();
+  }
+  document.getElementById('parlaySheet').classList.add('open');
+  document.getElementById('parlayOverlay').style.display = 'block';
+  renderParlaySheet();
+}
+
+function closeParlaySheet() {
+  document.getElementById('parlaySheet').classList.remove('open');
+  document.getElementById('parlayOverlay').style.display = 'none';
+}
+
+function copyParlayToClipboard() {
+  const legs = loadParlayLegs();
+  if (!legs.length) return;
+  const odds = calcParlayOdds(legs);
+  const stake = parseFloat(document.getElementById('parlayStake')?.value||25);
+  const payout = (stake * odds.decimal).toFixed(2);
+  const text = `🎰 G-MONEY PARLAY\n`
+    + legs.map((l,i) => `${i+1}. ${l.game} — ${l.label} (${l.odds})`).join('\n')
+    + `\nOdds: ${odds.american} | Stake: $${stake} | To Win: $${(payout-stake).toFixed(2)} | Payout: $${payout}`;
+  navigator.clipboard.writeText(text).then(() => showToast('📋 Parlay copied!','var(--green)'));
+}
+
+function saveParlayToSlip() {
+  const legs = loadParlayLegs();
+  if (legs.length < 2) { showToast('Add at least 2 legs first', 'var(--red)'); return; }
+  const stake = parseFloat(document.getElementById('parlayStake')?.value||25);
+  const odds  = calcParlayOdds(legs);
+  const saved = loadSavedParlays();
+  saved.unshift({
+    id: Date.now(),
+    date: new Date().toLocaleDateString('en-US',{month:'numeric',day:'numeric'}),
+    legs: [...legs],
+    stake,
+    odds: odds.american,
+    decimal: odds.decimal,
+    payout: (stake * odds.decimal).toFixed(2),
+    toWin: (stake * odds.decimal - stake).toFixed(2),
+    result: 'pending',
+  });
+  saveSavedParlays(saved.slice(0,20));
+  saveParlayLegs([]);
+  _parlayMode = false;
+  updateParlayModeBtn();
+  updatePillHighlights();
+  updateParlayFab();
+  closeParlaySheet();
+  showToast('🎰 Parlay saved! ' + legs.length + ' legs · ' + odds.american, 'var(--green)');
+  // Navigate to My Bets to show the saved ticket
+  setTimeout(() => showMyBetsPanel(), 400);
+}
+
+// G-Money auto-parlay: picks 3-4 best legs from today's games
+function buildGMoneyParlay() {
+  const cacheKey = (getActiveEvent()?.id||'') + '_' + currentDayKey;
+  const data = cache[cacheKey];
+  if (!data?.games?.length) return null;
+
+  const picks = [];
+  for (const g of data.games) {
+    if (picks.length >= 4) break;
+    // Skip games already final
+    const score = getGameScore(g);
+    if (score?.status === 'final') continue;
+
+    const awayAbbr = (g.away?.abbr||'').toUpperCase();
+    const homeAbbr = (g.home?.abbr||'').toUpperCase();
+    if (!awayAbbr || !homeAbbr) continue;
+
+    const awayML  = g.moneyline?.away;
+    const homeML  = g.moneyline?.home;
+    const spread  = g.spread;
+    const total   = g.total;
+    const sa      = (g.sharpAngle||'').toLowerCase();
+
+    let pick = null;
+
+    // Check sharp angle text for explicit recommendation
+    const mentionsAway  = sa.includes(awayAbbr.toLowerCase().slice(0,3));
+    const mentionsHome  = sa.includes(homeAbbr.toLowerCase().slice(0,3));
+    const mentionsOver  = sa.includes('over');
+    const mentionsUnder = sa.includes('under');
+
+    if (mentionsOver && total) {
+      pick = { id:g.id+'-ou-over', gameId:g.id, type:'O/U', label:'OVER '+total.line, odds: total.overJuice||'-110', game:awayAbbr+'v'+homeAbbr, away:awayAbbr, home:homeAbbr };
+    } else if (mentionsUnder && total) {
+      pick = { id:g.id+'-ou-under', gameId:g.id, type:'O/U', label:'UNDER '+total.line, odds: total.underJuice||'-110', game:awayAbbr+'v'+homeAbbr, away:awayAbbr, home:homeAbbr };
+    } else if (mentionsAway && spread) {
+      const line = spread.favTeam?.includes(awayAbbr) || spread.favTeam?.toUpperCase().includes(awayAbbr.slice(0,3))
+        ? (spread.line>0?'+':'')+spread.line
+        : '+'+(Math.abs(spread.line));
+      pick = { id:g.id+'-spread-a', gameId:g.id, type:'Spread', label:awayAbbr+' '+line, odds:'-110', game:awayAbbr+'v'+homeAbbr, away:awayAbbr, home:homeAbbr };
+    } else if (mentionsHome && spread) {
+      const line = spread.favTeam?.toUpperCase().includes(homeAbbr.slice(0,3))
+        ? (spread.line>0?'+':'')+spread.line
+        : '+'+(Math.abs(spread.line));
+      pick = { id:g.id+'-spread-h', gameId:g.id, type:'Spread', label:homeAbbr+' '+line, odds:'-110', game:awayAbbr+'v'+homeAbbr, away:awayAbbr, home:homeAbbr };
+    } else if (awayML && homeML) {
+      // Default: take the favorite ML if under -150, else take underdog spread
+      const awayNum = parseInt(String(awayML).replace('+',''));
+      const homeNum = parseInt(String(homeML).replace('+',''));
+      if (awayNum < -150 && awayNum > -400) {
+        pick = { id:g.id+'-ml-away', gameId:g.id, type:'ML', label:awayAbbr+' ML', odds:awayML, game:awayAbbr+'v'+homeAbbr, away:awayAbbr, home:homeAbbr };
+      } else if (homeNum < -150 && homeNum > -400) {
+        pick = { id:g.id+'-ml-home', gameId:g.id, type:'ML', label:homeAbbr+' ML', odds:homeML, game:awayAbbr+'v'+homeAbbr, away:awayAbbr, home:homeAbbr };
+      } else if (spread) {
+        const fav = spread.favTeam?.toUpperCase().includes(awayAbbr.slice(0,3)) ? awayAbbr : homeAbbr;
+        const line = (spread.line>0?'+':'')+spread.line;
+        pick = { id:g.id+'-spread-f', gameId:g.id, type:'Spread', label:fav+' '+line, odds:'-110', game:awayAbbr+'v'+homeAbbr, away:awayAbbr, home:homeAbbr };
+      }
+    }
+
+    if (pick) picks.push(pick);
+  }
+
+  return picks.length >= 2 ? picks : null;
+}
+
+function renderParlaySheet() {
+  const legs   = loadParlayLegs();
+  const saved  = loadSavedParlays();
+  const gmp    = buildGMoneyParlay();
+  const odds   = calcParlayOdds(legs);
+  const stake  = 25;
+
+  let html = '';
+
+  // G-Money suggested parlay
+  if (gmp) {
+    const gmpOdds = calcParlayOdds(gmp);
+    const gmpPayout = (stake * gmpOdds.decimal).toFixed(2);
+    html += `<div class="gmoney-parlay">
+      <div class="gmp-header">⚡ G-MONEY AUTO-PARLAY · TODAY'S BEST PLAYS</div>
+      <div class="gmp-legs">${gmp.map((l,i) => {
+        const away = (l.away||'').toUpperCase();
+        const home = (l.home||'').toUpperCase();
+        const matchup = (away && home) ? away+' vs '+home : (l.game||'');
+        return `<div class="gmp-leg"><span class="gmp-num">${i+1}</span><span class="gmp-leg-text">${matchup} — <strong>${l.label}</strong></span><span class="gmp-odds-badge">${l.odds}</span></div>`;
+      }).join('')}</div>
+      <div class="gmp-footer">
+        <span style="color:var(--text3)">${gmp.length}-leg parlay</span>
+        <span style="color:var(--amber);font-weight:700">${gmpOdds.american}</span>
+        <span style="color:var(--green)">$${stake} → $${gmpPayout}</span>
+      </div>
+      <button onclick="loadGMoneyParlay()" style="width:100%;margin-top:8px;padding:8px;background:var(--amber);color:#000;border:none;border-radius:6px;font-family:var(--mono);font-size:11px;font-weight:700;cursor:pointer;letter-spacing:.06em;">
+        ➕ LOAD INTO BUILDER
+      </button>
+    </div>`;
+  }
+
+  // Current builder
+  html += `<div style="padding:4px 16px 2px;font-family:var(--mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-top:4px;">
+    My Builder ${legs.length > 0 ? '· '+legs.length+' legs' : ''}
+  </div>`;
+
+  if (!legs.length) {
+    html += `<div class="parlay-empty">
+      Tap any odds pill to add a leg<br>
+      <span style="font-size:11px;opacity:.6">ML · Spread · O/U — mix and match</span>
+    </div>`;
+  } else {
+    html += legs.map((l, i) => {
+      // Normalize type
+      const t = (l.type||'').toUpperCase();
+      const typeCls   = t === 'ML' ? 'ml' : t === 'SPREAD' ? 'spread' : 'ou';
+      const typeLabel = t === 'ML' ? 'Moneyline' : t === 'SPREAD' ? 'Spread' : 'Over/Under';
+      // Build matchup — use away/home fields, fall back to parsing label
+      const away = l.away ? String(l.away).toUpperCase() : '';
+      const home = l.home ? String(l.home).toUpperCase() : '';
+      const matchup = (away && home) ? away + ' vs ' + home : '';
+      // Odds display
+      const oddsRaw = String(l.odds||'-110');
+      const oddsNum = parseInt(oddsRaw.replace('+',''));
+      const oddsStr = oddsNum > 0 ? '+' + oddsNum : oddsRaw;
+      return `<div class="parlay-leg">
+        <div class="parlay-leg-type ${typeCls}"></div>
+        <div class="parlay-leg-num">${i + 1}</div>
+        <div class="parlay-leg-body">
+          <div class="parlay-leg-pick">${l.label || ''}</div>
+          ${matchup ? `<div class="parlay-leg-matchup">${matchup}</div>` : ''}
+          <span class="parlay-leg-badge ${typeCls}">${typeLabel}</span>
+        </div>
+        <div class="parlay-leg-right">
+          <div class="parlay-leg-odds">${oddsStr}</div>
+          <button class="parlay-leg-del" onclick="removeParlalyLeg('${l.id}')">✕</button>
+        </div>
+      </div>`;
+    }).join('');
+
+    html += `<div class="parlay-payout">
+      <div class="parlay-payout-row">
+        <span class="parlay-payout-label">Parlay Odds</span>
+        <span class="parlay-payout-val">${odds.american}</span>
+      </div>
+      <div class="parlay-payout-row">
+        <span class="parlay-payout-label">To Win</span>
+        <span class="parlay-payout-val" style="color:var(--green)">$<span id="parlayToWin">${(stake*odds.decimal-stake).toFixed(2)}</span></span>
+      </div>
+      <div class="parlay-payout-row" style="margin-bottom:0">
+        <span class="parlay-payout-label">Total Payout</span>
+        <span class="parlay-payout-val">$<span id="parlayPayout">${(stake*odds.decimal).toFixed(2)}</span></span>
+      </div>
+      <div class="parlay-stake-row">
+        <span class="parlay-payout-label">Stake</span>
+        <span style="color:var(--text3);font-family:var(--mono);font-size:13px;">$</span>
+        <input class="parlay-stake-input" id="parlayStake" type="number" value="${stake}" min="1" step="5"
+          oninput="updateParlayCalc(${odds.decimal})">
+      </div>
+    </div>`;
+
+    html += `<div class="parlay-actions">
+      <button class="parlay-btn save" onclick="saveParlayToSlip()" style="flex:2;background:var(--amber);color:#000;border-color:var(--amber);">✅ DONE — SAVE TICKET</button>
+      <button class="parlay-btn clear" onclick="clearParlay()">🗑 CLEAR</button>
+    </div>`;
+  }
+
+  // Saved parlays
+  if (saved.length) {
+    html += `<div style="padding:12px 16px 4px;font-family:var(--mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;border-top:1px solid var(--border);margin-top:8px;">
+      Saved Slips (${saved.length})
+    </div>`;
+    html += `<div class="saved-parlays">` + saved.map(p => `
+      <div class="saved-parlay-card">
+        <div class="sp-header">
+          <span class="sp-title">${p.legs.length}-LEG PARLAY · ${p.date}</span>
+          <button onclick="deleteParlay(${p.id})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;">✕</button>
+        </div>
+        <div class="sp-legs">${p.legs.map(l => `${l.label} <span style="color:var(--text3);font-size:10px">(${l.odds})</span>`).join(' + ')}</div>
+        <div class="sp-footer">
+          <span class="sp-odds">${p.odds}</span>
+          <span style="color:var(--text3)">$${p.stake} stake</span>
+          <span class="sp-payout">→ $${p.payout}</span>
+        </div>
+      </div>`).join('') + `</div>`;
+  }
+
+  html += `<div class="parlay-tip">TAP ANY ODDS PILL ON A GAME CARD TO ADD · FOR ENTERTAINMENT ONLY</div>`;
+
+  document.getElementById('parlaySheetContent').innerHTML = html;
+}
+
+function updateParlayCalc(dec) {
+  const stake = parseFloat(document.getElementById('parlayStake')?.value||25);
+  const tw = document.getElementById('parlayToWin');
+  const tp = document.getElementById('parlayPayout');
+  if (tw) tw.textContent = (stake*dec-stake).toFixed(2);
+  if (tp) tp.textContent = (stake*dec).toFixed(2);
+}
+
+function removeParlalyLeg(id) {
+  let legs = loadParlayLegs();
+  legs = legs.filter(l => l.id !== id);
+  saveParlayLegs(legs);
+  updateParlayFab();
+  const cacheKey = (getActiveEvent()?.id||'') + '_' + currentDayKey;
+  if (cache[cacheKey]) renderPanel(currentDayKey, cache[cacheKey]);
+  renderParlaySheet();
+}
+
+function clearParlay() {
+  saveParlayLegs([]);
+  updateParlayFab();
+  const cacheKey = (getActiveEvent()?.id||'') + '_' + currentDayKey;
+  if (cache[cacheKey]) renderPanel(currentDayKey, cache[cacheKey]);
+  renderParlaySheet();
+}
+
+function deleteParlay(id) {
+  const saved = loadSavedParlays().filter(p => p.id !== id);
+  saveSavedParlays(saved);
+  renderParlaySheet();
+}
+
+function openGMoneyParlay() {
+  const ev = getActiveEvent();
+  if (ev.status && ev.status !== 'active') {
+    showToast('G-Money picks unlock when ' + ev.name + ' starts', 'var(--text3)');
+    return;
+  }
+  if (_parlayMode) {
+    _parlayMode = false;
+    updateParlayModeBtn();
+    applyParlayModeUI();
+  }
+  document.getElementById('parlaySheet').classList.add('open');
+  document.getElementById('parlayOverlay').style.display = 'block';
+  renderParlaySheet();
+  showToast('⚡ G-Money auto-parlay shown at top', 'var(--amber)');
+}
+
+function loadGMoneyParlay() {
+  const gmp = buildGMoneyParlay();
+  if (!gmp || !gmp.length) {
+    // Still open the sheet so user can build manually
+    document.getElementById('parlaySheet').classList.add('open');
+    renderParlaySheet();
+    showToast('⚠️ Add games to cache first — tap a game tab then try again', 'var(--amber)');
+    return;
+  }
+  saveParlayLegs(gmp);
+  updateParlayFab();
+  // Open sheet and render
+  document.getElementById('parlaySheet').classList.add('open');
+  renderParlaySheet();
+  setTimeout(() => {
+    const sheet = document.getElementById('parlaySheet');
+    if (sheet) sheet.scrollTo({ top: 300, behavior: 'smooth' });
+  }, 150);
+  showToast('⚡ ' + gmp.length + '-leg G-Money parlay loaded!', 'var(--amber)');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+
+  bootApp();
+  initTheme();
+  initNudge();
+  startScorePolling();
+  buildAbbrMap();
+
 });
+</script>
 
-app.get('/',           (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
-app.get('/index.html', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
+</body>
+</html>

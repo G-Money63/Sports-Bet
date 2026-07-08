@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>La Quinta TOT Tool — v0.6.0</title>
+<title>La Quinta TOT Tool — v0.6.1</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -79,7 +79,7 @@
 <body>
 <header>
   <h1>La Quinta TOT Tool</h1>
-  <p>La Quinta Resort Management · monthly TOT reconciliation, split deposit allocation, filing &amp; auto-save — v0.6.0</p>
+  <p>La Quinta Resort Management · monthly TOT reconciliation, split allocation with live balances &amp; forecasts — v0.6.1</p>
 </header>
 <div class="wrap">
   <div class="panel">
@@ -135,7 +135,7 @@
       <div style="overflow-x:auto"><table id="expTable"></table></div>
     </div>
   </div>
-  <div class="foot">v0.6.0 · working aid, not tax advice · tiers: ≤26 nts 11% · 27–29 nts 10% (separate form) · 30+ nts exempt</div>
+  <div class="foot">v0.6.1 · working aid, not tax advice · tiers: ≤26 nts 11% · 27–29 nts 10% (separate form) · 30+ nts exempt</div>
 </div>
 
 <script>
@@ -317,8 +317,11 @@ function render(){
           <input class="aamt" type="number" step="0.01" data-di="${i}" data-ai="${ai}" value="${(a.amt||0).toFixed(2)}">
           <button class="mini adel" data-di="${i}" data-ai="${ai}">✕</button></div>`).join('');
         const sumc=Math.abs(s-d.amt)<0.01?'matched':'unmatched';
+        const remaining=r2(d.amt-s);
+        const remTxt=Math.abs(remaining)<0.01?' ✓':remaining>0?` · <b>remaining ${money(remaining)}</b>`:` · <b style="color:var(--bad)">over by ${money(-remaining)}</b>`;
+        const balNotes=(d.allocs||[]).filter(a=>a.conf).map(a=>{const r=RES.find(x=>x.conf===a.conf);if(!r)return '';const bal=r2(r.payout-covered(r.conf));return bal>0.5?`<div class="note" style="color:var(--info)">↳ ${r.guest}: ${money(bal)} still expected from Airbnb (future payment)</div>`:'';}).filter(Boolean).join('');
         return `<tr><td class="l">${d.date}</td><td class="l">${d.ref}</td><td class="l">${d.channel||'—'}</td><td>${money(d.amt)}</td><td class="l">${status(d)}</td>
-          <td class="l">${rows}<button class="mini aadd" data-di="${i}">＋ split</button> <span class="note ${sumc}">allocated ${money(s)} / ${money(d.amt)}</span></td>
+          <td class="l">${rows}<div style="margin-top:4px"><button class="mini aadd" data-di="${i}">＋ split</button> <span class="note ${sumc}">allocated ${money(s)} of ${money(d.amt)}${remTxt}</span></div>${balNotes}</td>
           <td class="l note">${d.hint||''}</td></tr>`;
       }).join('')+`</tbody>`;
   }

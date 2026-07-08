@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>La Quinta TOT Tool — v0.5.0</title>
+<title>La Quinta TOT Tool — v0.6.0</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -69,12 +69,17 @@
   .hidden{display:none}
   .foot{color:var(--muted);font-size:12px;text-align:center;margin-top:30px}
   .matched{color:var(--ok);font-weight:600}.unmatched{color:var(--warn)}
+  .allocrow{display:flex;gap:6px;align-items:center;margin-bottom:4px}
+  .allocrow select{max-width:230px;font:inherit;font-size:12px;padding:4px 6px;border:1px solid #b9c4d0;border-radius:6px}
+  .allocrow input.aamt{width:90px;text-align:right;font:inherit;font-size:12px;padding:4px 6px;border:1px solid #b9c4d0;border-radius:6px}
+  .allocrow input.acustom{width:150px;font:inherit;font-size:12px;padding:4px 6px;border:1px solid #b9c4d0;border-radius:6px}
+  .mini.adel{border-color:#c98; color:#a4232b}
 </style>
 </head>
 <body>
 <header>
   <h1>La Quinta TOT Tool</h1>
-  <p>La Quinta Resort Management · monthly TOT reconciliation, smart matching, filing &amp; auto-save — v0.5.0</p>
+  <p>La Quinta Resort Management · monthly TOT reconciliation, split deposit allocation, filing &amp; auto-save — v0.6.0</p>
 </header>
 <div class="wrap">
   <div class="panel">
@@ -130,7 +135,7 @@
       <div style="overflow-x:auto"><table id="expTable"></table></div>
     </div>
   </div>
-  <div class="foot">v0.5.0 · working aid, not tax advice · tiers: ≤26 nts 11% · 27–29 nts 10% (separate form) · 30+ nts exempt</div>
+  <div class="foot">v0.6.0 · working aid, not tax advice · tiers: ≤26 nts 11% · 27–29 nts 10% (separate form) · 30+ nts exempt</div>
 </div>
 
 <script>
@@ -142,10 +147,10 @@ function lget(k){try{return JSON.parse(localStorage.getItem(k)||'{}');}catch(e){
 function lset(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true;}catch(e){return false;}}
 const depKey=d=>d.ref+'|'+d.amt.toFixed(2);
 function applySavedRes(){const s=lget(LS_RES);RES.forEach(r=>{const v=s[r.conf];if(v){if(typeof v.filedBase==='number')r.filedBase=v.filedBase;if(v.reviewed)r.reviewed=true;if(v.note)r.note=v.note;}});}
-function applySavedDep(){const s=lget(LS_DEP);DEPOSITS.forEach(d=>{const v=s[depKey(d)];if(v&&v.assignedTo!==undefined){d.assignedTo=v.assignedTo;d.suggested=false;d.hint=d.assignedTo?'saved by you':d.hint;}});}
+function applySavedDep(){const s=lget(LS_DEP);DEPOSITS.forEach(d=>{const v=s[depKey(d)];if(v&&v.allocs){d.allocs=v.allocs.map(a=>({conf:a.conf==null?null:a.conf,custom:a.custom===undefined?null:a.custom,amt:+a.amt||0}));d.suggested=false;d.hint='saved by you';}});}
 function saveState(){
   const rs=lget(LS_RES);RES.forEach(r=>{if(r.reviewed||r.note)rs[r.conf]={filedBase:r.filedBase,reviewed:!!r.reviewed,note:r.note||''};});lset(LS_RES,rs);
-  const ds=lget(LS_DEP);DEPOSITS.forEach(d=>{if(d.assignedTo&&!d.suggested)ds[depKey(d)]={assignedTo:d.assignedTo};});lset(LS_DEP,ds);
+  const ds=lget(LS_DEP);DEPOSITS.forEach(d=>{if(d.allocs&&d.allocs.length&&!d.suggested)ds[depKey(d)]={allocs:d.allocs};});lset(LS_DEP,ds);
   const el=document.getElementById('saveStamp');if(el)el.textContent='Saved ✓ '+new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
 }
 const r2=v=>Math.round((v+Number.EPSILON)*100)/100;
@@ -190,31 +195,28 @@ function taxOf(r){const b=r.filedBase;const tot=r.tier==='exempt'?0:r2(b*RATE_TO
 function groupBy(a,f){const m=new Map();a.forEach(x=>{const k=f(x);(m.get(k)||m.set(k,[]).get(k)).push(x);});return m;}
 
 /* ---------- deposit matching ---------- */
+function covered(conf){return DEPOSITS.reduce((s,d)=>s+(d.allocs||[]).filter(a=>a.conf===conf).reduce((t,a)=>t+(a.amt||0),0),0);}
 function autoMatchDeposits(){
-  DEPOSITS.forEach(d=>{d.assignedTo=null;d.suggested=false;d.hint='';});
-  const used=new Set();
-  // 1) exact single amount
-  RES.forEach(r=>{if(used.has(r.conf))return;const d=DEPOSITS.find(x=>!x.assignedTo&&Math.abs(x.amt-r.payout)<0.02);if(d){d.assignedTo=r.conf;used.add(r.conf);}});
-  // 2) two-deposit sum (extensions / split payments)
-  RES.forEach(r=>{if(used.has(r.conf))return;const free=DEPOSITS.filter(x=>!x.assignedTo);
+  DEPOSITS.forEach(d=>{d.allocs=[];d.suggested=false;d.hint='';});
+  const done=r=>Math.abs(covered(r.conf)-r.payout)<0.5;
+  RES.forEach(r=>{if(done(r))return;const d=DEPOSITS.find(x=>!x.allocs.length&&Math.abs(x.amt-r.payout)<0.02);if(d)d.allocs=[{conf:r.conf,custom:null,amt:d.amt}];});
+  RES.forEach(r=>{if(done(r))return;const free=DEPOSITS.filter(x=>!x.allocs.length);
     for(let i=0;i<free.length;i++)for(let j=i+1;j<free.length;j++)
-      if(Math.abs(free[i].amt+free[j].amt-r.payout)<0.02){free[i].assignedTo=r.conf;free[j].assignedTo=r.conf;used.add(r.conf);return;}});
-  // 3) suggestions for the rest (by amount + date proximity)
+      if(Math.abs(free[i].amt+free[j].amt-r.payout)<0.02){free[i].allocs=[{conf:r.conf,custom:null,amt:free[i].amt}];free[j].allocs=[{conf:r.conf,custom:null,amt:free[j].amt}];return;}});
   const yr=(RES.find(r=>r.ci)||{}).ci;const year=yr?yr.getFullYear():new Date().getFullYear();
   const earliest=RES.reduce((m,r)=>r.ci&&(!m||r.ci<m)?r.ci:m,null);
-  DEPOSITS.forEach(d=>{if(d.assignedTo)return;
+  DEPOSITS.forEach(d=>{if(d.allocs.length)return;
     const dm=String(d.date).match(/(\d{1,2})\/(\d{1,2})/);const dd=dm?new Date(year,+dm[1]-1,+dm[2]):null;
     let best=null;
-    RES.forEach(r=>{if(!r.ci)return;const gap=dd?Math.round((dd-r.ci)/86400000):999;const near=gap>=0&&gap<=7;
-      const hasDep=DEPOSITS.some(x=>x.assignedTo===r.conf);
-      const closeFull=Math.abs(d.amt-r.payout)<=Math.max(2,r.payout*0.01)&&!hasDep;
-      const installment=r.tier==='exempt'&&d.amt<r.payout-1&&near&&!hasDep;
+    RES.forEach(r=>{if(!r.ci)return;const gap=dd?Math.round((dd-r.ci)/86400000):999;const near=gap>=0&&gap<=7;const cov=covered(r.conf)>0.5;
+      const closeFull=Math.abs(d.amt-r.payout)<=Math.max(2,r.payout*0.01)&&!cov;
+      const installment=r.tier==='exempt'&&d.amt<r.payout-1&&near&&!cov;
       let score=0,why='';
       if(closeFull){score=100-Math.abs(d.amt-r.payout)+(near?5:0);why='amount ≈ full payout';}
       else if(installment){score=60-Math.abs(gap);why='monthly installment (long-term stay)';}
       if(score>0&&(!best||score>best.score))best={r,score,why};});
-    if(best){d.assignedTo=best.r.conf;d.suggested=true;d.hint=best.why;}
-    else d.hint=(earliest&&dd&&dd<earliest)?'before your earliest check-in — likely a prior-month stay':'no clean match — likely a batched payout covering several stays; assign manually';
+    if(best){d.allocs=[{conf:best.r.conf,custom:null,amt:d.amt}];d.suggested=true;d.hint=best.why;}
+    else d.hint=(earliest&&dd&&dd<earliest)?'before your earliest check-in — likely prior-month (type a name below)':'likely a batched payout — use ＋ split to divide it';
   });
   applySavedDep();
 }
@@ -252,8 +254,8 @@ function render(){
       const idx=RES.indexOf(r),t=taxOf(r),flags=[];
       if(!r.reviewed)flags.push('<span class="flagtag review">REVIEW</span>');
       if(r.tier==='tot'&&r.airbnbTax>0)flags.push('<span class="flagtag">TBID over</span>');
-      const dep=DEPOSITS.filter(x=>x.assignedTo===r.conf);
-      const depTxt=dep.length?`<span class="matched">✓ ${dep.map(d=>money(d.amt)).join(' + ')}</span>`:(DEPOSITS.length?'<span class="unmatched">— assign</span>':'');
+      const cov=covered(r.conf);
+      const depTxt=!DEPOSITS.length?'':(cov<=0.01?'<span class="unmatched">— none</span>':Math.abs(cov-r.payout)<0.5?`<span class="matched">✓ ${money(cov)}</span>`:`<span class="unmatched">${money(cov)} / ${money(r.payout)}</span>`);
       return `<tr>
         <td class="l">${r.guest}<div class="note">${r.conf}${r.channel?' · '+r.channel:''}</div></td>
         <td>${r.ci?r.ci.toLocaleDateString('en-US'):''}→${r.co?r.co.toLocaleDateString('en-US'):''}</td>
@@ -290,14 +292,35 @@ function render(){
   if(DEPOSITS.length){
     document.getElementById('depPanel').classList.remove('hidden');
     const total=r2(DEPOSITS.reduce((s,d)=>s+d.amt,0));
-    const matched=r2(DEPOSITS.filter(d=>d.assignedTo).reduce((s,d)=>s+d.amt,0));
+    const alloc=r2(DEPOSITS.reduce((s,d)=>s+(d.allocs||[]).reduce((t,a)=>t+(a.amt||0),0),0));
     document.getElementById('depControl').innerHTML=[
-      ['Total Airbnb deposits',money(total)],['Matched to reservations',money(matched)],['Unassigned',money(r2(total-matched)),r2(total-matched)>0.01?'flag':'']
+      ['Total Airbnb deposits',money(total)],['Allocated',money(alloc)],['Unallocated',money(r2(total-alloc)),r2(total-alloc)>0.01?'flag':'']
     ].map(([l,n,c])=>`<div class="kpi ${c||''}"><div class="n">${n}</div><div class="l">${l}</div></div>`).join('');
-    const opts=r=>`<option value="">— assign —</option>`+RES.map(x=>`<option value="${x.conf}"${r.assignedTo===x.conf?' selected':''}>${x.unitCode} · ${x.guest} (${money(x.payout)})</option>`).join('')+`<option value="OTHER"${r.assignedTo==='OTHER'?' selected':''}>Prior month / other</option>`;
-    const status=d=>d.assignedTo&&!d.suggested?'<span class="matched">✓ matched</span>':d.suggested?'<span style="color:var(--warn);font-weight:600">~ suggested</span>':'<span class="unmatched">— review</span>';
-    document.getElementById('depTable').innerHTML=`<thead><tr><th class="l">Date</th><th class="l">Ref</th><th class="l">Channel</th><th>Amount</th><th class="l">Status</th><th class="l">Assigned to</th><th class="l">Why</th></tr></thead><tbody>`+
-      DEPOSITS.map((d,i)=>`<tr><td class="l">${d.date}</td><td class="l">${d.ref}</td><td class="l">${d.channel||'—'}</td><td>${money(d.amt)}</td><td class="l">${status(d)}</td><td class="l"><select class="assign" data-i="${i}">${opts(d)}</select></td><td class="l note">${d.hint||''}</td></tr>`).join('')+`</tbody>`;
+    const tgtOpts=a=>{
+      const list=RES.map(r=>({conf:r.conf,label:`${r.unitCode} · ${r.guest} (${money(r.payout)})`,cov:covered(r.conf)>=r.payout-0.5}));
+      list.sort((x,y)=>(x.cov?1:0)-(y.cov?1:0));
+      return `<option value=""${!a.conf&&a.custom==null?' selected':''}>— pick stay —</option>`+
+        list.map(o=>`<option value="${o.conf}"${a.conf===o.conf?' selected':''}>${o.cov?'✓ ':''}${o.label}</option>`).join('')+
+        `<option value="__custom__"${!a.conf&&typeof a.custom==='string'?' selected':''}>Other / prior-month (type name)</option>`;
+    };
+    const status=d=>{const s=(d.allocs||[]).reduce((t,a)=>t+(a.amt||0),0);
+      if(d.suggested)return '<span style="color:var(--warn);font-weight:600">~ suggested</span>';
+      if(!d.allocs.length)return '<span class="unmatched">— review</span>';
+      if(Math.abs(s-d.amt)<0.01)return '<span class="matched">✓ done</span>';
+      return '<span class="unmatched">⚠ partial</span>';};
+    document.getElementById('depTable').innerHTML=`<thead><tr><th class="l">Date</th><th class="l">Ref</th><th class="l">Chan</th><th>Amount</th><th class="l">Status</th><th class="l">Allocation(s)</th><th class="l">Why</th></tr></thead><tbody>`+
+      DEPOSITS.map((d,i)=>{
+        const s=(d.allocs||[]).reduce((t,a)=>t+(a.amt||0),0);
+        const rows=(d.allocs||[]).map((a,ai)=>`<div class="allocrow">
+          <select class="atgt" data-di="${i}" data-ai="${ai}">${tgtOpts(a)}</select>
+          ${(!a.conf&&typeof a.custom==='string')?`<input class="acustom" data-di="${i}" data-ai="${ai}" placeholder="guest · unit" value="${(a.custom||'').replace(/"/g,'&quot;')}">`:''}
+          <input class="aamt" type="number" step="0.01" data-di="${i}" data-ai="${ai}" value="${(a.amt||0).toFixed(2)}">
+          <button class="mini adel" data-di="${i}" data-ai="${ai}">✕</button></div>`).join('');
+        const sumc=Math.abs(s-d.amt)<0.01?'matched':'unmatched';
+        return `<tr><td class="l">${d.date}</td><td class="l">${d.ref}</td><td class="l">${d.channel||'—'}</td><td>${money(d.amt)}</td><td class="l">${status(d)}</td>
+          <td class="l">${rows}<button class="mini aadd" data-di="${i}">＋ split</button> <span class="note ${sumc}">allocated ${money(s)} / ${money(d.amt)}</span></td>
+          <td class="l note">${d.hint||''}</td></tr>`;
+      }).join('')+`</tbody>`;
   }
   // expenses
   if(EXPENSES.length){
@@ -311,7 +334,21 @@ function render(){
   document.querySelectorAll('.mini').forEach(el=>el.addEventListener('click',e=>{const i=+e.target.dataset.idx;RES[i].filedBase=e.target.dataset.set==='g'?RES[i].gross:RES[i].airbnbBase;RES[i].reviewed=true;saveState();render();}));
   document.querySelectorAll('input.note').forEach(el=>el.addEventListener('change',e=>{RES[+e.target.dataset.idx].note=e.target.value;saveState();}));
   document.querySelectorAll('button[data-unit]').forEach(b=>b.addEventListener('click',e=>downloadUnit(decodeURIComponent(e.target.dataset.unit))));
-  document.querySelectorAll('select.assign').forEach(s=>s.addEventListener('change',e=>{const d=DEPOSITS[+e.target.dataset.i];d.assignedTo=e.target.value||null;d.suggested=false;d.hint=d.assignedTo?'confirmed by you':d.hint;saveState();render();}));
+  document.querySelectorAll('select.atgt').forEach(el=>el.addEventListener('change',e=>{
+    const d=DEPOSITS[+e.target.dataset.di],a=d.allocs[+e.target.dataset.ai],v=e.target.value;
+    if(v==='__custom__'){a.conf=null;a.custom=typeof a.custom==='string'?a.custom:'';}
+    else if(v===''){a.conf=null;a.custom=null;}
+    else {a.conf=v;a.custom=null;}
+    d.suggested=false;saveState();render();}));
+  document.querySelectorAll('input.acustom').forEach(el=>el.addEventListener('change',e=>{
+    const d=DEPOSITS[+e.target.dataset.di],a=d.allocs[+e.target.dataset.ai];a.custom=e.target.value;d.suggested=false;saveState();}));
+  document.querySelectorAll('input.aamt').forEach(el=>el.addEventListener('change',e=>{
+    const d=DEPOSITS[+e.target.dataset.di],a=d.allocs[+e.target.dataset.ai];a.amt=r2(numify(e.target.value));d.suggested=false;saveState();render();}));
+  document.querySelectorAll('button.adel').forEach(el=>el.addEventListener('click',e=>{
+    const d=DEPOSITS[+e.target.dataset.di];d.allocs.splice(+e.target.dataset.ai,1);d.suggested=false;saveState();render();}));
+  document.querySelectorAll('button.aadd').forEach(el=>el.addEventListener('click',e=>{
+    const d=DEPOSITS[+e.target.dataset.di];const s=d.allocs.reduce((t,a)=>t+(a.amt||0),0);const rem=r2(d.amt-s);
+    d.allocs.push({conf:null,custom:null,amt:rem>0?rem:0});d.suggested=false;saveState();render();}));
 }
 
 /* ---------- Excel ---------- */
@@ -346,7 +383,10 @@ function downloadMaster(){
   sum.push([],['','','','','','','','','TOTAL',r2(gT)]);
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(sum),'Summary');
   for(const [code,list] of groupBy(RES,r=>r.unitCode))XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(unitSheetAoa(code,list)),safeName(code));
-  if(DEPOSITS.length){const d=[['Airbnb deposits'],['Date','Ref','Amount','Assigned to']];DEPOSITS.forEach(x=>{const r=RES.find(y=>y.conf===x.assignedTo);d.push([x.date,x.ref,x.amt,x.assignedTo==='OTHER'?'Prior month / other':r?r.unitCode+' '+r.guest:'unassigned']);});XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(d),'Deposits');}
+  if(DEPOSITS.length){const d=[['Airbnb deposits & allocations'],['Date','Ref','Channel','Deposit amount','Allocated to','Alloc amount']];
+    DEPOSITS.forEach(x=>{if(!x.allocs||!x.allocs.length){d.push([x.date,x.ref,x.channel||'',x.amt,'(unallocated)','']);}
+      else x.allocs.forEach(a=>{const r=RES.find(y=>y.conf===a.conf);d.push([x.date,x.ref,x.channel||'',x.amt,a.conf?(r?r.unitCode+' '+r.guest:a.conf):(a.custom||'other'),a.amt]);});});
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(d),'Deposits');}
   XLSX.writeFile(wb,`LaQuinta_TOT_Master_${RES[0]?RES[0].filingMonth.replace(/\s+/g,'_'):'export'}.xlsx`);
 }
 
@@ -372,10 +412,10 @@ async function pdfToLines(buf){
 function parseBank(text){
   DEPOSITS=[];EXPENSES=[];
   const re=/(\d{1,2}\/\d{1,2})\s+Funds Received\s+DIRECT DEP FUNDS RECVD\s+([A-Z0-9]{8,14})\s+\$?([\d,]+\.\d{2})/g;let m;
-  while((m=re.exec(text)))DEPOSITS.push({date:m[1],ref:m[2],amt:parseFloat(m[3].replace(/,/g,'')),channel:'Airbnb',assignedTo:null});
+  while((m=re.exec(text)))DEPOSITS.push({date:m[1],ref:m[2],amt:parseFloat(m[3].replace(/,/g,'')),channel:'Airbnb',allocs:[]});
   // provisional VRBO / HomeAway / Expedia payout lines (refine once a real VRBO deposit is seen)
   const rv=/(\d{1,2}\/\d{1,2})\s+Funds Received[^\n]*?(VRBO|HOMEAWAY|EXPEDIA)[^\n]*?([A-Z0-9]{6,14})?\s+\$?([\d,]+\.\d{2})/gi;let v;
-  while((v=rv.exec(text)))DEPOSITS.push({date:v[1],ref:v[3]||'vrbo',amt:parseFloat(v[4].replace(/,/g,'')),channel:'VRBO',assignedTo:null});
+  while((v=rv.exec(text)))DEPOSITS.push({date:v[1],ref:v[3]||'vrbo',amt:parseFloat(v[4].replace(/,/g,'')),channel:'VRBO',allocs:[]});
   const push=(rx,cat,payee)=>{let x;const r=new RegExp(rx,'g');while((x=r.exec(text)))EXPENSES.push({date:x[1],payee,cat,amt:parseFloat(x[2].replace(/,/g,''))});};
   push('(\\d{1,2}\\/\\d{1,2})\\s+Debit Card\\s+TURNO[^\\(]*\\(([\\d,]+\\.\\d{2})\\)','Cleaning (Turno)','Turno');
   push('(\\d{1,2}\\/\\d{1,2})\\s+Debit Card\\s+GUESTY[^\\(]*\\(([\\d,]+\\.\\d{2})\\)','PMS software (Guesty)','Guesty');
@@ -417,7 +457,7 @@ document.getElementById('clrState').addEventListener('click',()=>{
   if(LASTROWS){RES=buildRes(LASTROWS);if(DEPOSITS.length)autoMatchDeposits();render();}
   const el=document.getElementById('saveStamp');if(el)el.textContent='Cleared — starting fresh';
 });
-document.getElementById('addDep').addEventListener('click',()=>{const dt=prompt('Deposit date (e.g. 6/15)?')||'';const am=numify(prompt('Amount?'));if(am){DEPOSITS.push({date:dt,ref:'manual',amt:r2(am),channel:'—',assignedTo:null});autoMatchDeposits();render();}});
+document.getElementById('addDep').addEventListener('click',()=>{const dt=prompt('Deposit date (e.g. 6/15)?')||'';const am=numify(prompt('Amount?'));if(am){DEPOSITS.push({date:dt,ref:'manual',amt:r2(am),channel:'—',allocs:[]});autoMatchDeposits();render();}});
 </script>
 </body>
 </html>

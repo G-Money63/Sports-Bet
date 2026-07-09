@@ -584,7 +584,8 @@ function monthsStore(){try{return JSON.parse(localStorage.getItem(LS_MONTHS)||'{
 function curMonthName(){const c={};RES.forEach(r=>{c[r.filingMonth]=(c[r.filingMonth]||0)+1;});let b='',n=-1;Object.entries(c).forEach(([k,v])=>{if(v>n){n=v;b=k;}});return b||'Unsaved';}
 function saveMonth(){if(!RES.length)return;CURMONTH=curMonthName();const m=monthsStore();m[CURMONTH]={res:serRes(),deposits:DEPOSITS,savedAt:new Date().toISOString()};try{localStorage.setItem(LS_MONTHS,JSON.stringify(m));}catch(e){}populateMonths();}
 function loadMonth(name){const snap=monthsStore()[name];if(!snap)return;RES=hydRes(snap.res||[]);DEPOSITS=snap.deposits||[];CURMONTH=name;
-  document.getElementById('homeStatus').classList.remove('hidden');document.getElementById('newMonthArea').classList.add('hidden');
+  document.getElementById('homeStatus').classList.remove('hidden');
+  document.getElementById('dropCsv').classList.toggle('done',RES.length>0);document.getElementById('dropPdf').classList.toggle('done',DEPOSITS.length>0);
   document.getElementById('viewSub').textContent=name;render();populateMonths();}
 function populateMonths(){const m=monthsStore();const sel=document.getElementById('monthSel');if(!sel)return;const names=Object.keys(m).sort().reverse();
   sel.innerHTML=(names.length?names:['(no months yet)']).map(n=>`<option${n===CURMONTH?' selected':''}>${n}</option>`).join('');}
@@ -597,7 +598,9 @@ function renderListings(){const el=document.getElementById('listingsTable');if(!
 function renderHistory(){const m=monthsStore();const el=document.getElementById('historyList');const names=Object.keys(m).sort().reverse();
   el.innerHTML=names.length?names.map(n=>`<div class="oline"><span><b>${n}</b> &middot; <span class="note">saved ${new Date(m[n].savedAt).toLocaleDateString('en-US')}</span></span><button class="btn sm ghost loadmo" data-m="${n}">Open</button></div>`).join(''):'<div class="note">No saved months yet. Process one from Home.</div>';
   el.querySelectorAll('.loadmo').forEach(b=>b.addEventListener('click',e=>{loadMonth(e.target.dataset.m);setView('home');}));}
-function showResults(){document.getElementById('homeStatus').classList.remove('hidden');document.getElementById('newMonthArea').classList.add('hidden');CURMONTH=curMonthName();document.getElementById('viewSub').textContent=CURMONTH;render();saveMonth();setView('home');}
+function showResults(){document.getElementById('homeStatus').classList.remove('hidden');CURMONTH=curMonthName();document.getElementById('viewSub').textContent=CURMONTH;
+  if(RES.length)document.getElementById('dropCsv').classList.add('done');if(DEPOSITS.length)document.getElementById('dropPdf').classList.add('done');
+  render();saveMonth();setView('home');}
 function handleCsv(file){
   document.getElementById('err').textContent='';
   Papa.parse(file,{header:true,skipEmptyLines:true,complete:res=>{

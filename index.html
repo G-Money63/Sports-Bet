@@ -7,6 +7,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/2.47.0/tabler-icons.min.css">
 <style>
   :root{
     --navy:#0f3b5c;--navy2:#12496f;--ink:#161c24;--muted:#5a6572;
@@ -84,85 +85,113 @@
   .oline.tot{font-weight:700;border-top:2px solid var(--line);border-bottom:none;margin-top:4px;padding-top:8px;color:var(--navy)}
   .oline .neg{color:var(--bad)}
   .owarn{background:var(--warnbg);color:var(--warn);font-size:12px;padding:6px 10px;border-radius:6px;margin-top:8px}
+
+  .app{display:grid;grid-template-columns:210px 1fr;gap:16px;max-width:1200px;margin:0 auto;padding:16px 18px 40px}
+  .sidebar{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 8px;height:fit-content;position:sticky;top:16px}
+  .brand{display:flex;align-items:center;gap:8px;font-weight:700;color:var(--navy);font-size:14px;padding:6px 8px 12px;border-bottom:1px solid var(--line);margin-bottom:8px}
+  .navitem{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;color:var(--muted);font-size:14px;cursor:pointer;font-weight:600}
+  .navitem:hover{background:var(--bg)}
+  .navitem.active{background:#e7f0fa;color:var(--navy)}
+  .navitem i{font-size:18px}
+  .main{min-width:0}
+  .topbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+  .topbar h1{margin:0;font-size:20px;color:var(--navy)}
+  .topactions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .topactions select{padding:8px 10px;border:1px solid #b9c4d0;border-radius:8px;font:inherit}
+  @media(max-width:760px){.app{grid-template-columns:1fr}.sidebar{position:static}}
 </style>
 </head>
 <body>
-<header>
-  <h1>La Quinta TOT Tool</h1>
-  <p>La Quinta Resort Management · monthly TOT reconciliation, owner reports with split ownership & CSV import — v0.7.1</p>
-</header>
-<div class="wrap">
-  <div class="panel">
-    <div class="drops">
-      <div id="dropCsv" class="drop">
-        <div><strong>1 · Guesty CSV</strong> (required)</div>
-        <div class="hint">All-listings reservations export. Drop or click.</div>
-        <input id="fileCsv" type="file" accept=".csv" class="hidden">
-      </div>
-      <div id="dropPdf" class="drop">
-        <div><strong>2 · Bank statement PDF</strong> (optional)</div>
-        <div class="hint">La Quinta Resort Mgmt statement — matches Airbnb deposits. Drop or click.</div>
-        <input id="filePdf" type="file" accept=".pdf" class="hidden">
-      </div>
-    </div>
-    <div id="err" class="note" style="color:var(--bad);margin-top:10px"></div>
-    <div class="note" style="margin-top:6px">Everything runs on your device. Nothing is uploaded anywhere.</div>
-  </div>
-
-  <div id="results" class="hidden">
-    <div class="panel">
-      <div class="toolbar">
-        <button class="btn" id="dlMaster">⬇ Download master workbook (.xlsx)</button>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand"><i class="ti ti-building-community"></i> La Quinta Resort Mgmt</div>
+    <div class="navitem active" data-view="home"><i class="ti ti-home"></i> Home</div>
+    <div class="navitem" data-view="citytax"><i class="ti ti-building-bank"></i> City tax</div>
+    <div class="navitem" data-view="revenue"><i class="ti ti-arrows-exchange"></i> Revenue match</div>
+    <div class="navitem" data-view="owners"><i class="ti ti-users"></i> Owner reports</div>
+    <div class="navitem" data-view="expenses"><i class="ti ti-receipt"></i> Expenses</div>
+    <div class="navitem" data-view="listings"><i class="ti ti-list-details"></i> Listings</div>
+    <div class="navitem" data-view="setup"><i class="ti ti-settings"></i> Owners and setup</div>
+    <div class="navitem" data-view="history"><i class="ti ti-history"></i> Past months</div>
+  </aside>
+  <main class="main">
+    <div class="topbar">
+      <div><h1 id="viewTitle">Home</h1><div id="viewSub" class="note"></div></div>
+      <div class="topactions">
+        <select id="monthSel"></select>
+        <button class="btn sm ghost" id="newMonthBtn">+ New month</button>
         <span id="saveStamp" class="note" style="font-weight:600;color:var(--ok)">Auto-save on</span>
-        <button class="btn sm ghost" id="expState">⬇ Backup my fixes</button>
-        <label class="btn sm ghost" style="cursor:pointer">⬆ Restore<input id="impState" type="file" accept=".json" class="hidden"></label>
-        <button class="btn sm ghost" id="clrState">Clear saved</button>
       </div>
-      <div class="cards" id="kpis"></div>
     </div>
 
-    <div class="panel" id="reconPanel">
-      <h2>Reconciliation — needs your eyes</h2>
-      <div id="recon"></div>
-    </div>
+    <section class="view" data-view="home">
+      <div class="panel" id="newMonthArea">
+        <h2>Start this month's close</h2>
+        <div class="drops">
+          <div id="dropCsv" class="drop"><div><strong>1 &middot; Guesty CSV</strong> (required)</div><div class="hint">All-listings reservations export. Drop or click.</div><input id="fileCsv" type="file" accept=".csv" class="hidden"></div>
+          <div id="dropPdf" class="drop"><div><strong>2 &middot; Bank statement PDF</strong> (optional)</div><div class="hint">La Quinta Resort Mgmt statement. Drop or click.</div><input id="filePdf" type="file" accept=".pdf" class="hidden"></div>
+        </div>
+        <div id="err" class="note" style="color:var(--bad);margin-top:10px"></div>
+        <div class="note" style="margin-top:6px">Everything runs on your device. Nothing is uploaded anywhere.</div>
+      </div>
+      <div class="panel hidden" id="homeStatus">
+        <div class="toolbar">
+          <button class="btn sm ghost" id="expState">Backup my fixes</button>
+          <label class="btn sm ghost" style="cursor:pointer">Restore<input id="impState" type="file" accept=".json" class="hidden"></label>
+          <button class="btn sm ghost" id="clrState">Clear this month</button>
+        </div>
+        <div class="cards" id="kpis"></div>
+      </div>
+      <div class="panel hidden" id="reconPanel"><h2>Needs your eyes</h2><div id="recon"></div></div>
+    </section>
 
-    <div class="panel">
-      <h2>By unit — review flagged rows, then download</h2>
-      <p class="note" style="margin-top:-6px">On a flagged row, tap <strong>G</strong> to use the Guesty base or <strong>A</strong> for Airbnb, or type your own. The REVIEW tag clears once you decide.</p>
-      <div id="units"></div>
-    </div>
+    <section class="view hidden" data-view="citytax">
+      <div class="panel">
+        <div class="toolbar"><button class="btn" id="dlMaster">Download master workbook (.xlsx)</button><span class="note">One tab per listing plus a summary.</span></div>
+        <h2>By listing &mdash; review flagged rows, then download</h2>
+        <p class="note" style="margin-top:-6px">On a flagged row, tap G for the Guesty base or A for Airbnb, or type your own. The REVIEW tag clears once you decide.</p>
+        <div id="units"></div>
+      </div>
+    </section>
 
-    <div class="panel hidden" id="depPanel">
-      <h2>Bank deposits — Airbnb payouts</h2>
-      <div id="depControl" class="cards" style="margin-bottom:14px"></div>
-      <p class="note" style="margin-top:-4px">Auto-matched by amount. Assign the rest with the dropdown (batched payouts, monthly installments, or prior-month stays). Edit a row if the parser missed anything.</p>
-      <div style="overflow-x:auto"><table id="depTable"></table></div>
-      <button class="btn sm ghost" id="addDep" style="margin-top:10px">＋ Add deposit manually</button>
-    </div>
+    <section class="view hidden" data-view="revenue">
+      <div class="panel hidden" id="depPanel">
+        <h2>Airbnb deposits &mdash; match to reservations</h2>
+        <div id="depControl" class="cards" style="margin-bottom:14px"></div>
+        <p class="note" style="margin-top:-4px">Auto-matched by amount. Split a deposit or type a prior-month name for the rest.</p>
+        <div style="overflow-x:auto"><table id="depTable"></table></div>
+        <button class="btn sm ghost" id="addDep" style="margin-top:10px">+ Add deposit manually</button>
+      </div>
+      <div class="panel" id="revEmpty"><div class="note">Add a bank statement on Home to match deposits.</div></div>
+    </section>
 
-    <div class="panel hidden" id="expPanel">
-      <h2>Expenses &amp; transfers detected <span class="note">(preview for owner reports — v2)</span></h2>
-      <div style="overflow-x:auto"><table id="expTable"></table></div>
-    </div>
-    <div class="panel hidden" id="ownerSetupPanel">
-      <h2>Owner setup <span class="note">(one-time, saved on this browser)</span></h2>
-      <p class="note" style="margin-top:-4px">Map each unit to its owner. Management % and the monthly software fees you charge feed the distribution math.</p>
-      <div style="overflow-x:auto"><table id="ownerSetupTable"></table></div>
-    </div>
+    <section class="view hidden" data-view="owners">
+      <div class="panel hidden" id="ownerRptPanel"><h2>Owner distributions</h2><div id="ownerRpts"></div></div>
+      <div class="panel" id="ownEmpty"><div class="note">Load a month and set up owners to see distributions.</div></div>
+    </section>
 
-    <div class="panel hidden" id="ownerExpPanel">
-      <h2>Owner expenses this month <span class="note">(your reminder list — saved)</span></h2>
-      <div style="overflow-x:auto"><table id="ownerExpTable"></table></div>
-      <button class="btn sm ghost" id="addExp" style="margin-top:10px">＋ Add expense</button>
-    </div>
+    <section class="view hidden" data-view="expenses">
+      <div class="panel hidden" id="ownerExpPanel"><h2>Expenses this month <span class="note">(your reminder list &mdash; saved)</span></h2><div style="overflow-x:auto"><table id="ownerExpTable"></table></div><button class="btn sm ghost" id="addExp" style="margin-top:10px">+ Add expense</button></div>
+      <div class="panel hidden" id="expPanel"><h2>Detected from bank statement <span class="note">(reference)</span></h2><div style="overflow-x:auto"><table id="expTable"></table></div></div>
+    </section>
 
-    <div class="panel hidden" id="ownerRptPanel">
-      <h2>Owner distributions <span class="note">(check these numbers before we build the Excel report)</span></h2>
-      <div id="ownerRpts"></div>
-    </div>
-  </div>
-  <div class="foot">v0.7.1 · working aid, not tax advice · tiers: ≤26 nts 11% · 27–29 nts 10% (separate form) · 30+ nts exempt</div>
+    <section class="view hidden" data-view="listings">
+      <div class="panel"><h2>Listings</h2><div id="listingsTable"><div class="note">Load a month to see listings.</div></div></div>
+    </section>
+
+    <section class="view hidden" data-view="setup">
+      <div class="panel hidden" id="ownerSetupPanel"><h2>Owners and setup <span class="note">(saved on this browser)</span></h2><div style="overflow-x:auto"><table id="ownerSetupTable"></table></div></div>
+      <div class="panel" id="setEmpty"><div class="note">Load a month or import your owners CSV to begin.</div></div>
+    </section>
+
+    <section class="view hidden" data-view="history">
+      <div class="panel"><h2>Past months</h2><div id="historyList"><div class="note">No saved months yet.</div></div></div>
+    </section>
+
+    <div class="foot">v0.8.0 &middot; working aid, not tax advice &middot; tiers: &le;26 nts 11% &middot; 27&ndash;29 nts 10% (separate form) &middot; 30+ nts exempt</div>
+  </main>
 </div>
+
 
 <script>
 pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -178,6 +207,7 @@ function saveState(){
   const rs=lget(LS_RES);RES.forEach(r=>{if(r.reviewed||r.note)rs[r.conf]={filedBase:r.filedBase,reviewed:!!r.reviewed,note:r.note||''};});lset(LS_RES,rs);
   const ds=lget(LS_DEP);DEPOSITS.forEach(d=>{if(d.allocs&&d.allocs.length&&!d.suggested)ds[depKey(d)]={allocs:d.allocs};});lset(LS_DEP,ds);
   const el=document.getElementById('saveStamp');if(el)el.textContent='Saved ✓ '+new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+  saveMonth();
 }
 /* ---------- owner reports (split ownership) ---------- */
 const LS_OWN='lqtot_owners_v1',LS_EXP='lqtot_exp_v1';
@@ -368,6 +398,7 @@ function autoMatchDeposits(){
 
 /* ---------- render ---------- */
 function render(){
+  ['revEmpty','ownEmpty','setEmpty'].forEach(id=>{const e=document.getElementById(id);if(e)e.classList.add('hidden');});
   let cityTax=0,disc=0,over=0;
   RES.forEach(r=>{cityTax+=taxOf(r).total;if(r.disc)disc++;if(r.tier==='tot'&&r.airbnbTax>0)over+=r2(r.airbnbTax-taxOf(r).total);});
   const units=new Set(RES.map(r=>r.unitCode)).size;
@@ -540,7 +571,33 @@ function downloadMaster(){
 }
 
 /* ---------- file handling ---------- */
-function showResults(){document.getElementById('results').classList.remove('hidden');render();document.getElementById('results').scrollIntoView({behavior:'smooth'});}
+/* ---------- shell: router + months ---------- */
+const LS_MONTHS='lqtot_months_v1';let CURMONTH='';
+function setView(v){document.querySelectorAll('.view').forEach(s=>s.classList.toggle('hidden',s.dataset.view!==v));
+  document.querySelectorAll('.navitem').forEach(n=>n.classList.toggle('active',n.dataset.view===v));
+  const t={home:'Home',citytax:'City tax',revenue:'Revenue match',owners:'Owner reports',expenses:'Expenses',listings:'Listings',setup:'Owners and setup',history:'Past months'};
+  document.getElementById('viewTitle').textContent=t[v]||'';
+  if(v==='listings')renderListings();if(v==='history')renderHistory();window.scrollTo(0,0);}
+function serRes(){return RES.map(r=>Object.assign({},r,{ci:r.ci?r.ci.toISOString():null,co:r.co?r.co.toISOString():null}));}
+function hydRes(a){return a.map(r=>Object.assign({},r,{ci:r.ci?new Date(r.ci):null,co:r.co?new Date(r.co):null}));}
+function monthsStore(){try{return JSON.parse(localStorage.getItem(LS_MONTHS)||'{}');}catch(e){return {};}}
+function curMonthName(){const c={};RES.forEach(r=>{c[r.filingMonth]=(c[r.filingMonth]||0)+1;});let b='',n=-1;Object.entries(c).forEach(([k,v])=>{if(v>n){n=v;b=k;}});return b||'Unsaved';}
+function saveMonth(){if(!RES.length)return;CURMONTH=curMonthName();const m=monthsStore();m[CURMONTH]={res:serRes(),deposits:DEPOSITS,savedAt:new Date().toISOString()};try{localStorage.setItem(LS_MONTHS,JSON.stringify(m));}catch(e){}populateMonths();}
+function loadMonth(name){const snap=monthsStore()[name];if(!snap)return;RES=hydRes(snap.res||[]);DEPOSITS=snap.deposits||[];CURMONTH=name;
+  document.getElementById('homeStatus').classList.remove('hidden');document.getElementById('newMonthArea').classList.add('hidden');
+  document.getElementById('viewSub').textContent=name;render();populateMonths();}
+function populateMonths(){const m=monthsStore();const sel=document.getElementById('monthSel');if(!sel)return;const names=Object.keys(m).sort().reverse();
+  sel.innerHTML=(names.length?names:['(no months yet)']).map(n=>`<option${n===CURMONTH?' selected':''}>${n}</option>`).join('');}
+function newMonth(){RES=[];DEPOSITS=[];['homeStatus','reconPanel','depPanel','ownerRptPanel','ownerExpPanel','ownerSetupPanel','expPanel'].forEach(id=>{const e=document.getElementById(id);if(e)e.classList.add('hidden');});
+  document.getElementById('newMonthArea').classList.remove('hidden');document.getElementById('dropCsv').classList.remove('done');document.getElementById('dropPdf').classList.remove('done');
+  document.getElementById('err').textContent='';document.getElementById('viewSub').textContent='new month';setView('home');}
+function renderListings(){const el=document.getElementById('listingsTable');if(!RES.length){el.innerHTML='<div class="note">Load a month to see listings.</div>';return;}
+  el.innerHTML=`<table><thead><tr><th class="l">Listing</th><th class="l">Owners</th><th>Res.</th><th>Tax</th><th>Distribution</th></tr></thead><tbody>`+
+    unitList().map(u=>{const o=computeOwner(u);return `<tr><td class="l"><b>${u}</b></td><td class="l">${(o.owners||[]).map(x=>x.name).join(', ')||'<span class="note">set owner</span>'}</td><td>${o.rs.length}</td><td>${money(o.tax)}</td><td>${money(o.distribution)}</td></tr>`;}).join('')+`</tbody>`;}
+function renderHistory(){const m=monthsStore();const el=document.getElementById('historyList');const names=Object.keys(m).sort().reverse();
+  el.innerHTML=names.length?names.map(n=>`<div class="oline"><span><b>${n}</b> &middot; <span class="note">saved ${new Date(m[n].savedAt).toLocaleDateString('en-US')}</span></span><button class="btn sm ghost loadmo" data-m="${n}">Open</button></div>`).join(''):'<div class="note">No saved months yet. Process one from Home.</div>';
+  el.querySelectorAll('.loadmo').forEach(b=>b.addEventListener('click',e=>{loadMonth(e.target.dataset.m);setView('home');}));}
+function showResults(){document.getElementById('homeStatus').classList.remove('hidden');document.getElementById('newMonthArea').classList.add('hidden');CURMONTH=curMonthName();document.getElementById('viewSub').textContent=CURMONTH;render();saveMonth();setView('home');}
 function handleCsv(file){
   document.getElementById('err').textContent='';
   Papa.parse(file,{header:true,skipEmptyLines:true,complete:res=>{
@@ -590,6 +647,11 @@ function wireDrop(dropId,inputId,handler,accept){
   drop.addEventListener('drop',e=>{if(e.dataTransfer.files[0])handler(e.dataTransfer.files[0]);});
 }
 wireDrop('dropCsv','fileCsv',handleCsv);wireDrop('dropPdf','filePdf',handlePdf);
+document.querySelectorAll('.navitem').forEach(n=>n.addEventListener('click',()=>setView(n.dataset.view)));
+document.getElementById('newMonthBtn').addEventListener('click',newMonth);
+document.getElementById('monthSel').addEventListener('change',e=>{const v=e.target.value;if(v&&monthsStore()[v])loadMonth(v);});
+populateMonths();
+(function boot(){const m=monthsStore();const names=Object.keys(m).sort().reverse();if(names.length)loadMonth(names[0]);})();
 document.getElementById('addExp').addEventListener('click',()=>{OWNEREXP.push({unit:unitList()[0]||'',desc:'',amount:0,paidBy:'owner'});saveExp();renderOwnerExp();renderOwnerReports();});
 document.getElementById('dlMaster').addEventListener('click',downloadMaster);
 document.getElementById('expState').addEventListener('click',()=>{
@@ -602,10 +664,9 @@ document.getElementById('impState').addEventListener('change',e=>{const f=e.targ
     const el=document.getElementById('saveStamp');if(el)el.textContent='Restored ✓';
   }catch(err){alert('Could not read that backup file.');}};rd.readAsText(f);});
 document.getElementById('clrState').addEventListener('click',()=>{
-  if(!confirm('Clear all saved fixes (base overrides, deposit assignments, notes)? This cannot be undone.'))return;
-  try{localStorage.removeItem(LS_RES);localStorage.removeItem(LS_DEP);}catch(e){}
-  if(LASTROWS){RES=buildRes(LASTROWS);if(DEPOSITS.length)autoMatchDeposits();render();}
-  const el=document.getElementById('saveStamp');if(el)el.textContent='Cleared — starting fresh';
+  if(!CURMONTH||!confirm('Remove '+CURMONTH+' and start it over? Your other months are untouched.'))return;
+  const m=monthsStore();delete m[CURMONTH];try{localStorage.setItem(LS_MONTHS,JSON.stringify(m));}catch(e){}
+  newMonth();populateMonths();
 });
 document.getElementById('addDep').addEventListener('click',()=>{const dt=prompt('Deposit date (e.g. 6/15)?')||'';const am=numify(prompt('Amount?'));if(am){DEPOSITS.push({date:dt,ref:'manual',amt:r2(am),channel:'—',allocs:[]});autoMatchDeposits();render();}});
 </script>

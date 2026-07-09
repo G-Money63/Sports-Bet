@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>La Quinta TOT Tool — v0.7.1</title>
+<title>La Quinta TOT Tool — v0.8.3</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -101,6 +101,14 @@
   .topactions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
   .topactions select{padding:8px 10px;border:1px solid #b9c4d0;border-radius:8px;font:inherit}
   @media(max-width:760px){.app{grid-template-columns:1fr}.sidebar{position:static}}
+  /* v0.8.3 — add new listing */
+  .addform{border:1px dashed var(--accent);border-radius:10px;padding:14px 16px;margin-bottom:16px;background:#fbf8f1}
+  .addform .frow{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:10px}
+  .addform .frow:last-child{margin-bottom:0}
+  .fld{display:flex;flex-direction:column;gap:3px}
+  .fld label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+  .newpill{display:inline-block;font-size:10px;font-weight:700;background:var(--okbg);color:var(--ok);padding:1px 7px;border-radius:20px;margin-left:6px}
+  .mini.rem{border-color:#c98;color:var(--bad)}
 </style>
 </head>
 <body>
@@ -190,7 +198,7 @@
       <div class="panel"><h2>Past months</h2><div id="historyList"><div class="note">No saved months yet.</div></div></div>
     </section>
 
-    <div class="foot">v0.8.2 &middot; working aid, not tax advice &middot; tiers: &le;26 nts 11% &middot; 27&ndash;29 nts 10% (separate form) &middot; 30+ nts exempt</div>
+    <div class="foot">v0.8.3 &middot; working aid, not tax advice &middot; tiers: &le;26 nts 11% &middot; 27&ndash;29 nts 10% (separate form) &middot; 30+ nts exempt</div>
   </main>
 </div>
 
@@ -220,6 +228,50 @@ function saveExp(){try{localStorage.setItem(LS_EXP,JSON.stringify(OWNEREXP));}ca
 function unitList(){return [...new Set(RES.map(r=>r.unitCode))];}
 function allUnits(){return [...new Set([...RES.map(r=>r.unitCode),...Object.keys(OWNERS)])].sort();}
 function unitCfg(u){if(!OWNERS[u])OWNERS[u]={mgmt:5,pms:35,pricing:15,owners:[]};if(!OWNERS[u].owners)OWNERS[u].owners=[];return OWNERS[u];}
+/* ---------- v0.8.3: add / remove listings manually ---------- */
+function unitHasBookings(u){return RES.some(r=>r.unitCode===u);}
+function unitDisplayName(u){const r=RES.find(x=>x.unitCode===u&&x.unitName);if(r)return r.unitName;return (OWNERS[u]&&OWNERS[u].name)||'';}
+function addListing(code,name,ownerName,ownerEmail){
+  code=(code||'').trim();
+  if(!code){alert('Please enter a unit code.');return false;}
+  if(OWNERS[code]||RES.some(r=>r.unitCode===code)){alert('That unit already exists: '+code);return false;}
+  const cfg={mgmt:5,pms:35,pricing:15,manual:true,name:(name||'').trim(),owners:[]};
+  const on=(ownerName||'').trim();
+  if(on)cfg.owners.push({name:on,email:(ownerEmail||'').trim(),share:100});
+  OWNERS[code]=cfg;saveOwners();
+  return true;
+}
+function removeListing(u){
+  if(!OWNERS[u]||!OWNERS[u].manual)return;
+  if(RES.some(r=>r.unitCode===u)){alert('This unit has bookings this month, so it can\u2019t be removed here.');return;}
+  if(!confirm('Remove listing '+u+' and its owner setup? This cannot be undone.'))return;
+  delete OWNERS[u];saveOwners();OSET_OPEN.delete(u);
+  renderOwnerSetup();renderListings();renderOwnerReports();
+}
+function addListingFormHtml(ctx){
+  return `<div class="addform hidden" id="addListingForm_${ctx}">
+    <div class="frow">
+      <div class="fld"><label>Unit code <span style="color:var(--bad)">*required</span></label><input id="alCode_${ctx}" class="oset" style="width:200px" placeholder="CLR 50999-9  or  80375 Palm Way"></div>
+      <div class="fld"><label>Property name (optional)</label><input id="alName_${ctx}" class="oset" style="width:200px" placeholder="e.g. Desert Villa"></div>
+    </div>
+    <div class="frow">
+      <div class="fld"><label>First owner name (optional)</label><input id="alOwner_${ctx}" class="oset" style="width:200px" placeholder="e.g. Gary Rubens"></div>
+      <div class="fld"><label>Owner email (optional)</label><input id="alEmail_${ctx}" class="oset" style="width:230px" placeholder="name@email.com"></div>
+    </div>
+    <div class="frow"><button class="btn sm" id="alSave_${ctx}">Add listing</button><button class="btn sm ghost" id="alCancel_${ctx}">Cancel</button></div>
+  </div>`;
+}
+function wireAddListing(ctx){
+  const btn=document.getElementById('addListingBtn_'+ctx),form=document.getElementById('addListingForm_'+ctx);
+  if(!btn||!form)return;
+  const clr=()=>['alCode_','alName_','alOwner_','alEmail_'].forEach(p=>{const el=document.getElementById(p+ctx);if(el)el.value='';});
+  btn.addEventListener('click',()=>{form.classList.toggle('hidden');if(!form.classList.contains('hidden')){const c=document.getElementById('alCode_'+ctx);if(c)c.focus();}});
+  const cx=document.getElementById('alCancel_'+ctx);if(cx)cx.addEventListener('click',()=>{clr();form.classList.add('hidden');});
+  const sv=document.getElementById('alSave_'+ctx);if(sv)sv.addEventListener('click',()=>{
+    const code=document.getElementById('alCode_'+ctx).value,name=document.getElementById('alName_'+ctx).value,on=document.getElementById('alOwner_'+ctx).value,em=document.getElementById('alEmail_'+ctx).value;
+    if(addListing(code,name,on,em)){clr();form.classList.add('hidden');OSET_OPEN.add((code||'').trim());renderOwnerSetup();renderListings();renderOwnerReports();}
+  });
+}
 function importOwnersCsv(file){
   Papa.parse(file,{header:true,skipEmptyLines:true,complete:res=>{
     res.data.forEach(row=>{const name=String(row.NAME||row.Name||'').trim();const email=String(row.EMAIL||row.Email||'').trim();
@@ -264,6 +316,7 @@ function computeOwner(u){
 let OSET_OPEN=new Set();
 function renderOwnerSetup(){
   document.getElementById('ownerSetupPanel').classList.remove('hidden');
+  const se=document.getElementById('setEmpty');if(se)se.classList.add('hidden');
   const units=allUnits();
   const body=!units.length?'<div class="note">Load a Guesty CSV or import your owners file to begin.</div>':units.map(u=>{
     const c=unitCfg(u);const shareTot=(c.owners||[]).reduce((s,o)=>s+(+o.share||0),0);const booked=RES.some(r=>r.unitCode===u);
@@ -273,22 +326,26 @@ function renderOwnerSetup(){
       <button class="mini adel odel" data-u="${u}" data-oi="${oi}">✕</button></div>`).join('');
     const open=OSET_OPEN.has(u);
     const summ=(c.owners||[]).map(o=>o.name).filter(Boolean).join(', ')||'no owners';
+    const dn=unitDisplayName(u);
     return `<div class="ocard${open?'':' collapsed'}"><div class="ohead">
-        <div class="otoggle" data-u="${u}" style="cursor:pointer;display:flex;align-items:center;gap:8px"><i class="ti ti-chevron-${open?'down':'right'}"></i><b>${u}</b>${open?(booked?'':' <span class="sub">(no bookings)</span>'):` <span class="sub">${summ}</span>`}</div>
+        <div class="otoggle" data-u="${u}" style="cursor:pointer;display:flex;align-items:center;gap:8px"><i class="ti ti-chevron-${open?'down':'right'}"></i><b>${u}</b>${dn?` <span class="sub">${dn}</span>`:''}${c.manual?' <span class="newpill">added manually</span>':''}${open?(booked?'':' <span class="sub">(no bookings)</span>'):` <span class="sub">${summ}</span>`}</div>
         <div class="sub">Mgmt <input class="oset onum ucfg" data-u="${u}" data-f="mgmt" type="number" step="0.5" value="${c.mgmt}" style="width:54px">%
           · PMS $<input class="oset onum ucfg" data-u="${u}" data-f="pms" type="number" value="${c.pms}" style="width:54px">
           · Pricing $<input class="oset onum ucfg" data-u="${u}" data-f="pricing" type="number" value="${c.pricing}" style="width:54px"></div></div>
       <div class="obody">${ownerRows||'<div class="note">No owners yet.</div>'}
         <button class="mini oadd" data-u="${u}" style="margin-top:6px">＋ owner</button>
+        ${c.manual?`<button class="mini rem lstdel" data-u="${u}" style="margin-top:6px;margin-left:6px">✕ Remove listing</button>`:''}
       </div></div>`;}).join('');
   document.getElementById('ownerSetupTable').outerHTML='<div id="ownerSetupTable">'+
-    '<div class="toolbar"><label class="btn sm ghost" style="cursor:pointer">⬆ Import owners CSV<input id="ownImp" type="file" accept=".csv" class="hidden"></label><span id="ownImpStamp" class="note"></span></div>'+body+'</div>';
+    '<div class="toolbar"><label class="btn sm ghost" style="cursor:pointer">⬆ Import owners CSV<input id="ownImp" type="file" accept=".csv" class="hidden"></label><button class="btn sm" id="addListingBtn_setup">＋ Add new listing</button><span id="ownImpStamp" class="note"></span></div>'+addListingFormHtml('setup')+body+'</div>';
   const imp=document.getElementById('ownImp');if(imp)imp.addEventListener('change',e=>{if(e.target.files[0])importOwnersCsv(e.target.files[0]);});
   document.querySelectorAll('.ucfg').forEach(el=>el.addEventListener('change',e=>{const c=unitCfg(e.target.dataset.u);c[e.target.dataset.f]=+e.target.value||0;saveOwners();renderOwnerReports();}));
   document.querySelectorAll('.oown').forEach(el=>el.addEventListener('change',e=>{const c=unitCfg(e.target.dataset.u),o=c.owners[+e.target.dataset.oi],f=e.target.dataset.f;o[f]=f==='share'?(+e.target.value||0):e.target.value;saveOwners();renderOwnerSetup();renderOwnerReports();}));
   document.querySelectorAll('.oadd').forEach(el=>el.addEventListener('click',e=>{const c=unitCfg(e.target.dataset.u);c.owners.push({name:'',email:'',share:0});saveOwners();renderOwnerSetup();}));
   document.querySelectorAll('.odel').forEach(el=>el.addEventListener('click',e=>{const c=unitCfg(e.target.dataset.u);c.owners.splice(+e.target.dataset.oi,1);saveOwners();renderOwnerSetup();renderOwnerReports();}));
   document.querySelectorAll('.otoggle').forEach(el=>el.addEventListener('click',e=>{const u=e.currentTarget.dataset.u;OSET_OPEN.has(u)?OSET_OPEN.delete(u):OSET_OPEN.add(u);renderOwnerSetup();}));
+  document.querySelectorAll('.lstdel').forEach(el=>el.addEventListener('click',e=>removeListing(e.currentTarget.dataset.u)));
+  wireAddListing('setup');
 }
 function renderOwnerExp(){
   if(!RES.length)return;
@@ -643,7 +700,7 @@ function setView(v){document.querySelectorAll('.view').forEach(s=>s.classList.to
   document.querySelectorAll('.navitem').forEach(n=>n.classList.toggle('active',n.dataset.view===v));
   const t={home:'Home',citytax:'City tax',revenue:'Revenue match',owners:'Owner reports',expenses:'Expenses',listings:'Listings',setup:'Owners and setup',history:'Past months'};
   document.getElementById('viewTitle').textContent=t[v]||'';
-  if(v==='listings')renderListings();if(v==='history')renderHistory();window.scrollTo(0,0);}
+  if(v==='listings')renderListings();if(v==='setup')renderOwnerSetup();if(v==='history')renderHistory();window.scrollTo(0,0);}
 function serRes(){return RES.map(r=>Object.assign({},r,{ci:r.ci?r.ci.toISOString():null,co:r.co?r.co.toISOString():null}));}
 function hydRes(a){return a.map(r=>Object.assign({},r,{ci:r.ci?new Date(r.ci):null,co:r.co?new Date(r.co):null}));}
 function monthsStore(){try{return JSON.parse(localStorage.getItem(LS_MONTHS)||'{}');}catch(e){return {};}}
@@ -658,9 +715,25 @@ function populateMonths(){const m=monthsStore();const sel=document.getElementByI
 function newMonth(){RES=[];DEPOSITS=[];['homeStatus','reconPanel','depPanel','ownerRptPanel','ownerExpPanel','ownerSetupPanel','expPanel'].forEach(id=>{const e=document.getElementById(id);if(e)e.classList.add('hidden');});
   document.getElementById('newMonthArea').classList.remove('hidden');document.getElementById('dropCsv').classList.remove('done');document.getElementById('dropPdf').classList.remove('done');
   document.getElementById('err').textContent='';document.getElementById('viewSub').textContent='new month';updateDropStats();setView('home');}
-function renderListings(){const el=document.getElementById('listingsTable');if(!RES.length){el.innerHTML='<div class="note">Load a month to see listings.</div>';return;}
-  el.innerHTML=`<table><thead><tr><th class="l">Listing</th><th class="l">Owners</th><th>Res.</th><th>Tax</th><th>Distribution</th></tr></thead><tbody>`+
-    unitList().map(u=>{const o=computeOwner(u);return `<tr><td class="l"><b>${u}</b></td><td class="l">${(o.owners||[]).map(x=>x.name).join(', ')||'<span class="note">set owner</span>'}</td><td>${o.rs.length}</td><td>${money(o.tax)}</td><td>${money(o.distribution)}</td></tr>`;}).join('')+`</tbody>`;}
+function renderListings(){
+  const el=document.getElementById('listingsTable');
+  const units=allUnits();
+  const toolbar=`<div class="toolbar"><button class="btn sm" id="addListingBtn_listings">＋ Add new listing</button><span class="note">Add a unit that isn\u2019t in your CSV yet.</span></div>`+addListingFormHtml('listings');
+  if(!units.length){el.innerHTML=toolbar+'<div class="note">Load a month or add a listing to begin.</div>';wireAddListing('listings');return;}
+  const rows=units.map(u=>{
+    const dn=unitDisplayName(u);const cfg=unitCfg(u);
+    const pill=(OWNERS[u]&&OWNERS[u].manual)?' <span class="newpill">NEW</span>':'';
+    const nameTd=`<b>${u}</b>${dn?' <span class="note">'+dn+'</span>':''}${pill}`;
+    if(!unitHasBookings(u)){
+      const ot=(cfg.owners||[]).map(x=>x.name).filter(Boolean).join(', ')||'<span class="note">set owner</span>';
+      return `<tr><td class="l">${nameTd}</td><td class="l">${ot}</td><td>0</td><td>${money(0)}</td><td>—</td></tr>`;
+    }
+    const o=computeOwner(u);
+    return `<tr><td class="l">${nameTd}</td><td class="l">${(o.owners||[]).map(x=>x.name).filter(Boolean).join(', ')||'<span class="note">set owner</span>'}</td><td>${o.rs.length}</td><td>${money(o.tax)}</td><td>${money(o.distribution)}</td></tr>`;
+  }).join('');
+  el.innerHTML=toolbar+`<table><thead><tr><th class="l">Listing</th><th class="l">Owners</th><th>Res.</th><th>Tax</th><th>Distribution</th></tr></thead><tbody>`+rows+`</tbody></table>`;
+  wireAddListing('listings');
+}
 function renderHistory(){const m=monthsStore();const el=document.getElementById('historyList');const names=Object.keys(m).sort().reverse();
   el.innerHTML=names.length?names.map(n=>`<div class="oline"><span><b>${n}</b> &middot; <span class="note">saved ${new Date(m[n].savedAt).toLocaleDateString('en-US')}</span></span><button class="btn sm ghost loadmo" data-m="${n}">Open</button></div>`).join(''):'<div class="note">No saved months yet. Process one from Home.</div>';
   el.querySelectorAll('.loadmo').forEach(b=>b.addEventListener('click',e=>{loadMonth(e.target.dataset.m);setView('home');}));}

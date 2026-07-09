@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>La Quinta TOT Tool — v0.7.0</title>
+<title>La Quinta TOT Tool — v0.7.1</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -89,7 +89,7 @@
 <body>
 <header>
   <h1>La Quinta TOT Tool</h1>
-  <p>La Quinta Resort Management · monthly TOT reconciliation, owner reports (setup, expenses, distributions) — v0.7.0</p>
+  <p>La Quinta Resort Management · monthly TOT reconciliation, owner reports with split ownership & CSV import — v0.7.1</p>
 </header>
 <div class="wrap">
   <div class="panel">
@@ -161,7 +161,7 @@
       <div id="ownerRpts"></div>
     </div>
   </div>
-  <div class="foot">v0.7.0 · working aid, not tax advice · tiers: ≤26 nts 11% · 27–29 nts 10% (separate form) · 30+ nts exempt</div>
+  <div class="foot">v0.7.1 · working aid, not tax advice · tiers: ≤26 nts 11% · 27–29 nts 10% (separate form) · 30+ nts exempt</div>
 </div>
 
 <script>
@@ -179,13 +179,25 @@ function saveState(){
   const ds=lget(LS_DEP);DEPOSITS.forEach(d=>{if(d.allocs&&d.allocs.length&&!d.suggested)ds[depKey(d)]={allocs:d.allocs};});lset(LS_DEP,ds);
   const el=document.getElementById('saveStamp');if(el)el.textContent='Saved ✓ '+new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
 }
-/* ---------- owner reports ---------- */
+/* ---------- owner reports (split ownership) ---------- */
 const LS_OWN='lqtot_owners_v1',LS_EXP='lqtot_exp_v1';
 let OWNERS=lget(LS_OWN),OWNEREXP=(function(){try{return JSON.parse(localStorage.getItem(LS_EXP)||'[]');}catch(e){return [];}})();
+Object.keys(OWNERS).forEach(u=>{const o=OWNERS[u];if(o&&!o.owners){OWNERS[u]={mgmt:o.mgmt==null?5:o.mgmt,pms:o.pms==null?35:o.pms,pricing:o.pricing==null?15:o.pricing,owners:o.owner?[{name:o.owner,email:o.email||'',share:100}]:[]};}});
 function saveOwners(){lset(LS_OWN,OWNERS);}
 function saveExp(){try{localStorage.setItem(LS_EXP,JSON.stringify(OWNEREXP));}catch(e){}}
 function unitList(){return [...new Set(RES.map(r=>r.unitCode))];}
-function ownerCfg(u){return Object.assign({owner:'',email:'',mgmt:5,pms:35,pricing:15},OWNERS[u]||{});}
+function allUnits(){return [...new Set([...RES.map(r=>r.unitCode),...Object.keys(OWNERS)])].sort();}
+function unitCfg(u){if(!OWNERS[u])OWNERS[u]={mgmt:5,pms:35,pricing:15,owners:[]};if(!OWNERS[u].owners)OWNERS[u].owners=[];return OWNERS[u];}
+function importOwnersCsv(file){
+  Papa.parse(file,{header:true,skipEmptyLines:true,complete:res=>{
+    res.data.forEach(row=>{const name=String(row.NAME||row.Name||'').trim();const email=String(row.EMAIL||row.Email||'').trim();
+      const props=String(row.PROPERTIES||row.Properties||'').split('/').map(s=>s.trim()).filter(Boolean);
+      props.forEach(u=>{const c=unitCfg(u);if(name&&!c.owners.some(o=>o.name===name))c.owners.push({name,email,share:0});});});
+    Object.values(OWNERS).forEach(c=>{if(c.owners&&c.owners.length&&!c.owners.some(o=>+o.share>0)){const n=c.owners.length,eq=Math.floor(100/n);c.owners.forEach((o,i)=>o.share=i===n-1?100-eq*(n-1):eq);}});
+    saveOwners();renderOwnerSetup();renderOwnerExp();renderOwnerReports();
+    const st=document.getElementById('ownImpStamp');if(st)st.textContent='Owners imported ✓ — set each unit\u2019s share %';
+  }});
+}
 function computeOwner(u){
   const rs=RES.filter(r=>r.unitCode===u);
   const gross=r2(rs.reduce((s,r)=>s+r.gross,0));
@@ -197,7 +209,7 @@ function computeOwner(u){
   const hasDeposits=DEPOSITS.length>0;
   const R=hasDeposits?received:payoutTot;
   const monthGross=payoutTot>0?r2(gross*(R/payoutTot)):gross;
-  const cfg=ownerCfg(u);
+  const cfg=unitCfg(u);
   const mgmtFee=r2(monthGross*((+cfg.mgmt||0)/100));
   const pms=+cfg.pms||0,pricing=+cfg.pricing||0;
   const exp=OWNEREXP.filter(e=>e.unit===u);
@@ -209,21 +221,39 @@ function computeOwner(u){
   const ownerNet=r2(distribution-ownerPaid);
   const longTerm=rs.some(r=>r.nights>=30);
   const covShort=hasDeposits&&received<payoutTot-1&&!longTerm;
+  const owners=cfg.owners||[];
+  const shareTot=owners.reduce((s,o)=>s+(+o.share||0),0);
+  const perOwner=owners.map(o=>({name:o.name,email:o.email,share:+o.share||0,
+    distribution:r2(distribution*((+o.share||0)/100)),net:r2(ownerNet*((+o.share||0)/100))}));
   return {u,cfg,rs,gross,payoutTot,tax,R,hasDeposits,mgmtFee,pms,pricing,manMgmt,manOwner,
     manOwnerList:exp.filter(e=>e.paidBy==='owner'),manMgmtList:exp.filter(e=>e.paidBy==='mgmt'),
-    mgmtCharged,distribution,ownerPaid,ownerNet,longTerm,covShort,received};
+    mgmtCharged,distribution,ownerPaid,ownerNet,longTerm,covShort,received,owners,perOwner,shareTot};
 }
 function renderOwnerSetup(){
-  const units=unitList();if(!units.length)return;
   document.getElementById('ownerSetupPanel').classList.remove('hidden');
-  document.getElementById('ownerSetupTable').innerHTML=`<thead><tr><th class="l">Unit</th><th class="l">Owner name</th><th class="l">Owner email</th><th>Mgmt %</th><th>PMS $/mo</th><th>Pricing $/mo</th></tr></thead><tbody>`+
-    units.map(u=>{const c=ownerCfg(u);return `<tr><td class="l"><b>${u}</b></td>
-      <td class="l"><input class="oset" data-u="${u}" data-f="owner" value="${(c.owner||'').replace(/"/g,'&quot;')}" placeholder="owner name"></td>
-      <td class="l"><input class="oset" data-u="${u}" data-f="email" value="${(c.email||'').replace(/"/g,'&quot;')}" placeholder="email"></td>
-      <td><input class="oset onum" data-u="${u}" data-f="mgmt" type="number" step="0.5" value="${c.mgmt}"></td>
-      <td><input class="oset onum" data-u="${u}" data-f="pms" type="number" step="1" value="${c.pms}"></td>
-      <td><input class="oset onum" data-u="${u}" data-f="pricing" type="number" step="1" value="${c.pricing}"></td></tr>`;}).join('')+`</tbody>`;
-  document.querySelectorAll('input.oset').forEach(el=>el.addEventListener('change',e=>{const u=e.target.dataset.u,f=e.target.dataset.f;if(!u)return;OWNERS[u]=OWNERS[u]||{};OWNERS[u][f]=(f==='owner'||f==='email')?e.target.value:(+e.target.value||0);saveOwners();renderOwnerReports();}));
+  const units=allUnits();
+  const body=!units.length?'<div class="note">Load a Guesty CSV or import your owners file to begin.</div>':units.map(u=>{
+    const c=unitCfg(u);const shareTot=(c.owners||[]).reduce((s,o)=>s+(+o.share||0),0);const booked=RES.some(r=>r.unitCode===u);
+    const ownerRows=(c.owners||[]).map((o,oi)=>`<div class="allocrow">
+      <input class="oset oown" data-u="${u}" data-oi="${oi}" data-f="name" style="width:150px" value="${(o.name||'').replace(/"/g,'&quot;')}" placeholder="owner name">
+      <input class="oset oown" data-u="${u}" data-oi="${oi}" data-f="email" style="width:190px" value="${(o.email||'').replace(/"/g,'&quot;')}" placeholder="email">
+      <input class="oset onum oown" data-u="${u}" data-oi="${oi}" data-f="share" type="number" step="1" value="${o.share==null?'':o.share}" placeholder="%"><span class="note">%</span>
+      <button class="mini adel odel" data-u="${u}" data-oi="${oi}">✕</button></div>`).join('');
+    return `<div class="ocard"><div class="ohead"><div><b>${u}</b>${booked?'':' <span class="sub">(no bookings this month)</span>'}</div>
+        <div class="sub">Mgmt <input class="oset onum ucfg" data-u="${u}" data-f="mgmt" type="number" step="0.5" value="${c.mgmt}" style="width:54px">%
+          · PMS $<input class="oset onum ucfg" data-u="${u}" data-f="pms" type="number" value="${c.pms}" style="width:54px">
+          · Pricing $<input class="oset onum ucfg" data-u="${u}" data-f="pricing" type="number" value="${c.pricing}" style="width:54px"></div></div>
+      <div class="obody">${ownerRows||'<div class="note">No owners yet.</div>'}
+        <button class="mini oadd" data-u="${u}" style="margin-top:6px">＋ owner</button>
+        <span class="note ${Math.abs(shareTot-100)<0.1||!c.owners.length?'matched':'unmatched'}" style="margin-left:8px">shares ${shareTot}%${c.owners.length&&Math.abs(shareTot-100)<0.1?' ✓':c.owners.length?' (should total 100)':''}</span>
+      </div></div>`;}).join('');
+  document.getElementById('ownerSetupTable').outerHTML='<div id="ownerSetupTable">'+
+    '<div class="toolbar"><label class="btn sm ghost" style="cursor:pointer">⬆ Import owners CSV<input id="ownImp" type="file" accept=".csv" class="hidden"></label><span id="ownImpStamp" class="note"></span></div>'+body+'</div>';
+  const imp=document.getElementById('ownImp');if(imp)imp.addEventListener('change',e=>{if(e.target.files[0])importOwnersCsv(e.target.files[0]);});
+  document.querySelectorAll('.ucfg').forEach(el=>el.addEventListener('change',e=>{const c=unitCfg(e.target.dataset.u);c[e.target.dataset.f]=+e.target.value||0;saveOwners();renderOwnerReports();}));
+  document.querySelectorAll('.oown').forEach(el=>el.addEventListener('change',e=>{const c=unitCfg(e.target.dataset.u),o=c.owners[+e.target.dataset.oi],f=e.target.dataset.f;o[f]=f==='share'?(+e.target.value||0):e.target.value;saveOwners();renderOwnerSetup();renderOwnerReports();}));
+  document.querySelectorAll('.oadd').forEach(el=>el.addEventListener('click',e=>{const c=unitCfg(e.target.dataset.u);c.owners.push({name:'',email:'',share:0});saveOwners();renderOwnerSetup();}));
+  document.querySelectorAll('.odel').forEach(el=>el.addEventListener('click',e=>{const c=unitCfg(e.target.dataset.u);c.owners.splice(+e.target.dataset.oi,1);saveOwners();renderOwnerSetup();renderOwnerReports();}));
 }
 function renderOwnerExp(){
   if(!RES.length)return;
@@ -246,19 +276,23 @@ function renderOwnerReports(){
   document.getElementById('ownerRptPanel').classList.remove('hidden');
   document.getElementById('ownerRpts').innerHTML=unitList().map(u=>{
     const o=computeOwner(u);
+    const names=o.owners.length?o.owners.map(x=>x.name||'?').join(', '):'(add owners in setup)';
     const expLines=o.manOwnerList.concat(o.manMgmtList).map(e=>`<div class="oline"><span>${e.desc||'expense'} (${e.paidBy==='mgmt'?'you charge':'owner-paid'})</span><span class="neg">− ${money(+e.amount||0)}</span></div>`).join('');
-    return `<div class="ocard"><div class="ohead"><div><b>${u}</b><div class="sub">${o.cfg.owner||'(set owner in setup)'}${o.cfg.email?' · '+o.cfg.email:''}</div></div><div class="sub">${o.rs.length} reservation${o.rs.length!==1?'s':''}</div></div>
+    const split=o.owners.length>1?`<div style="margin-top:8px" class="note">Owner split:</div>`+o.perOwner.map(p=>`<div class="oline"><span>${p.name||'(unnamed)'} — ${p.share}%${p.email?' · '+p.email:''}</span><span><b>${money(p.distribution)}</b> deposited · ${money(p.net)} net</span></div>`).join(''):'';
+    return `<div class="ocard"><div class="ohead"><div><b>${u}</b><div class="sub">${names}</div></div><div class="sub">${o.rs.length} reservation${o.rs.length!==1?'s':''}</div></div>
       <div class="obody">
         <div class="oline"><span>Gross booking (rent + cleaning + pet)</span><span>${money(o.gross)}</span></div>
         <div class="oline"><span>Received from Airbnb${o.hasDeposits?' (deposits)':' (payout est.)'}</span><span>${money(o.R)}</span></div>
         <div class="oline"><span>Management fee (${o.cfg.mgmt}%${o.longTerm?' · prorated':''})</span><span class="neg">− ${money(o.mgmtFee)}</span></div>
         <div class="oline"><span>PMS + pricing fees</span><span class="neg">− ${money(r2(o.pms+o.pricing))}</span></div>
         ${o.manMgmt?`<div class="oline"><span>Other charges from you</span><span class="neg">− ${money(o.manMgmt)}</span></div>`:''}
-        <div class="oline tot"><span>Distribution deposited to owner</span><span>${money(o.distribution)}</span></div>
+        <div class="oline tot"><span>Distribution deposited (all owners)</span><span>${money(o.distribution)}</span></div>
         <div class="oline" style="margin-top:6px"><span>Then paid from owner's account — city tax</span><span class="neg">− ${money(o.tax)}</span></div>
         ${o.manOwner?`<div class="oline"><span>Then paid from owner's account — other</span><span class="neg">− ${money(o.manOwner)}</span></div>`:''}
-        <div class="oline tot"><span>Owner's net after their expenses</span><span>${money(o.ownerNet)}</span></div>
+        <div class="oline tot"><span>Net after expenses (all owners)</span><span>${money(o.ownerNet)}</span></div>
+        ${split}
         ${expLines?`<div style="margin-top:8px" class="note">Expense detail:</div>${expLines}`:''}
+        ${o.owners.length&&Math.abs(o.shareTot-100)>0.1?`<div class="owarn">Ownership shares total ${o.shareTot}% — should be 100%. Fix in Owner setup.</div>`:''}
         ${o.longTerm?`<div class="owarn">Long-term stay — management fee prorated to this month's received amount; double-check.</div>`:''}
         ${o.covShort?`<div class="owarn">Deposits received (${money(o.received)}) don't yet cover the full payout (${money(o.payoutTot)}) — a payment may still be in transit or unallocated.</div>`:''}
       </div></div>`;

@@ -57,9 +57,10 @@
   .filebox{margin-top:14px;border:1px solid var(--line);border-radius:9px;padding:12px 14px;background:#fbfcfe}
   .filebox.full{border-left:5px solid var(--ok)}.filebox.tot{border-left:5px solid var(--warn)}.filebox.ex{border-left:5px solid #8894a2}
   .filebox .ttl{font-weight:700;font-size:13px;margin-bottom:8px}
-  .lines{display:grid;grid-template-columns:repeat(auto-fit,minmax(115px,1fr));gap:8px}
+  .lines{display:grid;grid-template-columns:repeat(auto-fit,minmax(102px,1fr));gap:8px}
   .lines div{background:#fff;border:1px solid var(--line);border-radius:7px;padding:8px 10px}
-  .lines .lab{font-size:11px;color:var(--muted)}.lines .val{font-size:15px;font-weight:700}
+  .lines .lab{font-size:11px;color:var(--muted);min-height:28px;display:flex;align-items:flex-end}.lines .val{font-size:15px;font-weight:700}
+  .dropstat{margin-top:8px;font-size:13px;font-weight:700;color:var(--ok)}
   .item{border-radius:8px;padding:10px 12px;margin-bottom:8px;font-size:13px;border:1px solid var(--line);background:#fafcff}
   .item.over{border-color:#f2c9cc;background:#fdf1f2}.item.warnitem{border-color:#f0d9b0;background:#fffaf0}
   .item.okitem{border-color:#bfe3cd;background:var(--okbg)}
@@ -80,6 +81,7 @@
   .ocard{border:1px solid var(--line);border-radius:10px;margin-bottom:14px;overflow:hidden}
   .ocard .ohead{background:var(--navy2);color:#fff;padding:10px 14px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
   .ocard .ohead .sub{color:#cfe0ee;font-size:12px}
+  .ocard.collapsed .obody{display:none}
   .obody{padding:12px 14px}
   .oline{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #eef2f6;font-size:13px}
   .oline.tot{font-weight:700;border-top:2px solid var(--line);border-bottom:none;margin-top:4px;padding-top:8px;color:var(--navy)}
@@ -128,8 +130,8 @@
       <div class="panel" id="newMonthArea">
         <h2>Start this month's close</h2>
         <div class="drops">
-          <div id="dropCsv" class="drop"><div><strong>1 &middot; Guesty CSV</strong> (required)</div><div class="hint">All-listings reservations export. Drop or click.</div><input id="fileCsv" type="file" accept=".csv" class="hidden"></div>
-          <div id="dropPdf" class="drop"><div><strong>2 &middot; Bank statement PDF</strong> (optional)</div><div class="hint">La Quinta Resort Mgmt statement. Drop or click.</div><input id="filePdf" type="file" accept=".pdf" class="hidden"></div>
+          <div id="dropCsv" class="drop"><div><strong>1 &middot; Guesty CSV</strong> (required)</div><div class="hint">All-listings reservations export. Drop or click.</div><div class="dropstat" id="csvStat"></div><input id="fileCsv" type="file" accept=".csv" class="hidden"></div>
+          <div id="dropPdf" class="drop"><div><strong>2 &middot; Bank statement PDF</strong> (optional)</div><div class="hint">La Quinta Resort Mgmt statement. Drop or click.</div><div class="dropstat" id="pdfStat"></div><input id="filePdf" type="file" accept=".pdf" class="hidden"></div>
         </div>
         <div id="err" class="note" style="color:var(--bad);margin-top:10px"></div>
         <div class="note" style="margin-top:6px">Everything runs on your device. Nothing is uploaded anywhere.</div>
@@ -188,7 +190,7 @@
       <div class="panel"><h2>Past months</h2><div id="historyList"><div class="note">No saved months yet.</div></div></div>
     </section>
 
-    <div class="foot">v0.8.0 &middot; working aid, not tax advice &middot; tiers: &le;26 nts 11% &middot; 27&ndash;29 nts 10% (separate form) &middot; 30+ nts exempt</div>
+    <div class="foot">v0.8.1 &middot; working aid, not tax advice &middot; tiers: &le;26 nts 11% &middot; 27&ndash;29 nts 10% (separate form) &middot; 30+ nts exempt</div>
   </main>
 </div>
 
@@ -259,6 +261,7 @@ function computeOwner(u){
     manOwnerList:exp.filter(e=>e.paidBy==='owner'),manMgmtList:exp.filter(e=>e.paidBy==='mgmt'),
     mgmtCharged,distribution,ownerPaid,ownerNet,longTerm,covShort,received,owners,perOwner,shareTot};
 }
+let OSET_OPEN=new Set();
 function renderOwnerSetup(){
   document.getElementById('ownerSetupPanel').classList.remove('hidden');
   const units=allUnits();
@@ -269,7 +272,10 @@ function renderOwnerSetup(){
       <input class="oset oown" data-u="${u}" data-oi="${oi}" data-f="email" style="width:190px" value="${(o.email||'').replace(/"/g,'&quot;')}" placeholder="email">
       <input class="oset onum oown" data-u="${u}" data-oi="${oi}" data-f="share" type="number" step="1" value="${o.share==null?'':o.share}" placeholder="%"><span class="note">%</span>
       <button class="mini adel odel" data-u="${u}" data-oi="${oi}">✕</button></div>`).join('');
-    return `<div class="ocard"><div class="ohead"><div><b>${u}</b>${booked?'':' <span class="sub">(no bookings this month)</span>'}</div>
+    const open=OSET_OPEN.has(u);
+    const summ=(c.owners||[]).map(o=>o.name).filter(Boolean).join(', ')||'no owners';
+    return `<div class="ocard${open?'':' collapsed'}"><div class="ohead">
+        <div class="otoggle" data-u="${u}" style="cursor:pointer;display:flex;align-items:center;gap:8px"><i class="ti ti-chevron-${open?'down':'right'}"></i><b>${u}</b>${open?(booked?'':' <span class="sub">(no bookings)</span>'):` <span class="sub">${summ} · ${shareTot}%</span>`}</div>
         <div class="sub">Mgmt <input class="oset onum ucfg" data-u="${u}" data-f="mgmt" type="number" step="0.5" value="${c.mgmt}" style="width:54px">%
           · PMS $<input class="oset onum ucfg" data-u="${u}" data-f="pms" type="number" value="${c.pms}" style="width:54px">
           · Pricing $<input class="oset onum ucfg" data-u="${u}" data-f="pricing" type="number" value="${c.pricing}" style="width:54px"></div></div>
@@ -284,6 +290,7 @@ function renderOwnerSetup(){
   document.querySelectorAll('.oown').forEach(el=>el.addEventListener('change',e=>{const c=unitCfg(e.target.dataset.u),o=c.owners[+e.target.dataset.oi],f=e.target.dataset.f;o[f]=f==='share'?(+e.target.value||0):e.target.value;saveOwners();renderOwnerSetup();renderOwnerReports();}));
   document.querySelectorAll('.oadd').forEach(el=>el.addEventListener('click',e=>{const c=unitCfg(e.target.dataset.u);c.owners.push({name:'',email:'',share:0});saveOwners();renderOwnerSetup();}));
   document.querySelectorAll('.odel').forEach(el=>el.addEventListener('click',e=>{const c=unitCfg(e.target.dataset.u);c.owners.splice(+e.target.dataset.oi,1);saveOwners();renderOwnerSetup();renderOwnerReports();}));
+  document.querySelectorAll('.otoggle').forEach(el=>el.addEventListener('click',e=>{const u=e.currentTarget.dataset.u;OSET_OPEN.has(u)?OSET_OPEN.delete(u):OSET_OPEN.add(u);renderOwnerSetup();}));
 }
 function renderOwnerExp(){
   if(!RES.length)return;
@@ -432,16 +439,14 @@ function render(){
       if(r.tier==='tot'&&r.airbnbTax>0)flags.push('<span class="flagtag">TBID over</span>');
       const cov=covered(r.conf);
       const depTxt=!DEPOSITS.length?'':(cov<=0.01?'<span class="unmatched">— none</span>':Math.abs(cov-r.payout)<0.5?`<span class="matched">✓ ${money(cov)}</span>`:`<span class="unmatched">${money(cov)} / ${money(r.payout)}</span>`);
+      const stay=`${r.ci?r.ci.toLocaleDateString('en-US'):''} → ${r.co?r.co.toLocaleDateString('en-US'):''}`;
       return `<tr>
-        <td class="l">${r.guest}<div class="note">${r.conf}${r.channel?' · '+r.channel:''}</div></td>
-        <td>${r.ci?r.ci.toLocaleDateString('en-US'):''}→${r.co?r.co.toLocaleDateString('en-US'):''}</td>
-        <td>${r.nights}</td><td class="l">${tierBadge(r.tier)}</td>
-        <td>${money(r.gross)}</td><td>${r.airbnbBase?money(r.airbnbBase):'—'}</td>
+        <td class="l" style="white-space:normal;min-width:150px">${r.guest}<div class="note">${r.conf} · ${r.channel||''}</div><div class="note">${stay} · ${r.nights} nts</div></td>
+        <td class="l">${tierBadge(r.tier)}</td>
+        <td class="note" style="text-align:right">G ${money(r.gross)}<br>A ${r.airbnbBase?money(r.airbnbBase):'—'}</td>
         <td>${r.tier==='exempt'?'—':`<input class="base" type="number" step="0.01" value="${r.filedBase.toFixed(2)}" data-idx="${idx}">${r.disc?`<div class="pick"><button class="mini" data-set="g" data-idx="${idx}">G</button><button class="mini" data-set="a" data-idx="${idx}">A</button></div>`:''}`}</td>
         <td>${money(t.total)}</td>
-        <td>${depTxt}</td>
-        <td class="l"><input class="note" type="text" placeholder="note…" value="${(r.note||'').replace(/"/g,'&quot;')}" data-idx="${idx}"></td>
-        <td class="l">${flags.join(' ')||'<span class="badge b-full">ok</span>'}</td>
+        <td class="l">${flags.join(' ')||'<span class="badge b-full">ok</span>'}${depTxt?'<div style="margin-top:2px">'+depTxt+'</div>':''}<div style="margin-top:4px"><input class="note" type="text" placeholder="note…" value="${(r.note||'').replace(/"/g,'&quot;')}" data-idx="${idx}" style="width:120px"></div></td>
       </tr>`;}).join('');
     let boxes='';
     for(const [key,g] of groupBy(list,r=>r.filingMonth+'||'+r.tier)){
@@ -450,9 +455,9 @@ function render(){
       const tt=g.reduce((a,r)=>{const x=taxOf(r);a.tot+=x.tot;a.tbid+=x.tbid;a.total+=x.total;return a;},{tot:0,tbid:0,total:0});
       const form=tier==='full'?'Standard TOT form (11%)':tier==='tot'?'Separate TOT-only form — email vacationlq@laquintaca.gov':'Zero return (0 on lines 1–3)';
       boxes+=`<div class="filebox ${tier==='full'?'full':tier==='tot'?'tot':'ex'}"><div class="ttl">${fm} — ${form}</div><div class="lines">
-        <div><div class="lab">Line 1 · Reservations</div><div class="val">${count}</div></div>
-        <div><div class="lab">Line 2 · Nights</div><div class="val">${nights}</div></div>
-        <div><div class="lab">Line 3 · Rent collected</div><div class="val">${money(base)}</div></div>
+        <div><div class="lab">Reservations</div><div class="val">${count}</div></div>
+        <div><div class="lab">Nights</div><div class="val">${nights}</div></div>
+        <div><div class="lab">Rent collected</div><div class="val">${money(base)}</div></div>
         <div><div class="lab">TOT (10%)</div><div class="val">${money(r2(tt.tot))}</div></div>
         <div><div class="lab">TBID (1%)</div><div class="val">${money(r2(tt.tbid))}</div></div>
         <div><div class="lab">Total due</div><div class="val">${money(r2(tt.total))}</div></div></div>
@@ -460,7 +465,7 @@ function render(){
     }
     html+=`<div class="unit"><div class="uhead"><div><h3>${code}</h3><div class="sub">${name}</div></div>
       <button class="btn sm ghost" data-unit="${encodeURIComponent(code)}">⬇ Download ${code}</button></div>
-      <div class="ubody"><table><thead><tr><th class="l">Guest</th><th>Stay</th><th>Nts</th><th class="l">Tier</th><th>Guesty base</th><th>Airbnb base</th><th>Filed base</th><th>City tax</th><th>Deposit</th><th class="l">Note</th><th class="l">Flags</th></tr></thead><tbody>${rowsHtml}</tbody></table>${boxes}</div></div>`;
+      <div class="ubody"><table><thead><tr><th class="l">Guest &amp; stay</th><th class="l">Tier</th><th>Base G / A</th><th>Filed base</th><th>City tax</th><th class="l">Status &amp; note</th></tr></thead><tbody>${rowsHtml}</tbody></table>${boxes}</div></div>`;
   }
   document.getElementById('units').innerHTML=html;
 
@@ -484,7 +489,7 @@ function render(){
       if(!d.allocs.length)return '<span class="unmatched">— review</span>';
       if(Math.abs(s-d.amt)<0.01)return '<span class="matched">✓ done</span>';
       return '<span class="unmatched">⚠ partial</span>';};
-    document.getElementById('depTable').innerHTML=`<thead><tr><th class="l">Date</th><th class="l">Ref</th><th class="l">Chan</th><th>Amount</th><th class="l">Status</th><th class="l">Allocation(s)</th><th class="l">Why</th></tr></thead><tbody>`+
+    document.getElementById('depTable').innerHTML=`<thead><tr><th class="l">Deposit</th><th>Amount</th><th class="l">Status</th><th class="l">Allocation(s)</th></tr></thead><tbody>`+
       DEPOSITS.map((d,i)=>{
         const s=(d.allocs||[]).reduce((t,a)=>t+(a.amt||0),0);
         const rows=(d.allocs||[]).map((a,ai)=>`<div class="allocrow">
@@ -496,9 +501,9 @@ function render(){
         const remaining=r2(d.amt-s);
         const remTxt=Math.abs(remaining)<0.01?' ✓':remaining>0?` · <b>remaining ${money(remaining)}</b>`:` · <b style="color:var(--bad)">over by ${money(-remaining)}</b>`;
         const balNotes=(d.allocs||[]).filter(a=>a.conf).map(a=>{const r=RES.find(x=>x.conf===a.conf);if(!r)return '';const bal=r2(r.payout-covered(r.conf));return bal>0.5?`<div class="note" style="color:var(--info)">↳ ${r.guest}: ${money(bal)} still expected from Airbnb (future payment)</div>`:'';}).filter(Boolean).join('');
-        return `<tr><td class="l">${d.date}</td><td class="l">${d.ref}</td><td class="l">${d.channel||'—'}</td><td>${money(d.amt)}</td><td class="l">${status(d)}</td>
-          <td class="l">${rows}<div style="margin-top:4px"><button class="mini aadd" data-di="${i}">＋ split</button> <span class="note ${sumc}">allocated ${money(s)} of ${money(d.amt)}${remTxt}</span></div>${balNotes}</td>
-          <td class="l note">${d.hint||''}</td></tr>`;
+        return `<tr><td class="l" style="white-space:normal"><b>${d.date}</b><div class="note">${d.ref}</div><div class="note">${d.channel||''}</div></td>
+          <td>${money(d.amt)}</td><td class="l">${status(d)}</td>
+          <td class="l">${rows}<div style="margin-top:4px"><button class="mini aadd" data-di="${i}">＋ split</button> <span class="note ${sumc}">allocated ${money(s)} of ${money(d.amt)}${remTxt}</span></div>${balNotes}${d.hint?`<div class="note">${d.hint}</div>`:''}</td></tr>`;
       }).join('')+`</tbody>`;
   }
   // expenses
@@ -586,21 +591,24 @@ function saveMonth(){if(!RES.length)return;CURMONTH=curMonthName();const m=month
 function loadMonth(name){const snap=monthsStore()[name];if(!snap)return;RES=hydRes(snap.res||[]);DEPOSITS=snap.deposits||[];CURMONTH=name;
   document.getElementById('homeStatus').classList.remove('hidden');
   document.getElementById('dropCsv').classList.toggle('done',RES.length>0);document.getElementById('dropPdf').classList.toggle('done',DEPOSITS.length>0);
-  document.getElementById('viewSub').textContent=name;render();populateMonths();}
+  document.getElementById('viewSub').textContent=name;render();populateMonths();updateDropStats();}
 function populateMonths(){const m=monthsStore();const sel=document.getElementById('monthSel');if(!sel)return;const names=Object.keys(m).sort().reverse();
   sel.innerHTML=(names.length?names:['(no months yet)']).map(n=>`<option${n===CURMONTH?' selected':''}>${n}</option>`).join('');}
 function newMonth(){RES=[];DEPOSITS=[];['homeStatus','reconPanel','depPanel','ownerRptPanel','ownerExpPanel','ownerSetupPanel','expPanel'].forEach(id=>{const e=document.getElementById(id);if(e)e.classList.add('hidden');});
   document.getElementById('newMonthArea').classList.remove('hidden');document.getElementById('dropCsv').classList.remove('done');document.getElementById('dropPdf').classList.remove('done');
-  document.getElementById('err').textContent='';document.getElementById('viewSub').textContent='new month';setView('home');}
+  document.getElementById('err').textContent='';document.getElementById('viewSub').textContent='new month';updateDropStats();setView('home');}
 function renderListings(){const el=document.getElementById('listingsTable');if(!RES.length){el.innerHTML='<div class="note">Load a month to see listings.</div>';return;}
   el.innerHTML=`<table><thead><tr><th class="l">Listing</th><th class="l">Owners</th><th>Res.</th><th>Tax</th><th>Distribution</th></tr></thead><tbody>`+
     unitList().map(u=>{const o=computeOwner(u);return `<tr><td class="l"><b>${u}</b></td><td class="l">${(o.owners||[]).map(x=>x.name).join(', ')||'<span class="note">set owner</span>'}</td><td>${o.rs.length}</td><td>${money(o.tax)}</td><td>${money(o.distribution)}</td></tr>`;}).join('')+`</tbody>`;}
 function renderHistory(){const m=monthsStore();const el=document.getElementById('historyList');const names=Object.keys(m).sort().reverse();
   el.innerHTML=names.length?names.map(n=>`<div class="oline"><span><b>${n}</b> &middot; <span class="note">saved ${new Date(m[n].savedAt).toLocaleDateString('en-US')}</span></span><button class="btn sm ghost loadmo" data-m="${n}">Open</button></div>`).join(''):'<div class="note">No saved months yet. Process one from Home.</div>';
   el.querySelectorAll('.loadmo').forEach(b=>b.addEventListener('click',e=>{loadMonth(e.target.dataset.m);setView('home');}));}
+function updateDropStats(){const c=document.getElementById('csvStat'),p=document.getElementById('pdfStat');
+  if(c)c.textContent=RES.length?`✓ Loaded — ${RES.length} reservations · ${curMonthName()}`:'';
+  if(p)p.textContent=DEPOSITS.length?`✓ Loaded — ${DEPOSITS.length} deposits`:'';}
 function showResults(){document.getElementById('homeStatus').classList.remove('hidden');CURMONTH=curMonthName();document.getElementById('viewSub').textContent=CURMONTH;
   if(RES.length)document.getElementById('dropCsv').classList.add('done');if(DEPOSITS.length)document.getElementById('dropPdf').classList.add('done');
-  render();saveMonth();setView('home');}
+  updateDropStats();render();saveMonth();setView('home');}
 function handleCsv(file){
   document.getElementById('err').textContent='';
   Papa.parse(file,{header:true,skipEmptyLines:true,complete:res=>{
